@@ -143,17 +143,17 @@ class PinataConnector(BaseConnector):
 
 
 class IpfsClient:
-    local_connector: LocalConnector
-    infura_connector: InfuraConnector
-    pinata_connector: PinataConnector
-    gateway_connector: GatewayConnector
+    local_connector: LocalConnector | None
+    infura_connector: InfuraConnector | None
+    pinata_connector: PinataConnector | None
+    gateway_connector: GatewayConnector | None
 
     def __init__(
             self,
-            local_connector: LocalConnector,
-            infura_connector: InfuraConnector,
-            pinata_connector: PinataConnector,
-            gateway_connector: GatewayConnector,
+            local_connector: LocalConnector | None = None,
+            infura_connector: InfuraConnector | None = None,
+            pinata_connector: PinataConnector | None = None,
+            gateway_connector: GatewayConnector | None = None,
     ):
         self.local_connector = local_connector
         self.infura_connector = infura_connector
