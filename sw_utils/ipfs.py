@@ -6,7 +6,7 @@ import backoff
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
 
-from py_utils.common.utils import LimitedSizeDict
+from sw_utils.common import LimitedSizeDict
 
 logger = logging.getLogger(__name__)
 
