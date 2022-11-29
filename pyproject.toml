@@ -3,6 +3,7 @@ name = "py-utils"
 version = "0.1.0"
 description = ""
 authors = ["StakeWise Labs <info@stakewise.io>"]
+license = "GPL-3.0-or-later"
 readme = "README.md"
 
 [tool.poetry.dependencies]

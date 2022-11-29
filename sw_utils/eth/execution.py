@@ -5,7 +5,7 @@ from web3.eth import AsyncEth
 from web3.middleware import async_geth_poa_middleware
 from web3.net import AsyncNet
 
-from py_utils.common.utils import Singleton
+from sw_utils.common import Singleton
 
 logger = logging.getLogger(__name__)
 

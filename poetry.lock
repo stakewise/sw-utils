@@ -807,7 +807,7 @@ python-versions = "*"
 
 [[package]]
 name = "virtualenv"
-version = "20.16.7"
+version = "20.17.0"
 description = "Virtual Python Environment builder"
 category = "dev"
 optional = false
@@ -883,7 +883,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "cedbd7eebb485b444e2676136cb743157bb541b3bf0a84f6ea81f7241353a868"
+content-hash = "9c6b64951461f87f71b0be261e5864cc86ff227ddc289b6a776c0d019ad74c20"
 
 [metadata.files]
 aiohttp = [
@@ -1727,8 +1727,8 @@ varint = [
     {file = "varint-1.0.2.tar.gz", hash = "sha256:a6ecc02377ac5ee9d65a6a8ad45c9ff1dac8ccee19400a5950fb51d594214ca5"},
 ]
 virtualenv = [
-    {file = "virtualenv-20.16.7-py3-none-any.whl", hash = "sha256:efd66b00386fdb7dbe4822d172303f40cd05e50e01740b19ea42425cbe653e29"},
-    {file = "virtualenv-20.16.7.tar.gz", hash = "sha256:8691e3ff9387f743e00f6bb20f70121f5e4f596cae754531f2b3b3a1b1ac696e"},
+    {file = "virtualenv-20.17.0-py3-none-any.whl", hash = "sha256:40a7e06a98728fd5769e1af6fd1a706005b4bb7e16176a272ed4292473180389"},
+    {file = "virtualenv-20.17.0.tar.gz", hash = "sha256:7d6a8d55b2f73b617f684ee40fd85740f062e1f2e379412cb1879c7136f05902"},
 ]
 web3 = [
     {file = "web3-6.0.0b8-py3-none-any.whl", hash = "sha256:cbb512a0282f5f33fee42440ce5f9a271c6dc9f84833eecd85ef810b33125872"},

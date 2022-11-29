@@ -5,7 +5,7 @@ import backoff
 from eth_typing import HexStr
 from web3.beacon import AsyncBeacon
 
-from py_utils.common.utils import Singleton
+from sw_utils.common import Singleton
 
 logger = logging.getLogger(__name__)
 
