@@ -1,4 +1,3 @@
-import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep
 from typing import Any, Dict, List, Optional, Tuple
@@ -6,8 +5,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from eth_typing import BlockNumber
 from web3.contract import AsyncContract
 from web3.types import EventData
-
-logger = logging.getLogger(__name__)
 
 
 class EventScannerState(ABC):

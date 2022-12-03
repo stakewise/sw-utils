@@ -1,8 +1,6 @@
 import logging
 from enum import Enum
 
-import backoff
-from eth_typing import HexStr
 from web3.beacon import AsyncBeacon
 
 from sw_utils.common import Singleton
@@ -31,9 +29,10 @@ PENDING_STATUSES = [ValidatorStatus.PENDING_INITIALIZED, ValidatorStatus.PENDING
 
 class ExtendedAsyncBeacon(AsyncBeacon):
     async def get_validators_by_ids(
-        self, validator_ids: str, state_id: str = 'head'
+        self, validator_ids: list[str], state_id: str = 'head'
     ) -> dict:
-        return await self._async_make_get_request(GET_VALIDATORS.format(state_id, validator_ids))
+        endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
+        return await self._async_make_get_request(endpoint)
 
 
 class ConsensusClient(metaclass=Singleton):
@@ -47,49 +46,3 @@ class ConsensusClient(metaclass=Singleton):
 
         self.clients[endpoint] = ExtendedAsyncBeacon(base_url=endpoint)
         return self.clients[endpoint]
-
-
-@backoff.on_exception(backoff.expo, Exception, max_time=300)
-async def get_genesis(client: AsyncBeacon) -> dict:
-    """Fetches genesis."""
-    request = await client.get_genesis()
-    return request['data']
-
-
-@backoff.on_exception(backoff.expo, Exception, max_time=300)
-async def get_finality_checkpoints(client: AsyncBeacon, state_id: str = 'head') -> dict:
-    """Fetches finality checkpoints."""
-    request = await client.get_finality_checkpoint(state_id)
-    return request['data']
-
-
-@backoff.on_exception(backoff.expo, Exception, max_time=300)
-async def get_validator(
-    client: AsyncBeacon,
-    validator_id: str,
-    state_id: str = 'head',
-) -> dict:
-    """Fetches validators."""
-    if not validator_id:
-        return {}
-    request = await client.get_validator(
-        validator_id=validator_id,
-        state_id=state_id,
-    )
-    return request['data']
-
-
-@backoff.on_exception(backoff.expo, Exception, max_time=300)
-async def get_validators(
-    client: ExtendedAsyncBeacon,
-    public_keys: list[HexStr],
-    state_id: str = 'head',
-) -> list[dict]:
-    """Fetches validators."""
-    if not public_keys:
-        return []
-    request = await client.get_validators_by_ids(
-        validator_ids=f"?id={'&id='.join(public_keys)}",
-        state_id=state_id,
-    )
-    return request['data']
