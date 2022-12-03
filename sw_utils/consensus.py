@@ -3,8 +3,6 @@ from enum import Enum
 
 from web3.beacon import AsyncBeacon
 
-from sw_utils.common import Singleton
-
 logger = logging.getLogger(__name__)
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
@@ -35,14 +33,5 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await self._async_make_get_request(endpoint)
 
 
-class ConsensusClient(metaclass=Singleton):
-    clients: dict[str, ExtendedAsyncBeacon] = {}
-
-    async def get_client(self, endpoint: str) -> ExtendedAsyncBeacon:
-        if self.clients.get(endpoint):
-            return self.clients[endpoint]
-
-        logger.info('Create Consensus client with endpoint=%s', endpoint)
-
-        self.clients[endpoint] = ExtendedAsyncBeacon(base_url=endpoint)
-        return self.clients[endpoint]
+async def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
+    return ExtendedAsyncBeacon(base_url=endpoint)
