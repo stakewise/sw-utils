@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "0.1.1"
+version = "0.1.2"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -18,9 +18,6 @@ isort = "^5.10.1"
 pre-commit = "^2.20.0"
 Flake8-pyproject = "^1.1.0"
 black = "^22.10.0"
-
-[tool.bandit]
-exclude_dirs = []
 
 [tool.pylint."pre-commit-hook"]
 disable=["C0103", "C0114", "C0115", "C0116", "R0801", "R0903", "W0703", "W1514"]

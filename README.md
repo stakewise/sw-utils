@@ -1,4 +1,4 @@
-## StakeWise python utils
+## StakeWise Python utils
 
 # Contacts
 - Alexander Sysoev - alexander@stakewise.io
