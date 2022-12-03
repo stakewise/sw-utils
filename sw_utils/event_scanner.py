@@ -9,8 +9,6 @@ from web3.types import EventData
 
 logger = logging.getLogger(__name__)
 
-NUM_BLOCKS_RESCAN_FOR_FORKS = 100
-
 
 class EventScannerState(ABC):
     """
