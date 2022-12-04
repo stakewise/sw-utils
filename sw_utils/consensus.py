@@ -1,9 +1,6 @@
-import logging
 from enum import Enum
 
 from web3.beacon import AsyncBeacon
-
-logger = logging.getLogger(__name__)
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
 

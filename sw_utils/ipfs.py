@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Dict, Optional
@@ -63,6 +64,44 @@ class PinataUploadClient(BaseUploadClient):
             response.raise_for_status()
             ipfs_id = (await response.json())['IpfsHash']
         return _strip_ipfs_prefix(ipfs_id)
+
+
+class IpfsMultiUploadClient(BaseUploadClient):
+    def __init__(self, clients: list[BaseUploadClient], quorum: Optional[int] = None):
+        if len(clients) == 0:
+            raise ValueError('Invalid number of clients')
+        self.clients = clients
+
+        if not quorum:
+            quorum = len(clients)
+        elif len(self.clients) < quorum:
+            raise ValueError('Quorum number larger than number of clients')
+        self.quorum = quorum
+
+    async def upload(self, data: str) -> str:
+        result = await asyncio.gather(
+            *[client.upload(data) for client in self.clients],
+            return_exceptions=True
+        )
+
+        ipfs_hashes: Dict[str, int] = {}
+        for value in result:
+            if isinstance(value, BaseException):
+                logger.error(value)
+                continue
+
+            ipfs_hash = _strip_ipfs_prefix(value)
+            ipfs_hashes[ipfs_hash] = ipfs_hashes.get(ipfs_hash, 0) + 1
+
+        if not ipfs_hashes:
+            raise RuntimeError('Upload to all clients has failed')
+
+        ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
+        count = ipfs_hashes[ipfs_hash]
+        if count < self.quorum:
+            raise RuntimeError('Failed to reach the uploads quorum')
+
+        return ipfs_hash
 
 
 class IpfsFetchClient:
