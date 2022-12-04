@@ -8,7 +8,7 @@ from web3.net import AsyncNet
 logger = logging.getLogger(__name__)
 
 
-def get_execution_client(self, endpoint: str, is_poa=False) -> Web3:
+def get_execution_client(endpoint: str, is_poa=False) -> Web3:
     client = Web3(
         Web3.AsyncHTTPProvider(endpoint),
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
@@ -18,6 +18,4 @@ def get_execution_client(self, endpoint: str, is_poa=False) -> Web3:
     if is_poa:
         client.middleware_onion.inject(async_geth_poa_middleware, layer=0)
         logger.info('Injected POA middleware')
-
-    self.clients[endpoint] = client
     return client
