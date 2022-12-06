@@ -67,16 +67,11 @@ class PinataUploadClient(BaseUploadClient):
 
 
 class IpfsMultiUploadClient(BaseUploadClient):
-    def __init__(self, clients: list[BaseUploadClient], quorum: Optional[int] = None):
+    def __init__(self, clients: list[BaseUploadClient]):
         if len(clients) == 0:
             raise ValueError('Invalid number of clients')
         self.clients = clients
-
-        if not quorum:
-            quorum = len(clients)
-        elif len(self.clients) < quorum:
-            raise ValueError('Quorum number larger than number of clients')
-        self.quorum = quorum
+        self.quorum = (len(clients) // 2) + 1
 
     async def upload(self, data: str) -> str:
         result = await asyncio.gather(
