@@ -30,5 +30,5 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await self._async_make_get_request(endpoint)
 
 
-async def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
+def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
     return ExtendedAsyncBeacon(base_url=endpoint)
