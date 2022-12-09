@@ -53,7 +53,7 @@ class EventScanner:
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = self.state.get_from_block()
-        if current_from_block < to_block:
+        if current_from_block >= to_block:
             raise ValueError('Invalid to block')
 
         # Scan in chunks, commit between
