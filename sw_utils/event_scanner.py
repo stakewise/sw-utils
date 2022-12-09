@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep
 from typing import Any, Dict, List, Optional, Tuple
@@ -5,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from eth_typing import BlockNumber
 from web3.contract import AsyncContract
 from web3.types import EventData
+
+logger = logging.getLogger(__name__)
 
 
 class EventScannerState(ABC):
@@ -33,7 +36,7 @@ class EventScannerState(ABC):
 
 class EventScanner:
     min_scan_chunk_size = 10
-    max_scan_chunk_size = 100000
+    max_scan_chunk_size = 1000000
     chunk_size_multiplier = 2
     max_request_retries = 30
     request_retry_seconds = 3
@@ -47,6 +50,7 @@ class EventScanner:
     ):
         self.state = state
         self.argument_filters = argument_filters
+        self.contract_event = contract_event
         self._contract_call = lambda from_block, to_block: getattr(
             contract.events, contract_event
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
@@ -60,6 +64,12 @@ class EventScanner:
         chunk_size = self.max_scan_chunk_size
 
         while current_from_block < to_block:
+            logger.info(
+                'Scanning %s events: %d/%d blocks',
+                self.contract_event,
+                current_from_block,
+                to_block
+            )
             estimated_end_block = min(to_block, BlockNumber(current_from_block + chunk_size))
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
