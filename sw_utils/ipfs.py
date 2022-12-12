@@ -6,14 +6,9 @@ from typing import Dict, Optional
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
 
-from sw_utils.common import LimitedSizeDict
-
 timeout = ClientTimeout(total=60)
 
 logger = logging.getLogger(__name__)
-
-CACHE_SIZE = 1024
-IPFS_CACHE: Dict[str, bytes] = LimitedSizeDict(size_limit=CACHE_SIZE)
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
@@ -43,6 +38,22 @@ class IpfsUploadClient(BaseUploadClient):
             client.pin.add(ipfs_id)
 
         return _strip_ipfs_prefix(ipfs_id)
+
+    async def remove(self, ipfs_hash: str) -> None:
+        with ipfshttpclient.connect(
+            self.endpoint,
+            username=self.username,
+            password=self.password,
+        ) as client:
+            client.pin.rm(_strip_ipfs_prefix(ipfs_hash))
+
+    async def cleanup(self) -> None:
+        with ipfshttpclient.connect(
+            self.endpoint,
+            username=self.username,
+            password=self.password,
+        ) as client:
+            client.repo.gc(quiet=True)
 
 
 class PinataUploadClient(BaseUploadClient):
@@ -104,26 +115,23 @@ class IpfsFetchClient:
         self.endpoints = endpoints
 
     @staticmethod
-    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> bytes:
+    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> str:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
-            return client.cat(ipfs_hash)
+            return client.cat(ipfs_hash).decode('utf-8')
 
     @staticmethod
-    async def _fetch_http(endpoint: str, ipfs_hash: str) -> bytes:
+    async def _fetch_http(endpoint: str, ipfs_hash: str) -> str:
         async with ClientSession(timeout=timeout) as session:
             response = await session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}")
             response.raise_for_status()
 
-        return await response.read()
+        return (await response.read()).decode('utf-8')
 
-    async def fetch(self, ipfs_hash: str) -> bytes:
+    async def fetch(self, ipfs_hash: str) -> str:
         """Tries to fetch IPFS hash from different sources."""
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        if IPFS_CACHE.get(ipfs_hash):
-            return IPFS_CACHE[ipfs_hash]
-
         for endpoint in self.endpoints:
             try:
                 if endpoint.startswith('http'):

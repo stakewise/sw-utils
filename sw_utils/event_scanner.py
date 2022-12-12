@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep
 from typing import Any, Dict, List, Optional, Tuple
@@ -5,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from eth_typing import BlockNumber
 from web3.contract import AsyncContract
 from web3.types import EventData
+
+logger = logging.getLogger(__name__)
 
 
 class EventScannerState(ABC):
@@ -33,7 +36,7 @@ class EventScannerState(ABC):
 
 class EventScanner:
     min_scan_chunk_size = 10
-    max_scan_chunk_size = 100000
+    max_scan_chunk_size = 1_000_000
     chunk_size_multiplier = 2
     max_request_retries = 30
     request_retry_seconds = 3
@@ -47,13 +50,14 @@ class EventScanner:
     ):
         self.state = state
         self.argument_filters = argument_filters
+        self.contract_event = contract_event
         self._contract_call = lambda from_block, to_block: getattr(
             contract.events, contract_event
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = self.state.get_from_block()
-        if current_from_block < to_block:
+        if current_from_block >= to_block:
             raise ValueError('Invalid to block')
 
         # Scan in chunks, commit between
@@ -65,6 +69,13 @@ class EventScanner:
                 current_from_block, estimated_end_block
             )
             self.state.process_events(new_events)
+
+            logger.info(
+                'Scanned %s events: %d/%d blocks',
+                self.contract_event,
+                current_to_block,
+                to_block
+            )
 
             # Try to guess how many blocks to fetch over `eth_getLogs` API next time
             chunk_size = self._estimate_next_chunk_size(chunk_size)
