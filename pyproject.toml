@@ -11,7 +11,6 @@ python = "^3.10"
 web3 = "^6.0.0b8"
 backoff = "^2.2.1"
 milagro-bls-binding = "==1.9.0"
-pycryptodomex = "^3.16.0"
 py-ecc = "^6.0.0"
 
 [tool.poetry.group.dev.dependencies]

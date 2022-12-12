@@ -1,18 +1,11 @@
 # pylint: disable=W0511
 # TODO: remove once https://github.com/ethereum/py-ssz/issues/127 fixed
-from typing import Dict
-
-from Cryptodome.Cipher import AES, PKCS1_OAEP
-from Cryptodome.PublicKey import RSA
 from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
 # pylint: disable=no-name-in-module
 from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
-from py_ecc.bls.g2_primitives import G1_to_pubkey, pubkey_to_G1
-from py_ecc.optimized_bls12_381.optimized_curve import (Z1, add, curve_order,
-                                                        multiply)
-from py_ecc.utils import prime_field_inv
+from py_ecc.optimized_bls12_381.optimized_curve import curve_order
 
 from .ssz import Serializable, bytes4, bytes32, bytes48, uint64
 from .typings import Bytes32
@@ -81,41 +74,6 @@ def is_valid_deposit_data_signature(
         amount=amount_gwei,
     )
     return MilagroBlsVerify(public_key, _compute_signing_root(deposit_message, domain), signature)
-
-
-def reconstruct_shared_bls_public_key(public_keys: Dict[int, BLSPubkey]) -> BLSPubkey:
-    """
-    Reconstructs shared BLS public key.
-    Copied from https://github.com/dankrad/python-ibft/blob/master/bls_threshold.py
-    """
-    r = Z1
-    for i, key in public_keys.items():
-        key_point = pubkey_to_G1(key)
-        coef = 1
-        for j in public_keys:
-            if j != i:
-                coef = -coef * (j + 1) * prime_field_inv(i - j, curve_order) % curve_order
-        r = add(r, multiply(key_point, coef))
-    return G1_to_pubkey(r)
-
-
-def decrypt_exit_signature_shard(encryption: bytes, rsa_account: RSA.RsaKey) -> BLSSignature:
-    """Decrypts exit signature shard with oracle's RSA private key."""
-    private_key_size = rsa_account.size_in_bytes()
-
-    # extract encryption parts
-    enc_session_key = encryption[:private_key_size]
-    nonce = encryption[private_key_size : private_key_size + 16]
-    tag = encryption[private_key_size + 16 : private_key_size + 32]
-    ciphertext = encryption[private_key_size + 32 :]
-
-    # decrypt the session key with the private RSA key
-    cipher_rsa = PKCS1_OAEP.new(rsa_account)
-    session_key = cipher_rsa.decrypt(enc_session_key)
-
-    # decrypt the data with the AES session key
-    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-    return BLSSignature(cipher_aes.decrypt_and_verify(ciphertext, tag))  # type: ignore
 
 
 def is_valid_exit_signature(
