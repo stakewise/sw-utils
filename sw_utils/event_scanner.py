@@ -36,7 +36,7 @@ class EventScannerState(ABC):
 
 class EventScanner:
     min_scan_chunk_size = 10
-    max_scan_chunk_size = 1000000
+    max_scan_chunk_size = 1_000_000
     chunk_size_multiplier = 2
     max_request_retries = 30
     request_retry_seconds = 3
