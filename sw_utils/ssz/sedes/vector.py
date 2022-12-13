@@ -3,18 +3,19 @@ from typing import IO, Any, Iterable, Sequence, Tuple
 from eth_typing import Hash32
 from eth_utils import to_tuple
 from eth_utils.toolz import sliding_window
-from src.validators.ssz.cache.utils import (get_merkle_leaves_with_cache,
-                                            get_merkle_leaves_without_cache)
-from src.validators.ssz.exceptions import SerializationError
-from src.validators.ssz.hashable_structure import BaseHashableStructure
-from src.validators.ssz.hashable_vector import HashableVector
-from src.validators.ssz.sedes.base import BaseSedes, TSedes
-from src.validators.ssz.sedes.basic import (BasicSedes,
-                                            HomogeneousProperCompositeSedes)
-from src.validators.ssz.typing import (CacheObj, TDeserializedElement,
-                                       TSerializableElement)
-from src.validators.ssz.utils import (merkleize, merkleize_with_cache, pack,
-                                      read_exact, s_decode_offset)
+
+from sw_utils.ssz.cache.utils import (get_merkle_leaves_with_cache,
+                                      get_merkle_leaves_without_cache)
+from sw_utils.ssz.exceptions import SerializationError
+from sw_utils.ssz.hashable_structure import BaseHashableStructure
+from sw_utils.ssz.hashable_vector import HashableVector
+from sw_utils.ssz.sedes.base import BaseSedes, TSedes
+from sw_utils.ssz.sedes.basic import (BasicSedes,
+                                      HomogeneousProperCompositeSedes)
+from sw_utils.ssz.typing import (CacheObj, TDeserializedElement,
+                                 TSerializableElement)
+from sw_utils.ssz.utils import (merkleize, merkleize_with_cache, pack,
+                                read_exact, s_decode_offset)
 
 TSedesPairs = Tuple[
     Tuple[BaseSedes[TSerializableElement, TDeserializedElement], TSerializableElement],

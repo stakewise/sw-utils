@@ -3,11 +3,12 @@ import functools
 from typing import IO, Any, Sequence, Tuple
 
 from eth_typing import Hash32
-from src.validators.ssz.constants import (BASE_TYPES, CHUNK_SIZE, EMPTY_CHUNK,
-                                          OFFSET_SIZE, ZERO_HASHES)
-from src.validators.ssz.exceptions import DeserializationError
-from src.validators.ssz.hash import hash_eth2
-from src.validators.ssz.typing import CacheObj
+
+from sw_utils.ssz.constants import (BASE_TYPES, CHUNK_SIZE, EMPTY_CHUNK,
+                                    OFFSET_SIZE, ZERO_HASHES)
+from sw_utils.ssz.exceptions import DeserializationError
+from sw_utils.ssz.hash import hash_eth2
+from sw_utils.ssz.typing import CacheObj
 
 
 def get_duplicates(values):

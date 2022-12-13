@@ -3,13 +3,13 @@ from typing import IO, Any, Iterable, Sequence, Tuple
 from eth_typing import Hash32
 from eth_utils import ValidationError, to_tuple
 from eth_utils.toolz import sliding_window
-from src.validators.ssz.exceptions import (DeserializationError,
-                                           SerializationError)
-from src.validators.ssz.hashable_structure import BaseHashableStructure
-from src.validators.ssz.sedes.base import BaseSedes, TSedes
-from src.validators.ssz.sedes.basic import ProperCompositeSedes
-from src.validators.ssz.typing import CacheObj
-from src.validators.ssz.utils import merkleize, read_exact, s_decode_offset
+
+from sw_utils.ssz.exceptions import DeserializationError, SerializationError
+from sw_utils.ssz.hashable_structure import BaseHashableStructure
+from sw_utils.ssz.sedes.base import BaseSedes, TSedes
+from sw_utils.ssz.sedes.basic import ProperCompositeSedes
+from sw_utils.ssz.typing import CacheObj
+from sw_utils.ssz.utils import merkleize, read_exact, s_decode_offset
 
 
 @to_tuple

@@ -3,8 +3,9 @@ from typing import Any, Iterable
 
 from eth_typing import Hash32
 from eth_utils import to_tuple
-from src.validators.ssz.sedes.base import TSedes
-from src.validators.ssz.typing import CacheObj
+
+from sw_utils.ssz.sedes.base import TSedes
+from sw_utils.ssz.typing import CacheObj
 
 
 def get_key(sedes, value: Any) -> str:

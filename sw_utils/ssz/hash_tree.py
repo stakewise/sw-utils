@@ -11,9 +11,10 @@ from eth_utils.toolz import drop, iterate, partition, pipe, take
 from pyrsistent import pmap, pvector
 from pyrsistent._transformations import transform
 from pyrsistent.typing import PMap, PVector
-from src.validators.ssz.constants import ZERO_HASHES
-from src.validators.ssz.hash import hash_eth2
-from src.validators.ssz.utils import get_next_power_of_two
+
+from sw_utils.ssz.constants import ZERO_HASHES
+from sw_utils.ssz.hash import hash_eth2
+from sw_utils.ssz.utils import get_next_power_of_two
 
 RawHashTreeLayer = PVector[Hash32]
 RawHashTree = PVector[RawHashTreeLayer]

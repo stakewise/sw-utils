@@ -9,13 +9,14 @@ from eth_utils.toolz import groupby, partition, pipe
 from pyrsistent import pvector
 from pyrsistent._transformations import transform
 from pyrsistent.typing import PVector
-from src.validators.ssz.abc import (HashableStructureAPI,
-                                    HashableStructureEvolverAPI,
-                                    ResizableHashableStructureAPI,
-                                    ResizableHashableStructureEvolverAPI)
-from src.validators.ssz.constants import CHUNK_SIZE, ZERO_BYTES32
-from src.validators.ssz.hash_tree import HashTree
-from src.validators.ssz.sedes.base import BaseProperCompositeSedes
+
+from sw_utils.ssz.abc import (HashableStructureAPI,
+                              HashableStructureEvolverAPI,
+                              ResizableHashableStructureAPI,
+                              ResizableHashableStructureEvolverAPI)
+from sw_utils.ssz.constants import CHUNK_SIZE, ZERO_BYTES32
+from sw_utils.ssz.hash_tree import HashTree
+from sw_utils.ssz.sedes.base import BaseProperCompositeSedes
 
 TStructure = TypeVar('TStructure', bound='BaseHashableStructure')
 TResizableStructure = TypeVar(

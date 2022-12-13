@@ -6,16 +6,17 @@ from typing import IO, Any, Generator, Iterable, Sequence, Tuple
 from eth_typing import Hash32
 from eth_utils import to_tuple
 from eth_utils.toolz import accumulate, concatv
-from src.validators.ssz import constants
-from src.validators.ssz.cache.utils import get_key
-from src.validators.ssz.constants import CHUNK_SIZE
-from src.validators.ssz.exceptions import DeserializationError
-from src.validators.ssz.sedes.base import (BaseBitfieldCompositeSedes,
-                                           BaseProperCompositeSedes, BaseSedes,
-                                           TSedes)
-from src.validators.ssz.typing import CacheObj, TDeserialized, TSerializable
-from src.validators.ssz.utils import (encode_offset, merkleize,
-                                      merkleize_with_cache, pack)
+
+from sw_utils.ssz import constants
+from sw_utils.ssz.cache.utils import get_key
+from sw_utils.ssz.constants import CHUNK_SIZE
+from sw_utils.ssz.exceptions import DeserializationError
+from sw_utils.ssz.sedes.base import (BaseBitfieldCompositeSedes,
+                                     BaseProperCompositeSedes, BaseSedes,
+                                     TSedes)
+from sw_utils.ssz.typing import CacheObj, TDeserialized, TSerializable
+from sw_utils.ssz.utils import (encode_offset, merkleize, merkleize_with_cache,
+                                pack)
 
 
 class BasicSedes(BaseSedes[TSerializable, TDeserialized]):

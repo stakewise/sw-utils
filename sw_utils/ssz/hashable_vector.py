@@ -2,10 +2,11 @@ from typing import TYPE_CHECKING, Iterable, Sequence, TypeVar
 
 from eth_typing import Hash32
 from pyrsistent import pvector
-from src.validators.ssz.hashable_structure import BaseHashableStructure
+
+from sw_utils.ssz.hashable_structure import BaseHashableStructure
 
 if TYPE_CHECKING:
-    from src.validators.ssz.sedes import Vector
+    from sw_utils.ssz.sedes import Vector
 
 TElement = TypeVar('TElement')
 
