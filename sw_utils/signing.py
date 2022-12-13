@@ -5,12 +5,9 @@ from eth_utils import to_canonical_address
 # pylint: disable=no-name-in-module
 from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
-from py_ecc.optimized_bls12_381.optimized_curve import curve_order
 
 from .ssz import Serializable, bytes4, bytes32, bytes48, uint64
 from .typings import Bytes32
-
-PRIME = curve_order
 
 EXIT_SIGNATURE_SHARD_LENGTH = 640
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
