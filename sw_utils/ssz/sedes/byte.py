@@ -1,8 +1,7 @@
 from typing import Any
 
-from src.validators.ssz.exceptions import (DeserializationError,
-                                           SerializationError)
-from src.validators.ssz.sedes.basic import BasicSedes
+from sw_utils.ssz.exceptions import DeserializationError, SerializationError
+from sw_utils.ssz.sedes.basic import BasicSedes
 
 
 class Byte(BasicSedes[bytes, bytes]):

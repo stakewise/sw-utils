@@ -3,8 +3,9 @@ from typing import Any, Generic, Iterable, Iterator, Optional, TypeVar, Union
 
 from eth_typing import Hash32
 from pyrsistent.typing import PVector
-from src.validators.ssz.hash_tree import HashTree
-from src.validators.ssz.sedes.base import BaseProperCompositeSedes
+
+from sw_utils.ssz.hash_tree import HashTree
+from sw_utils.ssz.sedes.base import BaseProperCompositeSedes
 
 TStructure = TypeVar('TStructure')
 TElement = TypeVar('TElement')

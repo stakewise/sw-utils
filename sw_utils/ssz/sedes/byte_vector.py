@@ -1,13 +1,12 @@
 from typing import Tuple, Union
 
 from eth_typing import Hash32
-from src.validators.ssz.exceptions import (DeserializationError,
-                                           SerializationError)
-from src.validators.ssz.sedes.byte import byte
-from src.validators.ssz.sedes.vector import Vector
-from src.validators.ssz.typing import CacheObj
-from src.validators.ssz.utils import (merkleize, merkleize_with_cache,
-                                      pack_bytes)
+
+from sw_utils.ssz.exceptions import DeserializationError, SerializationError
+from sw_utils.ssz.sedes.byte import byte
+from sw_utils.ssz.sedes.vector import Vector
+from sw_utils.ssz.typing import CacheObj
+from sw_utils.ssz.utils import merkleize, merkleize_with_cache, pack_bytes
 
 BytesOrByteArray = Union[bytes, bytearray]
 

@@ -8,13 +8,14 @@ from typing import NamedTuple, Optional, Sequence, Tuple, Type
 from eth_utils import ValidationError, to_dict, to_set, to_tuple
 from eth_utils.toolz import assoc, merge
 from lru import LRU
-from src.validators.ssz.cache.cache import DEFAULT_CACHE_SIZE
-from src.validators.ssz.cache.utils import get_base_key
-from src.validators.ssz.constants import FIELDS_META_ATTR
-from src.validators.ssz.sedes.base import BaseSedes
-from src.validators.ssz.sedes.container import Container
-from src.validators.ssz.typing import TSerializable
-from src.validators.ssz.utils import get_duplicates, is_immutable_field_value
+
+from sw_utils.ssz.cache.cache import DEFAULT_CACHE_SIZE
+from sw_utils.ssz.cache.utils import get_base_key
+from sw_utils.ssz.constants import FIELDS_META_ATTR
+from sw_utils.ssz.sedes.base import BaseSedes
+from sw_utils.ssz.sedes.container import Container
+from sw_utils.ssz.typing import TSerializable
+from sw_utils.ssz.utils import get_duplicates, is_immutable_field_value
 
 
 class Meta(NamedTuple):
