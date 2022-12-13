@@ -71,12 +71,13 @@ class EventScanner:
             )
             await self.state.process_events(new_events)
 
-            logger.info(
-                'Scanned %s events: %d/%d blocks',
-                self.state.contract_event,
-                current_to_block,
-                to_block
-            )
+            if new_events:
+                logger.info(
+                    'Scanned %s events: %d/%d blocks',
+                    self.state.contract_event,
+                    current_to_block,
+                    to_block
+                )
 
             # Try to guess how many blocks to fetch over `eth_getLogs` API next time
             chunk_size = self._estimate_next_chunk_size(chunk_size)
