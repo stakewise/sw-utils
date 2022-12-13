@@ -16,7 +16,7 @@ class EventScannerState(ABC):
     """
 
     @abstractmethod
-    def get_from_block(self) -> BlockNumber:
+    async def get_from_block(self) -> BlockNumber:
         """
         This function takes the latest entry from the database and returns
         the block at which the corresponding event was synced.
@@ -25,7 +25,7 @@ class EventScannerState(ABC):
         """
 
     @abstractmethod
-    def process_events(self, events: List[EventData]) -> None:
+    async def process_events(self, events: List[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.
@@ -56,7 +56,7 @@ class EventScanner:
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
-        current_from_block = self.state.get_from_block()
+        current_from_block = await self.state.get_from_block()
         if current_from_block >= to_block:
             return
 
@@ -68,7 +68,7 @@ class EventScanner:
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
             )
-            self.state.process_events(new_events)
+            await self.state.process_events(new_events)
 
             logger.info(
                 'Scanned %s events: %d/%d blocks',

@@ -9,7 +9,6 @@ from py_ecc.bls import G2ProofOfPossession
 from .ssz import Serializable, bytes4, bytes32, bytes48, uint64
 from .typings import Bytes32
 
-EXIT_SIGNATURE_SHARD_LENGTH = 640
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
 ZERO_BYTES32 = b'\x00' * 32
