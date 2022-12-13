@@ -14,10 +14,8 @@ class EventScannerState(ABC):
     """
     Application state that remembers what blocks we have scanned in the case of crash.
     """
-
-    def __init__(self, contract: AsyncContract, contract_event: str):
-        self.contract = contract
-        self.contract_event = contract_event
+    contract: AsyncContract
+    contract_event: str
 
     @staticmethod
     @abstractmethod
