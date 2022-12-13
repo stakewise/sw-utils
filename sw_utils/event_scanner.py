@@ -15,8 +15,13 @@ class EventScannerState(ABC):
     Application state that remembers what blocks we have scanned in the case of crash.
     """
 
+    def __init__(self, contract: AsyncContract, contract_event: str):
+        self.contract = contract
+        self.contract_event = contract_event
+
+    @staticmethod
     @abstractmethod
-    async def get_from_block(self) -> BlockNumber:
+    async def get_from_block() -> BlockNumber:
         """
         This function takes the latest entry from the database and returns
         the block at which the corresponding event was synced.
@@ -24,8 +29,9 @@ class EventScannerState(ABC):
         :return: The block number to start scanning from
         """
 
+    @staticmethod
     @abstractmethod
-    async def process_events(self, events: List[EventData]) -> None:
+    async def process_events(events: List[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.
@@ -44,15 +50,12 @@ class EventScanner:
     def __init__(
         self,
         state: EventScannerState,
-        contract: AsyncContract,
-        contract_event: str,
         argument_filters: Optional[Dict[str, Any]] = None,
     ):
         self.state = state
         self.argument_filters = argument_filters
-        self.contract_event = contract_event
         self._contract_call = lambda from_block, to_block: getattr(
-            contract.events, contract_event
+            state.contract.events, state.contract_event
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
@@ -72,7 +75,7 @@ class EventScanner:
 
             logger.info(
                 'Scanned %s events: %d/%d blocks',
-                self.contract_event,
+                self.state.contract_event,
                 current_to_block,
                 to_block
             )

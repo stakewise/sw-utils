@@ -115,21 +115,21 @@ class IpfsFetchClient:
         self.endpoints = endpoints
 
     @staticmethod
-    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> str:
+    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> bytes:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
-            return client.cat(ipfs_hash).decode('utf-8')
+            return client.cat(ipfs_hash)
 
     @staticmethod
-    async def _fetch_http(endpoint: str, ipfs_hash: str) -> str:
+    async def _fetch_http(endpoint: str, ipfs_hash: str) -> bytes:
         async with ClientSession(timeout=timeout) as session:
             response = await session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}")
             response.raise_for_status()
 
-        return (await response.read()).decode('utf-8')
+        return await response.read()
 
-    async def fetch(self, ipfs_hash: str) -> str:
+    async def fetch(self, ipfs_hash: str) -> bytes:
         """Tries to fetch IPFS hash from different sources."""
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
         for endpoint in self.endpoints:
