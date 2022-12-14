@@ -75,9 +75,9 @@ class EventScanner:
                 logger.info(
                     'Scanned %s event: count=%d, block=%d/%d',
                     self.state.contract_event,
+                    len(new_events),
                     current_to_block,
                     to_block,
-                    len(new_events)
                 )
 
             # Try to guess how many blocks to fetch over `eth_getLogs` API next time
