@@ -16,11 +16,11 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
     return ipfs_hash.replace('ipfs://', '').replace('/ipfs/', '')
 
 
-def encode_data(data: bytes) -> list:
+def to_json(data: bytes) -> list:
     return [base64.b64encode(data).decode('ascii')]
 
 
-def decode_data(data: list) -> bytes:
+def from_json(data: list) -> bytes:
     return base64.b64decode(data[0])
 
 
@@ -43,7 +43,7 @@ class IpfsUploadClient(BaseUploadClient):
             username=self.username,
             password=self.password,
         ) as client:
-            ipfs_id = client.add_json(encode_data(data))
+            ipfs_id = client.add_json(to_json(data))
             client.pin.add(ipfs_id)
 
         return _strip_ipfs_prefix(ipfs_id)
@@ -79,7 +79,7 @@ class PinataUploadClient(BaseUploadClient):
         async with ClientSession(headers=self.headers) as session:
             response = await session.post(
                 url=self.endpoint,
-                data=json.dumps({'pinataContent': encode_data(data)}),
+                data=json.dumps({'pinataContent': to_json(data)}),
             )
             response.raise_for_status()
             ipfs_id = (await response.json())['IpfsHash']
@@ -128,7 +128,7 @@ class IpfsFetchClient:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
-            return decode_data(client.get_json(ipfs_hash))
+            return from_json(client.get_json(ipfs_hash))
 
     @staticmethod
     async def _fetch_http(endpoint: str, ipfs_hash: str) -> bytes:
@@ -137,7 +137,7 @@ class IpfsFetchClient:
 
         response.raise_for_status()
         data = await response.json()
-        return decode_data(data)
+        return from_json(data)
 
     async def fetch(self, ipfs_hash: str) -> bytes:
         """Tries to fetch IPFS hash from different sources."""
