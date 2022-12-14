@@ -10,13 +10,16 @@ from web3.types import EventData
 logger = logging.getLogger(__name__)
 
 
-class EventScannerState(ABC):
+class EventProcessor(ABC):
     """
-    Application state that remembers what blocks we have scanned in the case of crash.
+    Processor of the events.
     """
+    contract: AsyncContract
+    contract_event: str
 
+    @staticmethod
     @abstractmethod
-    async def get_from_block(self) -> BlockNumber:
+    async def get_from_block() -> BlockNumber:
         """
         This function takes the latest entry from the database and returns
         the block at which the corresponding event was synced.
@@ -24,8 +27,9 @@ class EventScannerState(ABC):
         :return: The block number to start scanning from
         """
 
+    @staticmethod
     @abstractmethod
-    async def process_events(self, events: List[EventData]) -> None:
+    async def process_events(events: List[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.
@@ -43,20 +47,17 @@ class EventScanner:
 
     def __init__(
         self,
-        state: EventScannerState,
-        contract: AsyncContract,
-        contract_event: str,
+        processor: EventProcessor,
         argument_filters: Optional[Dict[str, Any]] = None,
     ):
-        self.state = state
+        self.processor = processor
         self.argument_filters = argument_filters
-        self.contract_event = contract_event
         self._contract_call = lambda from_block, to_block: getattr(
-            contract.events, contract_event
+            processor.contract.events, processor.contract_event
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
-        current_from_block = await self.state.get_from_block()
+        current_from_block = await self.processor.get_from_block()
         if current_from_block >= to_block:
             return
 
@@ -68,14 +69,16 @@ class EventScanner:
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
             )
-            await self.state.process_events(new_events)
+            await self.processor.process_events(new_events)
 
-            logger.info(
-                'Scanned %s events: %d/%d blocks',
-                self.contract_event,
-                current_to_block,
-                to_block
-            )
+            if new_events:
+                logger.info(
+                    'Scanned %s event: count=%d, block=%d/%d',
+                    self.processor.contract_event,
+                    len(new_events),
+                    current_to_block,
+                    to_block,
+                )
 
             # Try to guess how many blocks to fetch over `eth_getLogs` API next time
             chunk_size = self._estimate_next_chunk_size(chunk_size)

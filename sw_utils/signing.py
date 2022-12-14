@@ -6,7 +6,7 @@ from eth_utils import to_canonical_address
 from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
 
-from .ssz import Serializable, bytes4, bytes32, bytes48, uint64
+from .ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 from .typings import Bytes32
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
@@ -31,6 +31,15 @@ class DepositMessage(Serializable):
         ('pubkey', bytes48),
         ('withdrawal_credentials', bytes32),
         ('amount', uint64),
+    ]
+
+
+class DepositData(Serializable):
+    fields = [
+        ('pubkey', bytes48),
+        ('withdrawal_credentials', bytes32),
+        ('amount', uint64),
+        ('signature', bytes96),
     ]
 
 

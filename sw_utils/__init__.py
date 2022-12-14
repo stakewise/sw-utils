@@ -1,7 +1,7 @@
 from .common import InterruptHandler
 from .consensus import (PENDING_STATUSES, ExtendedAsyncBeacon, ValidatorStatus,
                         get_consensus_client)
-from .event_scanner import EventData, EventScanner, EventScannerState
+from .event_scanner import EventProcessor, EventScanner
 from .execution import get_execution_client
 from .ipfs import (BaseUploadClient, IpfsFetchClient, IpfsMultiUploadClient,
                    IpfsUploadClient, PinataUploadClient)
