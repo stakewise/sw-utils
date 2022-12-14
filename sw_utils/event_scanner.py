@@ -10,9 +10,9 @@ from web3.types import EventData
 logger = logging.getLogger(__name__)
 
 
-class EventScannerState(ABC):
+class EventProcessor(ABC):
     """
-    Application state that remembers what blocks we have scanned in the case of crash.
+    Processor of the events.
     """
     contract: AsyncContract
     contract_event: str
@@ -47,17 +47,17 @@ class EventScanner:
 
     def __init__(
         self,
-        state: EventScannerState,
+        processor: EventProcessor,
         argument_filters: Optional[Dict[str, Any]] = None,
     ):
-        self.state = state
+        self.processor = processor
         self.argument_filters = argument_filters
         self._contract_call = lambda from_block, to_block: getattr(
-            state.contract.events, state.contract_event
+            processor.contract.events, processor.contract_event
         ).getLogs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
-        current_from_block = await self.state.get_from_block()
+        current_from_block = await self.processor.get_from_block()
         if current_from_block >= to_block:
             return
 
@@ -69,12 +69,12 @@ class EventScanner:
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
             )
-            await self.state.process_events(new_events)
+            await self.processor.process_events(new_events)
 
             if new_events:
                 logger.info(
                     'Scanned %s event: count=%d, block=%d/%d',
-                    self.state.contract_event,
+                    self.processor.contract_event,
                     len(new_events),
                     current_to_block,
                     to_block,
