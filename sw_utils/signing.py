@@ -82,22 +82,20 @@ def is_valid_deposit_data_signature(
     return MilagroBlsVerify(public_key, _compute_signing_root(deposit_message, domain), signature)
 
 
-# pylint: disable=too-many-arguments
 def is_valid_exit_signature(
     validator_index: int,
     public_key: BLSPubkey,
     signature: BLSSignature,
-    epoch: int,
     genesis_validators_root: Bytes32,
-    fork_version: bytes
+    fork: ConsensusFork
 ) -> bool:
     """Checks whether exit signature is valid."""
     # pylint: disable=protected-access
     if not G2ProofOfPossession._is_valid_signature(signature):
         return False
 
-    domain = _compute_exit_domain(genesis_validators_root, fork_version)
-    voluntary_exit = VoluntaryExit(epoch=epoch, validator_index=validator_index)
+    domain = _compute_exit_domain(genesis_validators_root, fork.version)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
     return MilagroBlsVerify(public_key, _compute_signing_root(voluntary_exit, domain), signature)
 
 
