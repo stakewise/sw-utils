@@ -1,9 +1,8 @@
 # pylint: disable=W0511
 # TODO: remove once https://github.com/ethereum/py-ssz/issues/127 fixed
-from eth_typing import BLSPrivateKey, BLSPubkey, BLSSignature, HexAddress
+from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
 # pylint: disable=no-name-in-module
-from milagro_bls_binding import Sign as MilagroBlsSign
 from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
 
@@ -102,17 +101,16 @@ def is_valid_exit_signature(
     return MilagroBlsVerify(public_key, _compute_signing_root(voluntary_exit, domain), signature)
 
 
-def get_exit_message_signature(
+def get_exit_message_signing_root(
     validator_index: int,
     epoch: int,
-    private_key: BLSPrivateKey,
     genesis_validators_root: Bytes32,
     fork_version: bytes
-) -> BLSSignature:
+) -> bytes:
     """Signs exit message."""
     domain = _compute_exit_domain(genesis_validators_root, fork_version)
     voluntary_exit = VoluntaryExit(epoch=epoch, validator_index=validator_index)
-    return MilagroBlsSign(private_key, _compute_signing_root(voluntary_exit, domain))
+    return _compute_signing_root(voluntary_exit, domain)
 
 
 def _compute_deposit_domain(fork_version: bytes) -> bytes:
