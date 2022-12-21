@@ -12,20 +12,11 @@ timeout = ClientTimeout(total=60)
 logger = logging.getLogger(__name__)
 
 
-def _strip_ipfs_prefix(ipfs_hash: str) -> str:
-    return ipfs_hash.replace('ipfs://', '').replace('/ipfs/', '')
-
-
-def to_json(data: bytes) -> list:
-    return [base64.b64encode(data).decode('ascii')]
-
-
-def from_json(data: list) -> bytes:
-    return base64.b64decode(data[0])
-
-
 class BaseUploadClient:
-    async def upload(self, data: bytes) -> str:
+    async def upload_bytes(self, data: bytes) -> str:
+        raise NotImplementedError
+
+    async def upload_json(self, data: dict | list) -> str:
         raise NotImplementedError
 
 
@@ -37,13 +28,16 @@ class IpfsUploadClient(BaseUploadClient):
         self.username = username
         self.password = password
 
-    async def upload(self, data: bytes) -> str:
+    async def upload_bytes(self, data: bytes) -> str:
+        return await self.upload_json(_to_json(data))
+
+    async def upload_json(self, data: dict | list) -> str:
         with ipfshttpclient.connect(
             self.endpoint,
             username=self.username,
             password=self.password,
         ) as client:
-            ipfs_id = client.add_json(to_json(data))
+            ipfs_id = client.add_json(data)
             client.pin.add(ipfs_id)
 
         return _strip_ipfs_prefix(ipfs_id)
@@ -56,7 +50,7 @@ class IpfsUploadClient(BaseUploadClient):
         ) as client:
             client.pin.rm(_strip_ipfs_prefix(ipfs_hash))
 
-    async def cleanup(self) -> None:
+    async def prune(self) -> None:
         with ipfshttpclient.connect(
             self.endpoint,
             username=self.username,
@@ -75,11 +69,14 @@ class PinataUploadClient(BaseUploadClient):
             'Content-Type': 'application/json',
         }
 
-    async def upload(self, data: bytes) -> str:
+    async def upload_bytes(self, data: bytes) -> str:
+        return await self.upload_json(_to_json(data))
+
+    async def upload_json(self, data: dict | list) -> str:
         async with ClientSession(headers=self.headers) as session:
             response = await session.post(
                 url=self.endpoint,
-                data=json.dumps({'pinataContent': to_json(data)}),
+                data=json.dumps({'pinataContent': data}),
             )
             response.raise_for_status()
             ipfs_id = (await response.json())['IpfsHash']
@@ -93,9 +90,12 @@ class IpfsMultiUploadClient(BaseUploadClient):
         self.clients = clients
         self.quorum = (len(clients) // 2) + 1
 
-    async def upload(self, data: bytes) -> str:
+    async def upload_bytes(self, data: bytes) -> str:
+        return await self.upload_json(_to_json(data))
+
+    async def upload_json(self, data: dict | list) -> str:
         result = await asyncio.gather(
-            *[client.upload(data) for client in self.clients],
+            *[client.upload_json(data) for client in self.clients],
             return_exceptions=True
         )
 
@@ -124,22 +124,24 @@ class IpfsFetchClient:
         self.endpoints = endpoints
 
     @staticmethod
-    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> bytes:
+    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> dict | list:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
-            return from_json(client.get_json(ipfs_hash))
+            return client.get_json(ipfs_hash)
 
     @staticmethod
-    async def _fetch_http(endpoint: str, ipfs_hash: str) -> bytes:
+    async def _fetch_http(endpoint: str, ipfs_hash: str) -> dict | list:
         async with ClientSession(timeout=timeout) as session:
             response = await session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}")
 
         response.raise_for_status()
-        data = await response.json()
-        return from_json(data)
+        return await response.json()
 
-    async def fetch(self, ipfs_hash: str) -> bytes:
+    async def fetch_bytes(self, ipfs_hash: str) -> bytes:
+        return _from_json(await self.fetch_json(ipfs_hash))  # type: ignore
+
+    async def fetch_json(self, ipfs_hash: str) -> dict | list:
         """Tries to fetch IPFS hash from different sources."""
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
         for endpoint in self.endpoints:
@@ -152,3 +154,15 @@ class IpfsFetchClient:
                 logger.error(e)
 
         raise RuntimeError(f'Failed to fetch IPFS data at {ipfs_hash}')
+
+
+def _strip_ipfs_prefix(ipfs_hash: str) -> str:
+    return ipfs_hash.replace('ipfs://', '').replace('/ipfs/', '')
+
+
+def _to_json(data: bytes) -> list:
+    return [base64.b64encode(data).decode('ascii')]
+
+
+def _from_json(data: list) -> bytes:
+    return base64.b64decode(data[0])
