@@ -7,7 +7,7 @@ from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
 
 from .ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
-from .typings import Bytes32
+from .typings import Bytes32, ConsensusFork
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
@@ -103,13 +103,12 @@ def is_valid_exit_signature(
 
 def get_exit_message_signing_root(
     validator_index: int,
-    epoch: int,
     genesis_validators_root: Bytes32,
-    fork_version: bytes
+    fork: ConsensusFork
 ) -> bytes:
     """Signs exit message."""
-    domain = _compute_exit_domain(genesis_validators_root, fork_version)
-    voluntary_exit = VoluntaryExit(epoch=epoch, validator_index=validator_index)
+    domain = _compute_exit_domain(genesis_validators_root, fork.version)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
     return _compute_signing_root(voluntary_exit, domain)
 
 
