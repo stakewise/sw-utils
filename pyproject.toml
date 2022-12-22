@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "0.2.2"
+version = "0.2.3"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -20,6 +20,7 @@ isort = "^5.10.1"
 pre-commit = "^2.20.0"
 Flake8-pyproject = "^1.1.0"
 black = "^22.10.0"
+bandit = "^1.7.4"
 
 [tool.bandit]
 exclude_dirs = []
@@ -27,8 +28,10 @@ exclude_dirs = []
 [tool.pylint."pre-commit-hook"]
 disable=["C0103", "C0114", "C0115", "C0116", "R0801", "R0903", "W0703", "W1514"]
 ignore-paths = ["^sw_utils/ssz/.*$"]
+
 [tool.pylint."BASIC"]
 good-names = ["i", "el", "e", "w", "f", "w3"]
+ignored-modules=["milagro_bls_binding"]
 
 [tool.flake8]
 max-line-length = 100

@@ -1,16 +1,16 @@
 # pylint: disable=W0511
 # TODO: remove once https://github.com/ethereum/py-ssz/issues/127 fixed
+import milagro_bls_binding as bls
 from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
-# pylint: disable=no-name-in-module
-from milagro_bls_binding import Verify as MilagroBlsVerify
 from py_ecc.bls import G2ProofOfPossession
 
 from .ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
-from .typings import Bytes32
+from .typings import Bytes32, ConsensusFork
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
+DOMAIN_EXIT = bytes.fromhex('04000000')
 ZERO_BYTES32 = b'\x00' * 32
 
 
@@ -78,18 +78,35 @@ def is_valid_deposit_data_signature(
         withdrawal_credentials=withdrawal_credentials,
         amount=amount_gwei,
     )
-    return MilagroBlsVerify(public_key, _compute_signing_root(deposit_message, domain), signature)
+    return bls.Verify(public_key, _compute_signing_root(deposit_message, domain), signature)
 
 
 def is_valid_exit_signature(
-    validator_index: int, public_key: BLSPubkey, signature: BLSSignature
+    validator_index: int,
+    public_key: BLSPubkey,
+    signature: BLSSignature,
+    genesis_validators_root: Bytes32,
+    fork: ConsensusFork
 ) -> bool:
     """Checks whether exit signature is valid."""
     # pylint: disable=protected-access
     if not G2ProofOfPossession._is_valid_signature(signature):
         return False
-    voluntary_exit = VoluntaryExit(epoch=0, validator_index=validator_index)
-    return MilagroBlsVerify(public_key, voluntary_exit.hash_tree_root, signature)
+
+    domain = _compute_exit_domain(genesis_validators_root, fork.version)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
+    return bls.Verify(public_key, _compute_signing_root(voluntary_exit, domain), signature)
+
+
+def get_exit_message_signing_root(
+    validator_index: int,
+    genesis_validators_root: Bytes32,
+    fork: ConsensusFork
+) -> bytes:
+    """Signs exit message."""
+    domain = _compute_exit_domain(genesis_validators_root, fork.version)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
+    return _compute_signing_root(voluntary_exit, domain)
 
 
 def _compute_deposit_domain(fork_version: bytes) -> bytes:
@@ -98,22 +115,26 @@ def _compute_deposit_domain(fork_version: bytes) -> bytes:
     """
     if len(fork_version) != 4:
         raise ValueError(f'Fork version should be in 4 bytes. Got {len(fork_version)}.')
-    domain_type = DOMAIN_DEPOSIT
-    fork_data_root = _compute_deposit_fork_data_root(fork_version)
-    return domain_type + fork_data_root[:28]
+
+    fork_data_root = ForkData(
+        current_version=fork_version,
+        genesis_validators_root=ZERO_BYTES32,
+    ).hash_tree_root
+    return DOMAIN_DEPOSIT + fork_data_root[:28]
 
 
-def _compute_deposit_fork_data_root(current_version: bytes) -> bytes:
+def _compute_exit_domain(genesis_validators_root: Bytes32, fork_version: bytes) -> bytes:
     """
-    Return the appropriate ForkData root for a given deposit version.
+    Exit-only `compute_domain`
     """
-    genesis_validators_root = ZERO_BYTES32  # For deposit, it's fixed value
-    if len(current_version) != 4:
-        raise ValueError(f'Fork version should be in 4 bytes. Got {len(current_version)}.')
-    return ForkData(
-        current_version=current_version,
+    if len(fork_version) != 4:
+        raise ValueError(f'Fork version should be in 4 bytes. Got {len(fork_version)}.')
+
+    fork_data_root = ForkData(
+        current_version=fork_version,
         genesis_validators_root=genesis_validators_root,
     ).hash_tree_root
+    return DOMAIN_EXIT + fork_data_root[:28]
 
 
 def _compute_signing_root(ssz_object: Serializable, domain: bytes) -> bytes:

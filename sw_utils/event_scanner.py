@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from asyncio import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from eth_typing import BlockNumber
 from web3.contract import AsyncContract
@@ -29,7 +29,7 @@ class EventProcessor(ABC):
 
     @staticmethod
     @abstractmethod
-    async def process_events(events: List[EventData]) -> None:
+    async def process_events(events: list[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.
@@ -48,7 +48,7 @@ class EventScanner:
     def __init__(
         self,
         processor: EventProcessor,
-        argument_filters: Optional[Dict[str, Any]] = None,
+        argument_filters: dict[str, Any] | None = None,
     ):
         self.processor = processor
         self.argument_filters = argument_filters
@@ -88,7 +88,7 @@ class EventScanner:
 
     async def _scan_chunk(
         self, from_block: BlockNumber, to_block: BlockNumber
-    ) -> Tuple[BlockNumber, List[EventData]]:
+    ) -> tuple[BlockNumber, list[EventData]]:
         """
         Read and process events between block numbers.
         Dynamically decrease the size of the chunk if the case JSON-RPC server pukes out.
