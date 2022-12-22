@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Dict, Optional
+from abc import ABC, abstractmethod
 
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
@@ -12,17 +12,19 @@ timeout = ClientTimeout(total=60)
 logger = logging.getLogger(__name__)
 
 
-class BaseUploadClient:
+class BaseUploadClient(ABC):
+    @abstractmethod
     async def upload_bytes(self, data: bytes) -> str:
         raise NotImplementedError
 
+    @abstractmethod
     async def upload_json(self, data: dict | list) -> str:
         raise NotImplementedError
 
 
 class IpfsUploadClient(BaseUploadClient):
     def __init__(
-        self, endpoint: str, username: Optional[str] = None, password: Optional[str] = None
+        self, endpoint: str, username: str | None = None, password: str | None = None
     ):
         self.endpoint = endpoint
         self.username = username
@@ -99,7 +101,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
             return_exceptions=True
         )
 
-        ipfs_hashes: Dict[str, int] = {}
+        ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
                 logger.error(value)
