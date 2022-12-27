@@ -14,12 +14,18 @@ class EventProcessor(ABC):
     """
     Processor of the events.
     """
+
     contract: AsyncContract
     contract_event: str
 
-    @staticmethod
+    def __init__(self, contract: AsyncContract | None = None, contract_event: str | None = None):
+        if contract:
+            self.contract = contract
+        if contract_event:
+            self.contract_event = contract_event
+
     @abstractmethod
-    async def get_from_block() -> BlockNumber:
+    async def get_from_block(self) -> BlockNumber:
         """
         This function takes the latest entry from the database and returns
         the block at which the corresponding event was synced.
@@ -27,9 +33,8 @@ class EventProcessor(ABC):
         :return: The block number to start scanning from
         """
 
-    @staticmethod
     @abstractmethod
-    async def process_events(events: list[EventData]) -> None:
+    async def process_events(self, events: list[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.

@@ -20,12 +20,21 @@ class ValidatorStatus(Enum):
 
 
 PENDING_STATUSES = [ValidatorStatus.PENDING_INITIALIZED, ValidatorStatus.PENDING_QUEUED]
+ACTIVE_STATUSES = [
+    ValidatorStatus.ACTIVE_ONGOING,
+    ValidatorStatus.ACTIVE_EXITING,
+    ValidatorStatus.ACTIVE_SLASHED,
+]
+EXITED_STATUSES = [
+    ValidatorStatus.EXITED_UNSLASHED,
+    ValidatorStatus.EXITED_SLASHED,
+    ValidatorStatus.WITHDRAWAL_POSSIBLE,
+    ValidatorStatus.WITHDRAWAL_DONE,
+]
 
 
 class ExtendedAsyncBeacon(AsyncBeacon):
-    async def get_validators_by_ids(
-        self, validator_ids: list[str], state_id: str = 'head'
-    ) -> dict:
+    async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
         endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
 
