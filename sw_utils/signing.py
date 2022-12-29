@@ -72,13 +72,13 @@ def is_valid_deposit_data_signature(
     fork_version: bytes,
 ) -> bool:
     """Checks whether deposit data is valid."""
-    domain = _compute_deposit_domain(fork_version=fork_version)
+    domain = compute_deposit_domain(fork_version=fork_version)
     deposit_message = DepositMessage(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
         amount=amount_gwei,
     )
-    return bls.Verify(public_key, _compute_signing_root(deposit_message, domain), signature)
+    return bls.Verify(public_key, compute_signing_root(deposit_message, domain), signature)
 
 
 def is_valid_exit_signature(
@@ -95,7 +95,7 @@ def is_valid_exit_signature(
 
     domain = _compute_exit_domain(genesis_validators_root, fork.version)
     voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
-    return bls.Verify(public_key, _compute_signing_root(voluntary_exit, domain), signature)
+    return bls.Verify(public_key, compute_signing_root(voluntary_exit, domain), signature)
 
 
 def get_exit_message_signing_root(
@@ -106,10 +106,10 @@ def get_exit_message_signing_root(
     """Signs exit message."""
     domain = _compute_exit_domain(genesis_validators_root, fork.version)
     voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
-    return _compute_signing_root(voluntary_exit, domain)
+    return compute_signing_root(voluntary_exit, domain)
 
 
-def _compute_deposit_domain(fork_version: bytes) -> bytes:
+def compute_deposit_domain(fork_version: bytes) -> bytes:
     """
     Deposit-only `compute_domain`
     """
@@ -137,7 +137,7 @@ def _compute_exit_domain(genesis_validators_root: Bytes32, fork_version: bytes) 
     return DOMAIN_EXIT + fork_data_root[:28]
 
 
-def _compute_signing_root(ssz_object: Serializable, domain: bytes) -> bytes:
+def compute_signing_root(ssz_object: Serializable, domain: bytes) -> bytes:
     """
     Return the signing root of an object by calculating the root of the object-domain tree.
     The root is the hash tree root of:
