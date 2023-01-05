@@ -20,6 +20,17 @@ class ValidatorStatus(Enum):
 
 
 PENDING_STATUSES = [ValidatorStatus.PENDING_INITIALIZED, ValidatorStatus.PENDING_QUEUED]
+ACTIVE_STATUSES = [
+    ValidatorStatus.ACTIVE_ONGOING,
+    ValidatorStatus.ACTIVE_EXITING,
+    ValidatorStatus.ACTIVE_SLASHED,
+]
+EXITED_STATUSES = [
+    ValidatorStatus.EXITED_UNSLASHED,
+    ValidatorStatus.EXITED_SLASHED,
+    ValidatorStatus.WITHDRAWAL_POSSIBLE,
+    ValidatorStatus.WITHDRAWAL_DONE,
+]
 
 
 class ExtendedAsyncBeacon(AsyncBeacon):
