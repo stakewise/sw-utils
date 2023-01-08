@@ -76,12 +76,12 @@ class PinataUploadClient(BaseUploadClient):
 
     async def upload_json(self, data: dict | list) -> str:
         async with ClientSession(headers=self.headers) as session:
-            response = await session.post(
+            async with session.post(
                 url=self.endpoint,
                 data=json.dumps({'pinataContent': data}),
-            )
-            response.raise_for_status()
-            ipfs_id = (await response.json())['IpfsHash']
+            ) as response:
+                response.raise_for_status()
+                ipfs_id = (await response.json())['IpfsHash']
         return _strip_ipfs_prefix(ipfs_id)
 
 
@@ -135,10 +135,9 @@ class IpfsFetchClient:
     @staticmethod
     async def _fetch_http(endpoint: str, ipfs_hash: str) -> dict | list:
         async with ClientSession(timeout=timeout) as session:
-            response = await session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}")
-
-        response.raise_for_status()
-        return await response.json()
+            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
+                response.raise_for_status()
+                return await response.json()
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         return _from_json(await self.fetch_json(ipfs_hash))  # type: ignore
