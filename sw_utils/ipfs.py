@@ -34,6 +34,9 @@ class IpfsUploadClient(BaseUploadClient):
         return await self.upload_json(_to_json(data))
 
     async def upload_json(self, data: dict | list) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+
         with ipfshttpclient.connect(
             self.endpoint,
             username=self.username,
@@ -45,6 +48,9 @@ class IpfsUploadClient(BaseUploadClient):
         return _strip_ipfs_prefix(ipfs_id)
 
     async def remove(self, ipfs_hash: str) -> None:
+        if not ipfs_hash:
+            raise ValueError('Empty IPFS hash provided')
+
         with ipfshttpclient.connect(
             self.endpoint,
             username=self.username,
@@ -75,13 +81,16 @@ class PinataUploadClient(BaseUploadClient):
         return await self.upload_json(_to_json(data))
 
     async def upload_json(self, data: dict | list) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+
         async with ClientSession(headers=self.headers) as session:
-            response = await session.post(
+            async with session.post(
                 url=self.endpoint,
                 data=json.dumps({'pinataContent': data}),
-            )
-            response.raise_for_status()
-            ipfs_id = (await response.json())['IpfsHash']
+            ) as response:
+                response.raise_for_status()
+                ipfs_id = (await response.json())['IpfsHash']
         return _strip_ipfs_prefix(ipfs_id)
 
 
@@ -96,6 +105,9 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return await self.upload_json(_to_json(data))
 
     async def upload_json(self, data: dict | list) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+
         result = await asyncio.gather(
             *[client.upload_json(data) for client in self.clients],
             return_exceptions=True
@@ -135,16 +147,18 @@ class IpfsFetchClient:
     @staticmethod
     async def _fetch_http(endpoint: str, ipfs_hash: str) -> dict | list:
         async with ClientSession(timeout=timeout) as session:
-            response = await session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}")
-
-        response.raise_for_status()
-        return await response.json()
+            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
+                response.raise_for_status()
+                return await response.json()
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         return _from_json(await self.fetch_json(ipfs_hash))  # type: ignore
 
     async def fetch_json(self, ipfs_hash: str) -> dict | list:
         """Tries to fetch IPFS hash from different sources."""
+        if not ipfs_hash:
+            raise ValueError('Empty IPFS hash provided')
+
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
         for endpoint in self.endpoints:
             try:
