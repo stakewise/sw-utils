@@ -5,6 +5,7 @@ from .event_scanner import EventProcessor, EventScanner
 from .execution import get_execution_client
 from .ipfs import (BaseUploadClient, IpfsFetchClient, IpfsMultiUploadClient,
                    IpfsUploadClient, PinataUploadClient)
+from .middlewares import construct_async_sign_and_send_raw_middleware
 from .signing import (DepositData, DepositMessage, compute_deposit_domain,
                       compute_deposit_message, compute_signing_root,
                       get_eth1_withdrawal_credentials,
