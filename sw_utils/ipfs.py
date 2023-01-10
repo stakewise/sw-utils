@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
+from ipfshttpclient.exceptions import ErrorResponse
 
 timeout = ClientTimeout(total=60)
 
@@ -56,7 +57,12 @@ class IpfsUploadClient(BaseUploadClient):
             username=self.username,
             password=self.password,
         ) as client:
-            client.pin.rm(_strip_ipfs_prefix(ipfs_hash))
+            try:
+                client.pin.rm(_strip_ipfs_prefix(ipfs_hash))
+            except ErrorResponse as e:
+                if hasattr(e, 'args') and e.args and e.args[0] == 'not pinned or pinned indirectly':
+                    return
+                raise e
 
     async def prune(self) -> None:
         with ipfshttpclient.connect(
