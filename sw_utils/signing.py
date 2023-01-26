@@ -48,12 +48,13 @@ class VoluntaryExit(Serializable):
 
 
 def compute_deposit_message(
-    public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int
+    public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int, signature: bytes
 ) -> DepositMessage:
     return DepositMessage(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
         amount=amount_gwei,
+        signature=signature
     )
 
 
