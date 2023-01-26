@@ -53,7 +53,17 @@ def compute_deposit_message(
     return DepositMessage(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
+        amount=amount_gwei
+    )
+
+def compute_deposit_data(
+    public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int, signature: bytes
+) -> DepositData:
+    return DepositData(
+        pubkey=public_key,
+        withdrawal_credentials=withdrawal_credentials,
         amount=amount_gwei,
+        signature=signature
     )
 
 
