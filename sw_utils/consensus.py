@@ -47,5 +47,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         uri = URI(self.base_url + endpoint_uri)
         return await async_json_make_get_request(uri, timeout=60)
 
+
 def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
     return ExtendedAsyncBeacon(base_url=endpoint)
