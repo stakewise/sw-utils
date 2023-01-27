@@ -1,5 +1,8 @@
 from enum import Enum
+from typing import Any, Dict
 
+from eth_typing import URI
+from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
@@ -40,6 +43,9 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
 
+    async def _async_make_get_request(self, endpoint_uri: str) -> Dict[str, Any]:
+        uri = URI(self.base_url + endpoint_uri)
+        return await async_json_make_get_request(uri, timeout=60)
 
 def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
     return ExtendedAsyncBeacon(base_url=endpoint)
