@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 
 def get_execution_client(endpoint: str, is_poa=False) -> Web3:
     client = Web3(
-        Web3.AsyncHTTPProvider(endpoint),
+        Web3.AsyncHTTPProvider(endpoint, request_kwargs={'timeout': 60}),
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
-        middlewares=[],
     )
 
     if is_poa:
