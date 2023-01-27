@@ -8,9 +8,9 @@ from web3.net import AsyncNet
 logger = logging.getLogger(__name__)
 
 
-def get_execution_client(endpoint: str, is_poa=False) -> Web3:
+def get_execution_client(endpoint: str, is_poa=False, timeout=60) -> Web3:
     client = Web3(
-        Web3.AsyncHTTPProvider(endpoint, request_kwargs={'timeout': 60}),
+        Web3.AsyncHTTPProvider(endpoint, request_kwargs={'timeout': timeout}),
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
     )
 
