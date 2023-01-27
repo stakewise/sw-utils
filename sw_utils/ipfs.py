@@ -8,8 +8,6 @@ import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.exceptions import ErrorResponse
 
-timeout = ClientTimeout(total=60)
-
 logger = logging.getLogger(__name__)
 
 
@@ -140,19 +138,18 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
 
 class IpfsFetchClient:
-    def __init__(self, endpoints: list[str]):
+    def __init__(self, endpoints: list[str], timeout: int = 60):
         self.endpoints = endpoints
+        self.timeout = timeout
 
-    @staticmethod
-    async def _fetch_ipfs(endpoint: str, ipfs_hash: str) -> dict | list:
+    async def _fetch_ipfs(self, endpoint: str, ipfs_hash: str) -> dict | list:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
-            return client.get_json(ipfs_hash)
+            return client.get_json(ipfs_hash, timeout=self.timeout)
 
-    @staticmethod
-    async def _fetch_http(endpoint: str, ipfs_hash: str) -> dict | list:
-        async with ClientSession(timeout=timeout) as session:
+    async def _fetch_http(self, endpoint: str, ipfs_hash: str) -> dict | list:
+        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
             async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
                 response.raise_for_status()
                 return await response.json()
