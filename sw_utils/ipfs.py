@@ -114,7 +114,7 @@ class PinataUploadClient(BaseUploadClient):
     async def upload_json(self, data: dict | list) -> str:
         if not data:
             raise ValueError('Empty data provided')
-        headers = self.headers
+        headers = self.headers.copy()
         headers['Content-Type'] = 'application/json'
         async with ClientSession(headers=headers) as session:
             async with session.post(
@@ -129,7 +129,7 @@ class PinataUploadClient(BaseUploadClient):
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
 
-        headers = self.headers
+        headers = self.headers.copy()
         headers['Content-Type'] = 'application/json'
         async with ClientSession(headers=headers) as session:
             async with session.delete(url=urljoin(self.unpin_endpoint, ipfs_hash)) as response:
