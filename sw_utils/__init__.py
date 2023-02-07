@@ -4,7 +4,7 @@ from .consensus import (PENDING_STATUSES, ExtendedAsyncBeacon, ValidatorStatus,
 from .event_scanner import EventProcessor, EventScanner
 from .execution import get_execution_client
 from .ipfs import (BaseUploadClient, IpfsFetchClient, IpfsMultiUploadClient,
-                   IpfsUploadClient, PinataUploadClient)
+                   IpfsUploadClient, PinataUploadClient, WebStorageClient)
 from .middlewares import construct_async_sign_and_send_raw_middleware
 from .signing import (DepositData, DepositMessage, compute_deposit_data,
                       compute_deposit_domain, compute_deposit_message,
