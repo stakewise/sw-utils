@@ -56,5 +56,5 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await async_json_make_get_request(uri, timeout=self.timeout)
 
 
-def get_consensus_client(endpoint: str) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_url=endpoint)
+def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
+    return ExtendedAsyncBeacon(base_url=endpoint, timeout=timeout)
