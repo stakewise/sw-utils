@@ -2099,14 +2099,14 @@ test = ["covdefaults (>=2.2.2)", "coverage (>=7.1)", "coverage-enable-subprocess
 
 [[package]]
 name = "web3"
-version = "6.0.0b11"
-description = "web3.py"
+version = "6.0.0b9"
+description = "Web3.py"
 category = "main"
 optional = false
 python-versions = ">=3.7.2"
 files = [
-    {file = "web3-6.0.0b11-py3-none-any.whl", hash = "sha256:31947e15dec29d380de10b5429905ac519ae74219dd05379e9854ee44f178d86"},
-    {file = "web3-6.0.0b11.tar.gz", hash = "sha256:810d797bc39f7705029e78303ca4f679fce75f60568faa5c750bc8f54eb70bfc"},
+    {file = "web3-6.0.0b9-py3-none-any.whl", hash = "sha256:2b70afe31d38813804aa5ee3503c72e9e41cb2cf7e720627ccbc0a85791f97ca"},
+    {file = "web3-6.0.0b9.tar.gz", hash = "sha256:f90e55cddf6cde97552ff241d55903a5ef2a5fec192f2cad540e8effe555c494"},
 ]
 
 [package.dependencies]
@@ -2126,11 +2126,11 @@ requests = ">=2.16.0"
 websockets = ">=10.0.0"
 
 [package.extras]
-dev = ["black (>=22.1.0)", "build (>=0.9.0)", "bumpversion", "click (>=5.1)", "configparser (==3.5.0)", "contextlib2 (>=0.5.4)", "eth-tester[py-evm] (==v0.8.0-b.3)", "flake8 (==3.8.3)", "flaky (>=3.7.0)", "hypothesis (>=3.31.2)", "importlib-metadata (<5.0)", "ipfshttpclient (==0.8.0a2)", "isort (>=5.11.0)", "mock", "mypy (==0.910)", "pluggy (==0.13.1)", "py-geth (>=3.11.0)", "py-solc-x (>=1.1.1)", "pytest (>=6.2.5)", "pytest-asyncio (>=0.18.1)", "pytest-mock (>=1.10)", "pytest-pythonpath (>=0.3)", "pytest-watch (>=4.2)", "pytest-xdist (>=1.29)", "setuptools (>=38.6.0)", "sphinx (>=4.2.0)", "sphinx-rtd-theme (>=0.5.2)", "toposort (>=1.4)", "towncrier (==18.5.0)", "tox (>=3.18.0)", "tqdm (>4.32)", "twine (>=1.13)", "types-protobuf (==3.19.13)", "types-requests (>=2.26.1)", "types-setuptools (>=57.4.4)", "urllib3", "wheel", "when-changed (>=0.3.0)"]
-docs = ["click (>=5.1)", "configparser (==3.5.0)", "contextlib2 (>=0.5.4)", "mock", "py-geth (>=3.11.0)", "py-solc-x (>=1.1.1)", "pytest (>=6.2.5)", "sphinx (>=4.2.0)", "sphinx-rtd-theme (>=0.5.2)", "toposort (>=1.4)", "towncrier (==18.5.0)", "urllib3", "wheel"]
+dev = ["black (>=22.1.0)", "bumpversion", "click (>=5.1)", "configparser (==3.5.0)", "contextlib2 (>=0.5.4)", "eth-tester[py-evm] (==v0.8.0-b.3)", "flake8 (==3.8.3)", "flaky (>=3.7.0)", "hypothesis (>=3.31.2)", "importlib-metadata (<5.0)", "ipfshttpclient (==0.8.0a2)", "isort (>=4.2.15,<4.3.5)", "mock", "mypy (==0.910)", "pluggy (==0.13.1)", "py-geth (>=3.10.0)", "py-geth (>=3.9.1)", "py-solc (>=0.4.0)", "pytest (>=6.2.5)", "pytest-asyncio (>=0.18.1)", "pytest-mock (>=1.10)", "pytest-pythonpath (>=0.3)", "pytest-watch (>=4.2)", "pytest-xdist (>=1.29)", "setuptools (>=38.6.0)", "sphinx (>=4.2.0)", "sphinx-rtd-theme (>=0.5.2)", "toposort (>=1.4)", "towncrier (==18.5.0)", "tox (>=3.18.0)", "tqdm (>4.32)", "twine (>=1.13)", "types-protobuf (==3.19.13)", "types-requests (>=2.26.1)", "types-setuptools (>=57.4.4)", "urllib3", "wheel", "when-changed (>=0.3.0)"]
+docs = ["click (>=5.1)", "configparser (==3.5.0)", "contextlib2 (>=0.5.4)", "mock", "py-geth (>=3.9.1)", "py-solc (>=0.4.0)", "pytest (>=6.2.5)", "sphinx (>=4.2.0)", "sphinx-rtd-theme (>=0.5.2)", "toposort (>=1.4)", "towncrier (==18.5.0)", "urllib3", "wheel"]
 ipfs = ["ipfshttpclient (==0.8.0a2)"]
-linter = ["black (>=22.1.0)", "flake8 (==3.8.3)", "isort (>=5.11.0)", "mypy (==0.910)", "types-protobuf (==3.19.13)", "types-requests (>=2.26.1)", "types-setuptools (>=57.4.4)"]
-tester = ["eth-tester[py-evm] (==v0.8.0-b.3)", "py-geth (>=3.11.0)"]
+linter = ["black (>=22.1.0)", "flake8 (==3.8.3)", "isort (>=4.2.15,<4.3.5)", "mypy (==0.910)", "types-protobuf (==3.19.13)", "types-requests (>=2.26.1)", "types-setuptools (>=57.4.4)"]
+tester = ["eth-tester[py-evm] (==v0.8.0-b.3)", "py-geth (>=3.10.0)"]
 
 [[package]]
 name = "websockets"
@@ -2387,4 +2387,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "55a08efe0b5f55f53ad88a10e80b2443e7412b6217c6a7ad27ac53bf14cb4ea8"
+content-hash = "8463c77902472cb94695eb87c68cd1e7af3320ca37db60acd8b733769765fbee"
