@@ -12,15 +12,23 @@ class InterruptHandler:
 
     exit = False
 
-    def __init__(self) -> None:
+    def __enter__(self) -> 'InterruptHandler':
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
+        return self
 
-    # noinspection PyUnusedLocal
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        signal.signal(signal.SIGINT, self.exit_default)
+        signal.signal(signal.SIGTERM, self.exit_default)
+
     def exit_gracefully(self, signum: int, *args, **kwargs) -> None:
         # pylint: disable=unused-argument
         logger.info('Received interrupt signal %s, exiting...', signum)
         self.exit = True
+
+    def exit_default(self, signum: int, *args, **kwargs) -> None:
+        # pylint: disable=unused-argument
+        raise KeyboardInterrupt
 
 
 class LimitedSizeDict(OrderedDict):
