@@ -33,6 +33,10 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      # Run tests
+      # Run precommit
       - name: Run precommit
         run: poetry run pre-commit run --all-files
+
+      # Run tests
+      - name: Run tests
+        run: poetry run pytest sw_utils

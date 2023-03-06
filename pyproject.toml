@@ -23,6 +23,7 @@ Flake8-pyproject = "^1.1.0"
 black = "^22.10.0"
 bandit = {version = "^1.7.4", extras = ["toml"]}
 faker = "==15.3.4"
+pytest = "^7"
 
 [tool.bandit]
 exclude_dirs = ["sw_utils/tests/"]
