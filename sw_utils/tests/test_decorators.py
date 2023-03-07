@@ -4,7 +4,7 @@ import aiohttp
 import pytest
 from aiohttp import ClientResponseError
 
-from sw_utils.decorators import backoff_aiohttp_errors
+from sw_utils.decorators import backoff_aiohttp_errors, backoff_in_method
 
 
 class TestBackoffConnectionErrors:
@@ -44,3 +44,56 @@ class TestBackoffConnectionErrors:
             raise_timeout_error()
 
         assert call_count == 2
+
+
+class TestBackoffInMethod:
+    def test_no_exception(self):
+        class Example:
+            def __init__(self):
+                self.call_count = 0
+                self.max_tries = 2
+
+            @backoff_in_method(ValueError, max_tries_attr='max_tries')
+            def method(self):
+                self.call_count += 1
+
+        example = Example()
+        example.method()
+
+        assert example.call_count == 1
+
+    def test_basic(self):
+        class Example:
+            def __init__(self):
+                self.call_count = 0
+                self.max_tries = 2
+
+            @backoff_in_method(ValueError, max_tries_attr='max_tries')
+            def method(self):
+                self.call_count += 1
+                raise ValueError
+
+        example = Example()
+
+        with pytest.raises(ValueError):
+            example.method()
+
+        assert example.call_count == 2
+
+    def test_skip_exception(self):
+        class Example:
+            def __init__(self):
+                self.call_count = 0
+                self.max_tries = 2
+
+            @backoff_in_method(ValueError, max_tries_attr='max_tries')
+            def method(self):
+                self.call_count += 1
+                raise RuntimeError
+
+        example = Example()
+
+        with pytest.raises(RuntimeError):
+            example.method()
+
+        assert example.call_count == 1

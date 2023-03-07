@@ -10,6 +10,8 @@ from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
+from sw_utils.decorators import backoff_in_method
+
 logger = logging.getLogger(__name__)
 
 
@@ -238,10 +240,20 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
 
 class IpfsFetchClient:
-    def __init__(self, endpoints: list[str], timeout: int = 60):
+    def __init__(
+            self,
+            endpoints: list[str],
+            timeout: int = 60,
+            request_timeout: int = 60
+    ):
         self.endpoints = endpoints
         self.timeout = timeout
+        self.request_timeout = request_timeout
 
+    @backoff_in_method(
+        RuntimeError,
+        max_time_attr='timeout'
+    )
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
@@ -250,22 +262,32 @@ class IpfsFetchClient:
         for endpoint in self.endpoints:
             try:
                 if endpoint.startswith('http'):
-                    async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-                        async with session.get(
-                            f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
-                        ) as response:
-                            response.raise_for_status()
-                            return await response.read()
+                    return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
 
-                with ipfshttpclient.connect(
-                    endpoint,
-                ) as client:
-                    return client.cat(ipfs_hash, timeout=self.timeout)
+                return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
                 logger.error(e)
 
         raise RuntimeError(f'Failed to fetch IPFS data at {ipfs_hash}')
 
+    async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        async with ClientSession(timeout=ClientTimeout(self.request_timeout)) as session:
+            async with session.get(
+                    f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
+            ) as response:
+                response.raise_for_status()
+                return await response.read()
+
+    def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        with ipfshttpclient.connect(
+                endpoint,
+        ) as client:
+            return client.cat(ipfs_hash, timeout=self.request_timeout)
+
+    @backoff_in_method(
+        RuntimeError,
+        max_time_attr='timeout'
+    )
     async def fetch_json(self, ipfs_hash: str) -> dict | list:
         """Tries to fetch IPFS hash from different sources."""
         if not ipfs_hash:
@@ -275,21 +297,27 @@ class IpfsFetchClient:
         for endpoint in self.endpoints:
             try:
                 if endpoint.startswith('http'):
-                    async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-                        async with session.get(
-                            f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
-                        ) as response:
-                            response.raise_for_status()
-                            return await response.json()
+                    return await self._http_gateway_fetch_json(endpoint, ipfs_hash)
 
-                with ipfshttpclient.connect(
-                    endpoint,
-                ) as client:
-                    return client.get_json(ipfs_hash, timeout=self.timeout)
+                return self._ipfs_fetch_json(endpoint, ipfs_hash)
             except Exception as e:
                 logger.error(e)
 
         raise RuntimeError(f'Failed to fetch IPFS data at {ipfs_hash}')
+
+    async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
+        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
+            async with session.get(
+                    f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
+            ) as response:
+                response.raise_for_status()
+                return await response.json()
+
+    def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
+        with ipfshttpclient.connect(
+                endpoint,
+        ) as client:
+            return client.get_json(ipfs_hash, timeout=self.timeout)
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
