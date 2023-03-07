@@ -8,7 +8,7 @@ connection_errors = (
 )
 
 
-def backoff_aiohttp_connection_errors(
+def backoff_aiohttp_errors(
         max_tries: int | None = None,
         max_time: int | None = None,
         **kwargs
