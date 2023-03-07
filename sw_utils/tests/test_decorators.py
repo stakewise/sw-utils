@@ -4,14 +4,14 @@ import aiohttp
 import pytest
 from aiohttp import ClientResponseError
 
-from sw_utils.decorators import backoff_connection_errors
+from sw_utils.decorators import backoff_aiohttp_connection_errors
 
 
 class TestBackoffConnectionErrors:
     def test_bad_request_http_error(self):
         call_count = 0
 
-        @backoff_connection_errors(max_tries=2, max_time=2)
+        @backoff_aiohttp_connection_errors(max_tries=2, max_time=2)
         def raise_bad_request_http_error():
             nonlocal call_count
             call_count += 1
@@ -33,7 +33,7 @@ class TestBackoffConnectionErrors:
     def test_timeout_error(self):
         call_count = 0
 
-        @backoff_connection_errors(max_tries=2, max_time=1)
+        @backoff_aiohttp_connection_errors(max_tries=2, max_time=1)
         def raise_timeout_error():
             nonlocal call_count
             call_count += 1
