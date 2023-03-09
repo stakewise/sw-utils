@@ -10,8 +10,6 @@ from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
-from sw_utils.decorators import backoff_in_method
-
 logger = logging.getLogger(__name__)
 
 
@@ -250,10 +248,6 @@ class IpfsFetchClient:
         self.timeout = timeout
         self.request_timeout = request_timeout
 
-    @backoff_in_method(
-        RuntimeError,
-        max_time_attr='timeout'
-    )
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
@@ -284,10 +278,6 @@ class IpfsFetchClient:
         ) as client:
             return client.cat(ipfs_hash, timeout=self.request_timeout)
 
-    @backoff_in_method(
-        RuntimeError,
-        max_time_attr='timeout'
-    )
     async def fetch_json(self, ipfs_hash: str) -> dict | list:
         """Tries to fetch IPFS hash from different sources."""
         if not ipfs_hash:
