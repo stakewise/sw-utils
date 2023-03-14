@@ -13,6 +13,10 @@ from ipfshttpclient.exceptions import ErrorResponse
 logger = logging.getLogger(__name__)
 
 
+class IpfsException(Exception):
+    pass
+
+
 class BaseUploadClient(ABC):
     @abstractmethod
     async def upload_bytes(self, data: bytes) -> str:
@@ -215,12 +219,12 @@ class IpfsMultiUploadClient(BaseUploadClient):
             ipfs_hashes[ipfs_hash] = ipfs_hashes.get(ipfs_hash, 0) + 1
 
         if not ipfs_hashes:
-            raise RuntimeError('Upload to all clients has failed')
+            raise IpfsException('Upload to all clients has failed')
 
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
         if count < self.quorum:
-            raise RuntimeError('Failed to reach the uploads quorum')
+            raise IpfsException('Failed to reach the uploads quorum')
 
         return ipfs_hash
 
@@ -260,7 +264,7 @@ class IpfsFetchClient:
             except Exception as e:
                 logger.error(e)
 
-        raise RuntimeError(f'Failed to fetch IPFS data at {ipfs_hash}')
+        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
@@ -291,7 +295,7 @@ class IpfsFetchClient:
             except Exception as e:
                 logger.error(e)
 
-        raise RuntimeError(f'Failed to fetch IPFS data at {ipfs_hash}')
+        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
