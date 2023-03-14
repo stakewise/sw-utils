@@ -42,7 +42,7 @@ def backoff_aiohttp_errors(
     * retrying web3 api calls
     * retrying aiohttp calls to services
 
-    DO NOT use `backoff_aiohttp_errors` for handling ipfs errors in IpfsFetchClient
+    DO NOT use `backoff_aiohttp_errors` for handling errors in IpfsFetchClient
     or IpfsMultiUploadClient.
     Catch `sw_utils/ipfs.py#IpfsException` instead.
 
@@ -96,9 +96,9 @@ def backoff_requests_errors(
         **kwargs
 ):
     """
-    DEPRECATED.
-    For IPFS errors rely on sw_utils/decorators.py#IpfsException
-    Do not catch requests errors directly.
+    DO NOT use `backoff_requests_errors` for handling errors in IpfsFetchClient
+    or IpfsMultiUploadClient.
+    Catch `sw_utils/ipfs.py#IpfsException` instead.
 
     Retry:
       * connection errors
