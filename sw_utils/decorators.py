@@ -1,3 +1,4 @@
+import asyncio
 import functools
 
 import aiohttp
@@ -56,7 +57,7 @@ def backoff_aiohttp_errors(
 
     backoff_decorator = backoff.on_exception(
         backoff.expo,
-        (aiohttp.ClientConnectionError, RecoverableServerError),
+        (aiohttp.ClientConnectionError, RecoverableServerError, asyncio.TimeoutError),
         max_tries=max_tries,
         max_time=max_time,
         **kwargs

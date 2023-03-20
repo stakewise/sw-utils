@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import Mock
 
 import aiohttp
@@ -76,7 +77,7 @@ class TestBackoffAiohttpErrors:
 
         assert call_count == 2
 
-    async def test_timeout_error(self):
+    async def test_server_timeout_error(self):
         call_count = 0
 
         @backoff_aiohttp_errors(max_tries=2, max_time=1)
@@ -88,6 +89,23 @@ class TestBackoffAiohttpErrors:
 
         with pytest.raises(aiohttp.ServerTimeoutError):
             await raise_timeout_error()
+
+        assert call_count == 2
+
+    async def test_recover_asyncio_timeout_error(self):
+        call_count = 0
+
+        @backoff_aiohttp_errors(max_tries=2, max_time=1)
+        async def recover_asyncio_timeout_error():
+            nonlocal call_count
+            call_count += 1
+
+            if call_count == 1:
+                raise asyncio.TimeoutError
+
+            return 'recovered after asyncio.TimeoutError'
+
+        await recover_asyncio_timeout_error()
 
         assert call_count == 2
 
