@@ -22,9 +22,9 @@ def wrap_aiohttp_500_errors(f):
     Both are represented by `aiohttp.ClientResponseError`.
     """
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return await f(*args, **kwargs)
         except aiohttp.ClientResponseError as e:
             if e.status >= 500:
                 raise RecoverableServerError(e) from e
@@ -64,9 +64,9 @@ def backoff_aiohttp_errors(
 
     def decorator(f):
         @functools.wraps(f)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             try:
-                return backoff_decorator(wrap_aiohttp_500_errors(f))(*args, **kwargs)
+                return await backoff_decorator(wrap_aiohttp_500_errors(f))(*args, **kwargs)
             except RecoverableServerError as e:
                 raise e.origin
 
