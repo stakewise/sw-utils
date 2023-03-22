@@ -202,3 +202,18 @@ class TestBackoffRequestsErrors:
             raise_timeout_error()
 
         assert call_count == 2
+
+    async def test_async_connect_timeout_error(self):
+        call_count = 0
+
+        @backoff_requests_errors(max_tries=2, max_time=1)
+        async def raise_timeout_error():
+            nonlocal call_count
+            call_count += 1
+
+            raise requests.ConnectTimeout
+
+        with pytest.raises(requests.ConnectTimeout):
+            await raise_timeout_error()
+
+        assert call_count == 2

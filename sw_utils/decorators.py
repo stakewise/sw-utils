@@ -80,6 +80,17 @@ def wrap_requests_500_errors(f):
     Allows to distinguish between HTTP 400 and HTTP 500 errors.
     Both are represented by `requests.HTTPError`.
     """
+    if asyncio.iscoroutinefunction(f):
+        @functools.wraps(f)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await f(*args, **kwargs)
+            except requests.HTTPError as e:
+                if e.response.status >= 500:
+                    raise RecoverableServerError(e) from e
+                raise
+        return async_wrapper
+
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         try:
@@ -118,12 +129,21 @@ def backoff_requests_errors(
     )
 
     def decorator(f):
+        if asyncio.iscoroutinefunction(f):
+            @functools.wraps(f)
+            async def async_wrapper(*args, **kwargs):
+                try:
+                    return await backoff_decorator(wrap_requests_500_errors(f))(*args, **kwargs)
+                except RecoverableServerError as e:
+                    raise e.origin
+            return async_wrapper
+
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
             try:
                 return backoff_decorator(wrap_requests_500_errors(f))(*args, **kwargs)
             except RecoverableServerError as e:
                 raise e.origin
-
         return wrapper
+
     return decorator
