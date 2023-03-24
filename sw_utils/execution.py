@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_execution_client(endpoint: str, is_poa=False, timeout=60) -> Web3:
     client = Web3(
-        ExtendedAsyncHTTPProvider(endpoint.split(","), request_kwargs={'timeout': timeout}),
+        ExtendedAsyncHTTPProvider(endpoint.split(','), request_kwargs={'timeout': timeout}),
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
     )
 
@@ -44,7 +44,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         endpoint_urls: List[str],
         request_kwargs: Optional[Any] = None,
     ):
-        logger.info({"msg": "Initialize MultiHTTPProvider"})
+        logger.info({'msg': 'Initialize MultiHTTPProvider'})
         self._hosts_uri = endpoint_urls
         self._providers = []
 
@@ -52,11 +52,11 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
             self.endpoint_uri = URI(endpoint_urls[0])
 
         for host_uri in endpoint_urls:
-            if host_uri.startswith("http"):
+            if host_uri.startswith('http'):
                 self._providers.append(
                     AsyncHTTPProvider(host_uri, request_kwargs))
             else:
-                protocol = host_uri.split("://")[0]
+                protocol = host_uri.split('://')[0]
                 raise ProtocolNotSupported(
                     f'Protocol "{protocol}" is not supported.')
 
@@ -69,15 +69,15 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 break
             except Exception as error:  # pylint: disable=W0703
                 if i == len(self._providers)-1:
-                    msg = "No active provider available."
-                    logger.error({"msg": msg})
+                    msg = 'No active provider available.'
+                    logger.error({'msg': msg})
                     raise NoActiveProviderError(msg) from error
 
                 logger.warning(
                     {
-                        "msg": "Provider not responding.",
-                        "error": str(error),
-                        "provider": provider.endpoint_uri,
+                        'msg': 'Provider not responding.',
+                        'error': str(error),
+                        'provider': provider.endpoint_uri,
                     }
                 )
 

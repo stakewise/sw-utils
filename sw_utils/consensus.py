@@ -55,7 +55,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
-        super().__init__("")
+        super().__init__('')
 
     async def get_validators_by_ids(
         self, validator_ids: list[str], state_id: str = 'head'
@@ -72,15 +72,15 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 break
             except Exception as error:  # pylint: disable=W0703
                 if i == len(self.base_urls)-1:
-                    msg = "No active provider available."
-                    logger.error({"msg": msg})
+                    msg = 'No active provider available.'
+                    logger.error({'msg': msg})
                     raise NoActiveProviderError(msg) from error
 
                 logger.warning(
                     {
-                        "msg": "Provider not responding.",
-                        "error": str(error),
-                        "provider": url,
+                        'msg': 'Provider not responding.',
+                        'error': str(error),
+                        'provider': url,
                     }
                 )
 
@@ -88,4 +88,4 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
 
 def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_urls=endpoint.split(","), timeout=timeout)
+    return ExtendedAsyncBeacon(base_urls=endpoint.split(','), timeout=timeout)
