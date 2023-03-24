@@ -1,12 +1,12 @@
 import logging
+from typing import Any, List, Optional, Union
 
-from typing import Any, List, Union, Optional
 from eth_typing import URI
-from web3 import Web3, HTTPProvider
+from web3 import HTTPProvider, Web3
 from web3.eth import AsyncEth
 from web3.middleware import async_geth_poa_middleware
-from web3.providers.async_rpc import AsyncHTTPProvider
 from web3.net import AsyncNet
+from web3.providers.async_rpc import AsyncHTTPProvider
 from web3.types import RPCEndpoint, RPCResponse
 
 logger = logging.getLogger(__name__)

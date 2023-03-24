@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 from eth_typing import URI
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
-from execution import NoActiveProviderError
+
+from .execution import NoActiveProviderError
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
 
