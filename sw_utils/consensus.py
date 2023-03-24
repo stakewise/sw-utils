@@ -48,7 +48,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     """
 
 
-
     def __init__(
         self,
         base_urls: List[str],
@@ -56,6 +55,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
+        super().__init__("")
 
     async def get_validators_by_ids(
         self, validator_ids: list[str], state_id: str = 'head'
