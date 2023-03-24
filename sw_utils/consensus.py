@@ -47,12 +47,14 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     Provider with support for fallback endpoints.
     """
 
+
+
     def __init__(
         self,
-        base_url: List[str],
+        base_urls: List[str],
         timeout: int = 60
     ) -> None:
-        super().__init__(base_url)
+        self.base_urls = base_urls
         self.timeout = timeout
 
     async def get_validators_by_ids(
@@ -63,13 +65,13 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await self._async_make_get_request(endpoint)
 
     async def _async_make_get_request(self, endpoint_uri: str) -> Dict[str, Any]:
-        for i, url in enumerate(self.base_url):
+        for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(url + endpoint_uri)
                 response = await async_json_make_get_request(uri, timeout=self.timeout)
                 break
             except Exception as error:  # pylint: disable=W0703
-                if i == len(self.base_url)-1:
+                if i == len(self.base_urls)-1:
                     msg = "No active provider available."
                     logger.error({"msg": msg})
                     raise NoActiveProviderError(msg) from error
@@ -86,4 +88,4 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
 
 def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_url=endpoint.split(","), timeout=timeout)
+    return ExtendedAsyncBeacon(base_urls=endpoint.split(","), timeout=timeout)

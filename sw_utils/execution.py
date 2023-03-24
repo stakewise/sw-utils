@@ -37,11 +37,11 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     Provider with support for fallback endpoints.
     """
 
-    _providers: List[HTTPProvider] = []
+    _providers: List[AsyncHTTPProvider] = []
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        endpoint_urls: List[Union[URI, str]],
+        endpoint_urls: List[str],
         request_kwargs: Optional[Any] = None,
     ):
         logger.info({"msg": "Initialize MultiHTTPProvider"})
@@ -49,7 +49,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self._providers = []
 
         if endpoint_urls:
-            self.endpoint_uri = endpoint_urls[0]
+            self.endpoint_uri = URI(endpoint_urls[0])
 
         for host_uri in endpoint_urls:
             if host_uri.startswith("http"):
