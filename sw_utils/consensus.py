@@ -1,11 +1,15 @@
+import logging
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from eth_typing import URI
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
+from execution import NoActiveProviderError
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
+
+logger = logging.getLogger(__name__)
 
 
 class ValidatorStatus(Enum):
@@ -22,7 +26,8 @@ class ValidatorStatus(Enum):
     WITHDRAWAL_DONE = 'withdrawal_done'
 
 
-PENDING_STATUSES = [ValidatorStatus.PENDING_INITIALIZED, ValidatorStatus.PENDING_QUEUED]
+PENDING_STATUSES = [ValidatorStatus.PENDING_INITIALIZED,
+                    ValidatorStatus.PENDING_QUEUED]
 ACTIVE_STATUSES = [
     ValidatorStatus.ACTIVE_ONGOING,
     ValidatorStatus.ACTIVE_EXITING,
@@ -37,9 +42,13 @@ EXITED_STATUSES = [
 
 
 class ExtendedAsyncBeacon(AsyncBeacon):
+    """
+    Provider with support for fallback endpoints.
+    """
+
     def __init__(
         self,
-        base_url: str,
+        base_url: List[str],
         timeout: int = 60
     ) -> None:
         super().__init__(base_url)
@@ -48,13 +57,32 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     async def get_validators_by_ids(
         self, validator_ids: list[str], state_id: str = 'head'
     ) -> dict:
-        endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
+        endpoint = GET_VALIDATORS.format(
+            state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
 
     async def _async_make_get_request(self, endpoint_uri: str) -> Dict[str, Any]:
-        uri = URI(self.base_url + endpoint_uri)
-        return await async_json_make_get_request(uri, timeout=self.timeout)
+        for i, url in enumerate(self.base_url):
+            try:
+                uri = URI(url + endpoint_uri)
+                response = await async_json_make_get_request(uri, timeout=self.timeout)
+                break
+            except Exception as error:  # pylint: disable=W0703
+                if i == len(self.base_url)-1:
+                    msg = "No active provider available."
+                    logger.error({"msg": msg})
+                    raise NoActiveProviderError(msg) from error
+
+                logger.warning(
+                    {
+                        "msg": "Provider not responding.",
+                        "error": str(error),
+                        "provider": url,
+                    }
+                )
+
+        return response
 
 
 def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_url=endpoint, timeout=timeout)
+    return ExtendedAsyncBeacon(base_url=endpoint.split(","), timeout=timeout)
