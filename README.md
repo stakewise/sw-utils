@@ -4,7 +4,7 @@
 ### Testing
 - Install `poetry`
 - `poetry install`
-- `poetry run pytest -s sw_utils/tests`
+- `poetry run pytest sw_utils`
 
 # Contacts
 - Alexander Sysoev - alexander@stakewise.io
