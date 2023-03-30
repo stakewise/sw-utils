@@ -66,7 +66,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         response: Dict[str, Any] = {}
         for i, url in enumerate(self.base_urls):
             try:
-                uri = URI(f"{url}{endpoint_uri}")
+                uri = URI(f'{url}{endpoint_uri}')
                 response = await async_json_make_get_request(uri, timeout=self.timeout)
                 return response
             except Exception as error:  # pylint: disable=W0703
