@@ -80,7 +80,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 if i == len(self.base_urls)-1:
                     msg = 'No active provider available.'
                     logger.error({'msg': msg})
-                    return response
+        return response
 
 
 def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
