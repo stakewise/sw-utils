@@ -6,8 +6,6 @@ from eth_typing import URI
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 
-from .execution import NoActiveProviderError
-
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
 
 logger = logging.getLogger(__name__)
@@ -65,17 +63,13 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await self._async_make_get_request(endpoint)
 
     async def _async_make_get_request(self, endpoint_uri: str) -> Dict[str, Any]:
+        response: Dict[str, Any] = {}
         for i, url in enumerate(self.base_urls):
             try:
-                uri = URI(url + endpoint_uri)
+                uri = URI(f"{url}{endpoint_uri}")
                 response = await async_json_make_get_request(uri, timeout=self.timeout)
-                break
+                return response
             except Exception as error:  # pylint: disable=W0703
-                if i == len(self.base_urls)-1:
-                    msg = 'No active provider available.'
-                    logger.error({'msg': msg})
-                    raise NoActiveProviderError(msg) from error
-
                 logger.warning(
                     {
                         'msg': 'Provider not responding.',
@@ -83,8 +77,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                         'provider': url,
                     }
                 )
-
-        return response
+                if i == len(self.base_urls)-1:
+                    msg = 'No active provider available.'
+                    logger.error({'msg': msg})
+                    return response
 
 
 def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:

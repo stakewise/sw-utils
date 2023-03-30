@@ -24,10 +24,6 @@ def get_execution_client(endpoint: str, is_poa=False, timeout=60) -> Web3:
     return client
 
 
-class NoActiveProviderError(Exception):
-    """Base exception if all endpoints are offline"""
-
-
 class ProtocolNotSupported(Exception):
     """Supported protocols: http, https"""
 
@@ -63,16 +59,12 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         super().__init__()
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
-        for i, provider in enumerate(self._providers):
+        response: RPCResponse = {}
+        for provider in self._providers:
             try:
                 response = await provider.make_request(method, params)
-                break
+                return response
             except Exception as error:  # pylint: disable=W0703
-                if i == len(self._providers)-1:
-                    msg = 'No active provider available.'
-                    logger.error({'msg': msg})
-                    raise NoActiveProviderError(msg) from error
-
                 logger.warning(
                     {
                         'msg': 'Provider not responding.',
@@ -80,5 +72,4 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                         'provider': provider.endpoint_uri,
                     }
                 )
-
         return response
