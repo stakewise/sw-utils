@@ -39,6 +39,8 @@ EXITED_STATUSES = [
     ValidatorStatus.WITHDRAWAL_DONE,
 ]
 
+class NoActiveProviderError(Exception):
+    pass
 
 class ExtendedAsyncBeacon(AsyncBeacon):
     """
@@ -70,16 +72,17 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 response = await async_json_make_get_request(uri, timeout=self.timeout)
                 return response
             except Exception as error:  # pylint: disable=W0703
-                logger.warning(
+                logger.error(
                     {
-                        'msg': 'Provider not responding.',
+                        'msg': f'Consensus provider not responding at {url}.',
                         'error': str(error),
                         'provider': url,
                     }
                 )
                 if i == len(self.base_urls)-1:
-                    msg = 'No active provider available.'
+                    msg = f'No active consensus provider available for endpoint {endpoint_uri}.'
                     logger.error({'msg': msg})
+                    raise NoActiveProviderError(msg) from error
         return response
 
 

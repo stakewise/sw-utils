@@ -28,6 +28,10 @@ class ProtocolNotSupported(Exception):
     """Supported protocols: http, https"""
 
 
+class NoActiveProviderError(Exception):
+    pass
+
+
 class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     """
     Provider with support for fallback endpoints.
@@ -60,16 +64,20 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         response: RPCResponse = {}
-        for provider in self._providers:
+        for i, provider in enumerate(self._providers):
             try:
                 response = await provider.make_request(method, params)
                 return response
             except Exception as error:  # pylint: disable=W0703
-                logger.warning(
+                logger.error(
                     {
-                        'msg': 'Provider not responding.',
+                        'msg': f'Execution provider not responding at {provider.endpoint_uri}.',
                         'error': str(error),
                         'provider': provider.endpoint_uri,
                     }
                 )
+                if i == len(self._providers) - 1:
+                    msg = f'No active execution provider available for method {method}.'
+                    logger.error({'msg': msg})
+                    raise NoActiveProviderError(msg) from error
         return response
