@@ -1,10 +1,14 @@
 import logging
 from enum import Enum
 from typing import Any, Dict, List
+from urllib.parse import urljoin
 
+import backoff
 from eth_typing import URI
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
+
+from sw_utils.retries import AiohttpRecoveredErrors, wrap_aiohttp_500_errors
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
 
@@ -39,23 +43,22 @@ EXITED_STATUSES = [
     ValidatorStatus.WITHDRAWAL_DONE,
 ]
 
-class NoActiveProviderError(Exception):
-    pass
 
 class ExtendedAsyncBeacon(AsyncBeacon):
     """
     Provider with support for fallback endpoints.
     """
 
-
     def __init__(
         self,
         base_urls: List[str],
-        timeout: int = 60
+        timeout: int = 60,
+        retry_timeout: int = 0,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
-        super().__init__('')
+        self.retry_timeout = retry_timeout
+        super().__init__('')  # hack origin base_url param
 
     async def get_validators_by_ids(
         self, validator_ids: list[str], state_id: str = 'head'
@@ -65,26 +68,34 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return await self._async_make_get_request(endpoint)
 
     async def _async_make_get_request(self, endpoint_uri: str) -> Dict[str, Any]:
-        response: Dict[str, Any] = {}
+        if self.retry_timeout:
+            backoff_decorator = backoff.on_exception(
+                backoff.expo,
+                AiohttpRecoveredErrors,
+                max_time=self.retry_timeout,
+            )
+            return await backoff_decorator(
+                wrap_aiohttp_500_errors(self.make_providers_request)
+            )(endpoint_uri)
+        return await self.make_providers_request(endpoint_uri)
+
+    async def make_providers_request(self, endpoint_uri: str):
         for i, url in enumerate(self.base_urls):
             try:
-                uri = URI(f'{url}{endpoint_uri}')
-                response = await async_json_make_get_request(uri, timeout=self.timeout)
-                return response
-            except Exception as error:  # pylint: disable=W0703
-                logger.error(
-                    {
-                        'msg': f'Consensus provider not responding at {url}.',
-                        'error': str(error),
-                        'provider': url,
-                    }
-                )
-                if i == len(self.base_urls)-1:
-                    msg = f'No active consensus provider available for endpoint {endpoint_uri}.'
-                    logger.error({'msg': msg})
-                    raise NoActiveProviderError(msg) from error
-        return response
+                uri = URI(urljoin(url, endpoint_uri))
+                return await async_json_make_get_request(uri, timeout=self.timeout)
+
+            except AiohttpRecoveredErrors as error:
+                logger.exception(error)
+                if i == len(self.base_urls) - 1:
+                    raise error
 
 
-def get_consensus_client(endpoint: str, timeout: int = 60) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_urls=endpoint.split(','), timeout=timeout)
+def get_consensus_client(
+        endpoint: str, timeout: int = 60, retry_timeout: int = 0
+) -> ExtendedAsyncBeacon:
+    return ExtendedAsyncBeacon(
+        base_urls=endpoint.split(','),
+        timeout=timeout,
+        retry_timeout=retry_timeout
+    )

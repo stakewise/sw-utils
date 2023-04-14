@@ -5,7 +5,7 @@ import aiohttp
 import pytest
 import requests
 
-from sw_utils.decorators import backoff_aiohttp_errors, backoff_requests_errors
+from sw_utils.retries import backoff_aiohttp_errors, backoff_requests_errors
 
 
 class TestBackoffAiohttpErrors:

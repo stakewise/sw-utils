@@ -17,6 +17,18 @@ class RecoverableServerError(Exception):
         super().__init__()
 
 
+AiohttpRecoveredErrors = (
+    aiohttp.ClientConnectionError,
+    RecoverableServerError,
+    asyncio.TimeoutError,
+)
+RequestsRecoveredErrors = (
+    requests.ConnectionError,
+    requests.Timeout,
+    RecoverableServerError,
+)
+
+
 def wrap_aiohttp_500_errors(f):
     """
     Allows to distinguish between HTTP 400 and HTTP 500 errors.
@@ -57,7 +69,7 @@ def backoff_aiohttp_errors(
 
     backoff_decorator = backoff.on_exception(
         backoff.expo,
-        (aiohttp.ClientConnectionError, RecoverableServerError, asyncio.TimeoutError),
+        AiohttpRecoveredErrors,
         max_tries=max_tries,
         max_time=max_time,
         **kwargs
@@ -122,7 +134,7 @@ def backoff_requests_errors(
 
     backoff_decorator = backoff.on_exception(
         backoff.expo,
-        (requests.ConnectionError, requests.Timeout, RecoverableServerError),
+        RequestsRecoveredErrors,
         max_tries=max_tries,
         max_time=max_time,
         **kwargs

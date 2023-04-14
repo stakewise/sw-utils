@@ -69,6 +69,6 @@ def construct_async_sign_and_send_raw_middleware(
 
             return await make_request(RPCEndpoint('eth_sendRawTransaction'), [Web3.to_hex(raw_tx)])
 
-        return middleware
+        return middleware  # type: ignore
 
     return sign_and_send_raw_middleware
