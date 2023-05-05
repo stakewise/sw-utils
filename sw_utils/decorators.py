@@ -20,11 +20,11 @@ class RecoverableServerError(Exception):
         self.status_code = getattr(origin, 'status', None)
         self.uri = getattr(origin, 'request_info', None)
 
-        logger.error(
-            'RecoverableServerError (status_code: %s, uri: %s): %s',
-            self.status_code, self.uri, origin
-        )
         super().__init__()
+
+    def __str__(self):
+        return (f'RecoverableServerError (status_code: {self.status_code}, '
+            f'uri: {self.uri}): {self.origin}')
 
 
 def wrap_aiohttp_500_errors(f):
