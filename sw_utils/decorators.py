@@ -20,9 +20,9 @@ class RecoverableServerError(Exception):
         if isinstance(origin, requests.HTTPError):
             self.status_code = origin.response.status_code
             self.uri = origin.response.url
-        else:
-            self.status_code = getattr(origin, 'status', None)
-            self.uri = getattr(origin, 'request_info', None)
+        elif isinstance(origin, aiohttp.ClientResponseError):
+            self.status_code = origin.status
+            self.uri = origin.request_info
 
         super().__init__()
 
