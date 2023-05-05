@@ -1,9 +1,12 @@
 import asyncio
 import functools
+import logging
 
 import aiohttp
 import backoff
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class RecoverableServerError(Exception):
@@ -14,6 +17,12 @@ class RecoverableServerError(Exception):
     """
     def __init__(self, origin: Exception):
         self.origin = origin
+        self.status_code = getattr(origin, "status", None)
+        self.uri = getattr(origin, "request_info", None)
+
+        logger.error(
+            f"RecoverableServerError (status_code: {self.status_code}, uri: {self.uri}): {origin}"
+        )
         super().__init__()
 
 
