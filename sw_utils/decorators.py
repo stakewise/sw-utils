@@ -17,11 +17,12 @@ class RecoverableServerError(Exception):
     """
     def __init__(self, origin: Exception):
         self.origin = origin
-        self.status_code = getattr(origin, "status", None)
-        self.uri = getattr(origin, "request_info", None)
+        self.status_code = getattr(origin, 'status', None)
+        self.uri = getattr(origin, 'request_info', None)
 
         logger.error(
-            f"RecoverableServerError (status_code: {self.status_code}, uri: {self.uri}): {origin}"
+            'RecoverableServerError (status_code: %d, uri: %s): %s',
+            self.status_code, self.uri, origin
         )
         super().__init__()
 
