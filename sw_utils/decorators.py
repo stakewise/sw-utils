@@ -15,7 +15,7 @@ class RecoverableServerError(Exception):
     Only for internal use inside sw-utils library.
     Do not raise `RecoverableServerError` in application code.
     """
-    def __init__(self, origin: Exception):
+    def __init__(self, origin: requests.HTTPError | aiohttp.ClientResponseError):
         self.origin = origin
         if isinstance(origin, requests.HTTPError):
             self.status_code = origin.response.status_code
