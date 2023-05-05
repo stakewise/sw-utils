@@ -17,8 +17,12 @@ class RecoverableServerError(Exception):
     """
     def __init__(self, origin: Exception):
         self.origin = origin
-        self.status_code = getattr(origin, 'status', None)
-        self.uri = getattr(origin, 'request_info', None)
+        if isinstance(origin, requests.HTTPError):
+            self.status_code = origin.response.status_code
+            self.uri = origin.response.url
+        else:
+            self.status_code = getattr(origin, 'status', None)
+            self.uri = getattr(origin, 'request_info', None)
 
         super().__init__()
 
