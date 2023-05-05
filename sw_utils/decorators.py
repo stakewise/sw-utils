@@ -21,7 +21,7 @@ class RecoverableServerError(Exception):
         self.uri = getattr(origin, 'request_info', None)
 
         logger.error(
-            'RecoverableServerError (status_code: %d, uri: %s): %s',
+            'RecoverableServerError (status_code: %s, uri: %s): %s',
             self.status_code, self.uri, origin
         )
         super().__init__()
