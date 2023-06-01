@@ -6,11 +6,11 @@ from eth_account.signers.local import LocalAccount
 from eth_keys.datatypes import PrivateKey
 from eth_typing import ChecksumAddress, HexStr
 from eth_utils.toolz import curry
-from web3 import Web3
+from web3 import AsyncWeb3, Web3
 from web3._utils.async_transactions import fill_transaction_defaults
 from web3.middleware.signing import format_transaction, gen_normalized_accounts
-from web3.types import (AsyncMiddleware, Middleware, RPCEndpoint, RPCResponse,
-                        TxParams)
+from web3.types import (AsyncMiddleware, AsyncMiddlewareCoroutine, RPCEndpoint,
+                        RPCResponse, TxParams)
 
 _PrivateKey = Union[LocalAccount, PrivateKey, HexStr, bytes]
 
@@ -31,7 +31,7 @@ async def fill_nonce(w3: 'Web3', transaction: TxParams) -> TxParams:
 # TODO: can be removed once https://github.com/ethereum/web3.py/issues/2773 is fixed
 def construct_async_sign_and_send_raw_middleware(
     private_key_or_account: Union[_PrivateKey, Collection[_PrivateKey]]
-) -> Middleware:
+) -> AsyncMiddleware:
     """Capture transactions sign and send as raw transactions
 
 
@@ -46,8 +46,8 @@ def construct_async_sign_and_send_raw_middleware(
     accounts = gen_normalized_accounts(private_key_or_account)
 
     async def sign_and_send_raw_middleware(
-        make_request: Callable[[RPCEndpoint, Any], Any], _async_w3: 'Web3'
-    ) -> AsyncMiddleware:
+        make_request: Callable[[RPCEndpoint, Any], Any], _async_w3: 'AsyncWeb3'
+    ) -> AsyncMiddlewareCoroutine:
 
         async def middleware(method: RPCEndpoint, params: Any) -> RPCResponse:
             if method != 'eth_sendTransaction':
