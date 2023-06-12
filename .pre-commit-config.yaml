@@ -57,3 +57,13 @@ repos:
         language: system
         types: [ python ]
         require_serial: true
+
+  - repo: local
+    hooks:
+      - id: poetry-lock-check
+        name: poetry lock check
+        entry: poetry
+        language: system
+        files: no-files
+        args: ["lock", "--check"]
+        always_run: true
