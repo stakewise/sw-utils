@@ -13,9 +13,7 @@ class UInt(BasicSedes[int, int]):
 
     def serialize(self, value: int) -> bytes:
         if value < 0:
-            raise SerializationError(
-                f'Can only serialize non-negative integers, got {value}'
-            )
+            raise SerializationError(f'Can only serialize non-negative integers, got {value}')
 
         try:
             return value.to_bytes(self.size, 'little')

@@ -42,6 +42,9 @@ ignored-modules=["milagro_bls_binding"]
 max-line-length = 100
 select = ["E121"]
 
+[tool.isort]
+profile = "black"
+
 [tool.mypy]
 ignore_missing_imports = true
 python_version = "3.10"

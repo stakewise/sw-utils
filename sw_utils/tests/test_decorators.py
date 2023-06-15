@@ -20,7 +20,7 @@ class TestBackoffAiohttpErrors:
             # simulate aiohttp.ClientResponse.raise_for_status
             raise aiohttp.ClientResponseError(
                 Mock(),
-                (Mock(), ),
+                (Mock(),),
                 status=400,
                 message='',
                 headers={},
@@ -42,7 +42,7 @@ class TestBackoffAiohttpErrors:
             # simulate aiohttp.ClientResponse.raise_for_status
             raise aiohttp.ClientResponseError(
                 Mock(),
-                (Mock(), ),
+                (Mock(),),
                 status=500,
                 message='',
                 headers={},
@@ -65,7 +65,7 @@ class TestBackoffAiohttpErrors:
                 # simulate aiohttp.ClientResponse.raise_for_status
                 raise aiohttp.ClientResponseError(
                     Mock(),
-                    (Mock(), ),
+                    (Mock(),),
                     status=500,
                     message='',
                     headers={},
@@ -122,9 +122,7 @@ class TestBackoffRequestsErrors:
             # simulate requests.Response.raise_for_status()
             response_mock = Mock()
             response_mock.status = 400
-            raise requests.HTTPError(
-                '400 client error', response=response_mock
-            )
+            raise requests.HTTPError('400 client error', response=response_mock)
 
         with pytest.raises(requests.HTTPError):
             raise_bad_request_http_error()
@@ -142,9 +140,7 @@ class TestBackoffRequestsErrors:
             # simulate requests.Response.raise_for_status()
             response_mock = Mock()
             response_mock.status = 500
-            raise requests.HTTPError(
-                '500 server error', response=response_mock
-            )
+            raise requests.HTTPError('500 server error', response=response_mock)
 
         with pytest.raises(requests.HTTPError):
             raise_500_http_error()
@@ -163,9 +159,7 @@ class TestBackoffRequestsErrors:
                 # simulate requests.Response.raise_for_status()
                 response_mock = Mock()
                 response_mock.status = 500
-                raise requests.HTTPError(
-                    '500 server error', response=response_mock
-                )
+                raise requests.HTTPError('500 server error', response=response_mock)
 
             return 'Recovered after 500 error'
 

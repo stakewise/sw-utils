@@ -4,18 +4,23 @@ from eth_typing import Hash32
 from eth_utils import to_tuple
 from eth_utils.toolz import sliding_window
 
-from sw_utils.ssz.cache.utils import (get_merkle_leaves_with_cache,
-                                      get_merkle_leaves_without_cache)
+from sw_utils.ssz.cache.utils import (
+    get_merkle_leaves_with_cache,
+    get_merkle_leaves_without_cache,
+)
 from sw_utils.ssz.exceptions import SerializationError
 from sw_utils.ssz.hashable_structure import BaseHashableStructure
 from sw_utils.ssz.hashable_vector import HashableVector
 from sw_utils.ssz.sedes.base import BaseSedes, TSedes
-from sw_utils.ssz.sedes.basic import (BasicSedes,
-                                      HomogeneousProperCompositeSedes)
-from sw_utils.ssz.typing import (CacheObj, TDeserializedElement,
-                                 TSerializableElement)
-from sw_utils.ssz.utils import (merkleize, merkleize_with_cache, pack,
-                                read_exact, s_decode_offset)
+from sw_utils.ssz.sedes.basic import BasicSedes, HomogeneousProperCompositeSedes
+from sw_utils.ssz.typing import CacheObj, TDeserializedElement, TSerializableElement
+from sw_utils.ssz.utils import (
+    merkleize,
+    merkleize_with_cache,
+    pack,
+    read_exact,
+    s_decode_offset,
+)
 
 TSedesPairs = Tuple[
     Tuple[BaseSedes[TSerializableElement, TDeserializedElement], TSerializableElement],
@@ -38,9 +43,7 @@ class Vector(
     def length(self) -> int:
         return self.max_length
 
-    def get_element_sedes(
-        self, index
-    ) -> BaseSedes[TSerializableElement, TDeserializedElement]:
+    def get_element_sedes(self, index) -> BaseSedes[TSerializableElement, TDeserializedElement]:
         return self.element_sedes
 
     #
@@ -77,9 +80,7 @@ class Vector(
         return HashableVector.from_iterable(elements, sedes=self)
 
     @to_tuple
-    def _deserialize_stream_to_tuple(
-        self, stream: IO[bytes]
-    ) -> Iterable[TDeserializedElement]:
+    def _deserialize_stream_to_tuple(self, stream: IO[bytes]) -> Iterable[TDeserializedElement]:
         if self.element_sedes.is_fixed_sized:
             element_size = self.element_sedes.get_fixed_size()
             for _ in range(self.length):
@@ -105,9 +106,7 @@ class Vector(
             return value.hash_tree_root
 
         if isinstance(self.element_sedes, BasicSedes):
-            serialized_elements = tuple(
-                self.element_sedes.serialize(element) for element in value
-            )
+            serialized_elements = tuple(self.element_sedes.serialize(element) for element in value)
             return merkleize(pack(serialized_elements))
         else:
             element_tree_hashes = tuple(
@@ -120,22 +119,16 @@ class Vector(
     ) -> Tuple[Hash32, CacheObj]:
         merkle_leaves = ()
         if isinstance(self.element_sedes, BasicSedes):
-            serialized_elements = tuple(
-                self.element_sedes.serialize(element) for element in value
-            )
+            serialized_elements = tuple(self.element_sedes.serialize(element) for element in value)
             merkle_leaves = pack(serialized_elements)
         else:
             has_get_hash_tree_root_and_leaves = hasattr(
                 self.element_sedes, 'get_hash_tree_root_and_leaves'
             )
             if has_get_hash_tree_root_and_leaves:
-                merkle_leaves = get_merkle_leaves_with_cache(
-                    value, self.element_sedes, cache
-                )
+                merkle_leaves = get_merkle_leaves_with_cache(value, self.element_sedes, cache)
             else:
-                merkle_leaves = get_merkle_leaves_without_cache(
-                    value, self.element_sedes
-                )
+                merkle_leaves = get_merkle_leaves_without_cache(value, self.element_sedes)
 
         return merkleize_with_cache(merkle_leaves, cache=cache, limit=self.chunk_count)
 

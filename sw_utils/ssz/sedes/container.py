@@ -68,16 +68,12 @@ class Container(ProperCompositeSedes[Sequence[Any], Tuple[Any, ...]]):
     def deserialize_fixed_size_parts(
         self, stream: IO[bytes]
     ) -> Iterable[Tuple[Tuple[Any], Tuple[int, TSedes]]]:
-        fixed_items_and_offets = _deserialize_fixed_size_items_and_offsets(
-            stream, self.field_sedes
-        )
+        fixed_items_and_offets = _deserialize_fixed_size_items_and_offsets(stream, self.field_sedes)
         fixed_size_values = tuple(
             item for item, sedes in fixed_items_and_offets if sedes.is_fixed_sized
         )
         offset_pairs = tuple(
-            (item, sedes)
-            for item, sedes in fixed_items_and_offets
-            if not sedes.is_fixed_sized
+            (item, sedes) for item, sedes in fixed_items_and_offets if not sedes.is_fixed_sized
         )
         return fixed_size_values, offset_pairs
 
@@ -88,9 +84,7 @@ class Container(ProperCompositeSedes[Sequence[Any], Tuple[Any, ...]]):
         offsets, fields = zip(*offset_pairs)
 
         *head_fields, last_field = fields
-        for sedes, (left_offset, right_offset) in zip(
-            head_fields, sliding_window(2, offsets)
-        ):
+        for sedes, (left_offset, right_offset) in zip(head_fields, sliding_window(2, offsets)):
             field_length = right_offset - left_offset
             field_data = read_exact(field_length, stream)
             yield sedes.deserialize(field_data)
@@ -110,17 +104,13 @@ class Container(ProperCompositeSedes[Sequence[Any], Tuple[Any, ...]]):
         if not offset_pairs:
             return fixed_size_values
 
-        variable_size_values = self.deserialize_variable_size_parts(
-            offset_pairs, stream
-        )
+        variable_size_values = self.deserialize_variable_size_parts(offset_pairs, stream)
 
         fixed_size_parts_iter = iter(fixed_size_values)
         variable_size_parts_iter = iter(variable_size_values)
 
         value = tuple(
-            next(fixed_size_parts_iter)
-            if sedes.is_fixed_sized
-            else next(variable_size_parts_iter)
+            next(fixed_size_parts_iter) if sedes.is_fixed_sized else next(variable_size_parts_iter)
             for sedes in self.field_sedes
         )
 
@@ -149,8 +139,7 @@ class Container(ProperCompositeSedes[Sequence[Any], Tuple[Any, ...]]):
             return value.hash_tree_root
 
         merkle_leaves = tuple(
-            sedes.get_hash_tree_root(element)
-            for element, sedes in zip(value, self.field_sedes)
+            sedes.get_hash_tree_root(element) for element, sedes in zip(value, self.field_sedes)
         )
         return merkleize(merkle_leaves)
 

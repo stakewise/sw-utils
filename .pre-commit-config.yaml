@@ -67,3 +67,17 @@ repos:
         files: no-files
         args: ["lock", "--check"]
         always_run: true
+
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: black
+        language: system
+        types: [ python ]
+        args:
+          [
+            "--check",
+            "--diff",
+          ]
+        require_serial: true

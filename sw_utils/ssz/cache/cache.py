@@ -41,9 +41,7 @@ class SSZCache(MM):
         raise NotImplementedError('By default, DB classes cannot be iterated.')
 
     def __len__(self) -> int:
-        raise NotImplementedError(
-            'By default, classes cannot return the total number of keys.'
-        )
+        raise NotImplementedError('By default, classes cannot return the total number of keys.')
 
     @property
     def cache_size(self) -> int:
