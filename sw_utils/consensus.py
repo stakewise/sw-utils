@@ -37,17 +37,11 @@ EXITED_STATUSES = [
 
 
 class ExtendedAsyncBeacon(AsyncBeacon):
-    def __init__(
-        self,
-        base_url: str,
-        timeout: int = 60
-    ) -> None:
+    def __init__(self, base_url: str, timeout: int = 60) -> None:
         super().__init__(base_url)
         self.timeout = timeout
 
-    async def get_validators_by_ids(
-        self, validator_ids: list[str], state_id: str = 'head'
-    ) -> dict:
+    async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
         endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
 

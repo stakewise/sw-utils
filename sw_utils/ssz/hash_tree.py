@@ -26,9 +26,7 @@ def validate_chunk_count(chunk_count: Optional[int]) -> None:
             raise ValueError(f'Chunk count is not positive: {chunk_count}')
 
 
-def validate_raw_hash_tree(
-    raw_hash_tree: RawHashTree, chunk_count: Optional[int] = None
-) -> None:
+def validate_raw_hash_tree(raw_hash_tree: RawHashTree, chunk_count: Optional[int] = None) -> None:
     if len(raw_hash_tree) == 0:
         raise ValueError('Hash tree is empty')
 
@@ -48,9 +46,7 @@ def validate_raw_hash_tree(
 
 
 class HashTree(PVector[Hash32]):
-    def __init__(
-        self, raw_hash_tree: RawHashTree, chunk_count: Optional[int] = None
-    ) -> None:
+    def __init__(self, raw_hash_tree: RawHashTree, chunk_count: Optional[int] = None) -> None:
         validate_chunk_count(chunk_count)
         validate_raw_hash_tree(raw_hash_tree, chunk_count)
 
@@ -58,9 +54,7 @@ class HashTree(PVector[Hash32]):
         self.raw_hash_tree = raw_hash_tree
 
     @classmethod
-    def compute(
-        cls, chunks: Iterable[Hash32], chunk_count: Optional[int] = None
-    ) -> 'HashTree':
+    def compute(cls, chunks: Iterable[Hash32], chunk_count: Optional[int] = None) -> 'HashTree':
         raw_hash_tree = compute_hash_tree(chunks, chunk_count)
         return cls(raw_hash_tree, chunk_count)
 
@@ -249,12 +243,9 @@ class HashTreeEvolver:
                 for index, chunk in self.updated_chunks.items()
             )
             appenders = (
-                partial(append_chunk_to_tree, chunk=chunk)
-                for chunk in self.appended_chunks
+                partial(append_chunk_to_tree, chunk=chunk) for chunk in self.appended_chunks
             )
-            raw_hash_tree = pipe(
-                self.original_hash_tree.raw_hash_tree, *setters, *appenders
-            )
+            raw_hash_tree = pipe(self.original_hash_tree.raw_hash_tree, *setters, *appenders)
             return self.original_hash_tree.__class__(
                 raw_hash_tree, self.original_hash_tree.chunk_count
             )
@@ -330,9 +321,7 @@ def pad_hash_tree(
     return unpadded_chunk_tree + padding
 
 
-def compute_hash_tree(
-    chunks: Iterable[Hash32], chunk_count: Optional[int] = None
-) -> RawHashTree:
+def compute_hash_tree(chunks: Iterable[Hash32], chunk_count: Optional[int] = None) -> RawHashTree:
     validate_chunk_count(chunk_count)
 
     chunks = pvector(chunks)
@@ -340,9 +329,7 @@ def compute_hash_tree(
     if not chunks:
         raise ValueError('Number of chunks is 0')
     if chunk_count is not None and len(chunks) > chunk_count:
-        raise ValueError(
-            f'Number of chunks ({len(chunks)}) exceeds chunk_count ({chunk_count})'
-        )
+        raise ValueError(f'Number of chunks ({len(chunks)}) exceeds chunk_count ({chunk_count})')
 
     unpadded_chunk_tree = pvector(generate_hash_tree_layers(chunks))
     return pad_hash_tree(unpadded_chunk_tree, chunk_count)
@@ -352,9 +339,7 @@ def recompute_hash_in_tree(
     hash_tree: RawHashTree, layer_index: int, hash_index: int
 ) -> RawHashTree:
     if layer_index == 0:
-        raise ValueError(
-            'Cannot recompute hash in leaf layer as it consists of chunks not hashes'
-        )
+        raise ValueError('Cannot recompute hash in leaf layer as it consists of chunks not hashes')
 
     child_layer_index = layer_index - 1
     left_child_hash_index = hash_index * 2
@@ -379,18 +364,14 @@ def set_chunk_in_tree(hash_tree: RawHashTree, index: int, chunk: Hash32) -> RawH
     hash_tree_with_updated_chunk = hash_tree.transform((0, index), chunk)
 
     parent_layer_indices = drop(1, range(len(hash_tree)))
-    parent_hash_indices = drop(
-        1, take(len(hash_tree), iterate(lambda index: index // 2, index))
-    )
+    parent_hash_indices = drop(1, take(len(hash_tree), iterate(lambda index: index // 2, index)))
 
     update_functions = (
         partial(recompute_hash_in_tree, layer_index=layer_index, hash_index=hash_index)
         for layer_index, hash_index in zip(parent_layer_indices, parent_hash_indices)
     )
 
-    hash_tree_with_updated_branch = pipe(
-        hash_tree_with_updated_chunk, *update_functions
-    )
+    hash_tree_with_updated_branch = pipe(hash_tree_with_updated_chunk, *update_functions)
 
     if len(hash_tree_with_updated_branch[-1]) == 1:
         return hash_tree_with_updated_branch
