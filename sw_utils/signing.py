@@ -103,7 +103,7 @@ def is_valid_exit_signature(
         return False
 
     domain = _compute_exit_domain(genesis_validators_root, fork.version)
-    voluntary_exit = VoluntaryExit(epoch=0, validator_index=validator_index)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
     return bls.Verify(public_key, compute_signing_root(voluntary_exit, domain), signature)
 
 
@@ -112,7 +112,7 @@ def get_exit_message_signing_root(
 ) -> bytes:
     """Signs exit message."""
     domain = _compute_exit_domain(genesis_validators_root, fork.version)
-    voluntary_exit = VoluntaryExit(epoch=0, validator_index=validator_index)
+    voluntary_exit = VoluntaryExit(epoch=fork.epoch, validator_index=validator_index)
     return compute_signing_root(voluntary_exit, domain)
 
 
