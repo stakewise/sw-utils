@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "0.3.8"
+version = "0.3.9"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"

@@ -55,7 +55,7 @@ class EventScanner:
         self.argument_filters = argument_filters
         self._contract_call = lambda from_block, to_block: getattr(
             processor.contract.events, processor.contract_event
-        ).get_logs(argument_filters=argument_filters, from_block=from_block, to_block=to_block)
+        ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
