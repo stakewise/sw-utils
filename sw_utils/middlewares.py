@@ -9,8 +9,13 @@ from eth_utils.toolz import curry
 from web3 import AsyncWeb3, Web3
 from web3._utils.async_transactions import fill_transaction_defaults
 from web3.middleware.signing import format_transaction, gen_normalized_accounts
-from web3.types import (AsyncMiddleware, AsyncMiddlewareCoroutine, RPCEndpoint,
-                        RPCResponse, TxParams)
+from web3.types import (
+    AsyncMiddleware,
+    AsyncMiddlewareCoroutine,
+    RPCEndpoint,
+    RPCResponse,
+    TxParams,
+)
 
 _PrivateKey = Union[LocalAccount, PrivateKey, HexStr, bytes]
 
@@ -48,7 +53,6 @@ def construct_async_sign_and_send_raw_middleware(
     async def sign_and_send_raw_middleware(
         make_request: Callable[[RPCEndpoint, Any], Any], _async_w3: 'AsyncWeb3'
     ) -> AsyncMiddlewareCoroutine:
-
         async def middleware(method: RPCEndpoint, params: Any) -> RPCResponse:
             if method != 'eth_sendTransaction':
                 return await make_request(method, params)
