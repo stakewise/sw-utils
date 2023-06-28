@@ -4,8 +4,13 @@ from typing import IO, Any, Sequence, Tuple
 
 from eth_typing import Hash32
 
-from sw_utils.ssz.constants import (BASE_TYPES, CHUNK_SIZE, EMPTY_CHUNK,
-                                    OFFSET_SIZE, ZERO_HASHES)
+from sw_utils.ssz.constants import (
+    BASE_TYPES,
+    CHUNK_SIZE,
+    EMPTY_CHUNK,
+    OFFSET_SIZE,
+    ZERO_HASHES,
+)
 from sw_utils.ssz.exceptions import DeserializationError
 from sw_utils.ssz.hash import hash_eth2
 from sw_utils.ssz.typing import CacheObj

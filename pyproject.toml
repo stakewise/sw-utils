@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "0.3.4"
+version = "0.3.8"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -41,6 +41,9 @@ ignored-modules=["milagro_bls_binding"]
 [tool.flake8]
 max-line-length = 100
 select = ["E121"]
+
+[tool.isort]
+profile = "black"
 
 [tool.mypy]
 ignore_missing_imports = true

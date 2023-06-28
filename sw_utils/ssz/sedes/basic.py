@@ -11,12 +11,14 @@ from sw_utils.ssz import constants
 from sw_utils.ssz.cache.utils import get_key
 from sw_utils.ssz.constants import CHUNK_SIZE
 from sw_utils.ssz.exceptions import DeserializationError
-from sw_utils.ssz.sedes.base import (BaseBitfieldCompositeSedes,
-                                     BaseProperCompositeSedes, BaseSedes,
-                                     TSedes)
+from sw_utils.ssz.sedes.base import (
+    BaseBitfieldCompositeSedes,
+    BaseProperCompositeSedes,
+    BaseSedes,
+    TSedes,
+)
 from sw_utils.ssz.typing import CacheObj, TDeserialized, TSerializable
-from sw_utils.ssz.utils import (encode_offset, merkleize, merkleize_with_cache,
-                                pack)
+from sw_utils.ssz.utils import encode_offset, merkleize, merkleize_with_cache, pack
 
 
 class BasicSedes(BaseSedes[TSerializable, TDeserialized]):
@@ -83,26 +85,18 @@ class ProperCompositeSedes(BaseProperCompositeSedes[TSerializable, TDeserialized
         pairs = self._get_item_sedes_pairs(value)  # slow
         element_sedes = tuple(sedes for element, sedes in pairs)
 
-        has_fixed_size_section_length_cache = hasattr(
-            value, '_fixed_size_section_length_cache'
-        )
+        has_fixed_size_section_length_cache = hasattr(value, '_fixed_size_section_length_cache')
         if has_fixed_size_section_length_cache:
             if value._fixed_size_section_length_cache is None:
-                fixed_size_section_length = _compute_fixed_size_section_length(
-                    element_sedes
-                )
+                fixed_size_section_length = _compute_fixed_size_section_length(element_sedes)
                 value._fixed_size_section_length_cache = fixed_size_section_length
             else:
                 fixed_size_section_length = value._fixed_size_section_length_cache
         else:
-            fixed_size_section_length = _compute_fixed_size_section_length(
-                element_sedes
-            )
+            fixed_size_section_length = _compute_fixed_size_section_length(element_sedes)
 
         variable_size_section_parts = tuple(
-            sedes.serialize(item)  # slow
-            for item, sedes in pairs
-            if not sedes.is_fixed_sized
+            sedes.serialize(item) for item, sedes in pairs if not sedes.is_fixed_sized  # slow
         )
 
         if variable_size_section_parts:
@@ -130,9 +124,7 @@ class ProperCompositeSedes(BaseProperCompositeSedes[TSerializable, TDeserialized
         except StopIteration:
             pass
         else:
-            raise DeserializationError(
-                'Did not consume all offsets while decoding value'
-            )
+            raise DeserializationError('Did not consume all offsets while decoding value')
 
         return b''.join(concatv(fixed_size_section_parts, variable_size_section_parts))
 
@@ -167,9 +159,7 @@ class ProperCompositeSedes(BaseProperCompositeSedes[TSerializable, TDeserialized
         return get_key(self, value)
 
 
-class HomogeneousProperCompositeSedes(
-    ProperCompositeSedes[TSerializable, TDeserialized]
-):
+class HomogeneousProperCompositeSedes(ProperCompositeSedes[TSerializable, TDeserialized]):
     def get_sedes_id(self) -> str:
         sedes_name = self.__class__.__name__
         return f'{sedes_name}({self.element_sedes.get_sedes_id()},{self.max_length})'

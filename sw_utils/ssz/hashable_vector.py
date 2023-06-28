@@ -13,9 +13,7 @@ TElement = TypeVar('TElement')
 
 class HashableVector(BaseHashableStructure[TElement], Sequence[TElement]):
     @classmethod
-    def from_iterable(
-        cls, iterable: Iterable[TElement], sedes: 'Vector[TElement, TElement]'
-    ):
+    def from_iterable(cls, iterable: Iterable[TElement], sedes: 'Vector[TElement, TElement]'):
         elements = pvector(iterable)
         if len(elements) != sedes.length:
             raise ValueError(

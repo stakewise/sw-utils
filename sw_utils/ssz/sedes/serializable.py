@@ -29,9 +29,7 @@ class Meta(NamedTuple):
 def validate_args_and_kwargs(args, kwargs, arg_names):
     duplicate_arg_names = get_duplicates(arg_names)
     if duplicate_arg_names:
-        raise ValueError(
-            'Duplicate argument names: {0}'.format(sorted(duplicate_arg_names))
-        )
+        raise ValueError('Duplicate argument names: {0}'.format(sorted(duplicate_arg_names)))
 
     needed_arg_names = set(arg_names[len(args) :])
     used_arg_names = set(arg_names[: len(args)])
@@ -91,9 +89,7 @@ class BaseSerializable(collections.abc.Sequence):
         self.cache = LRU(DEFAULT_CACHE_SIZE) if cache is None else cache
 
     def as_dict(self):
-        return dict(
-            (field, value) for field, value in zip(self._meta.field_names, self)
-        )
+        return dict((field, value) for field, value in zip(self._meta.field_names, self))
 
     def __iter__(self):
         for attr in self._meta.field_attrs:
@@ -109,17 +105,15 @@ class BaseSerializable(collections.abc.Sequence):
         elif isinstance(index, str):
             return getattr(self, index)
         else:
-            raise IndexError(
-                'Unsupported type for __getitem__: {0}'.format(type(index))
-            )
+            raise IndexError('Unsupported type for __getitem__: {0}'.format(type(index)))
 
     def __len__(self):
         return len(self._meta.fields)
 
     def __eq__(self, other):
-        satisfies_class_relationship = issubclass(
-            self.__class__, other.__class__
-        ) or issubclass(other.__class__, self.__class__)
+        satisfies_class_relationship = issubclass(self.__class__, other.__class__) or issubclass(
+            other.__class__, self.__class__
+        )
 
         if not satisfies_class_relationship:
             return False
@@ -139,9 +133,7 @@ class BaseSerializable(collections.abc.Sequence):
 
     def __hash__(self):
         if self._hash_cache is None:
-            self._hash_cache = hash(self.__class__) * int.from_bytes(
-                self.hash_tree_root, 'little'
-            )
+            self._hash_cache = hash(self.__class__) * int.from_bytes(self.hash_tree_root, 'little')
         return self._hash_cache
 
     def copy(self, *args, **kwargs):
@@ -293,12 +285,8 @@ class MetaSerializable(abc.ABCMeta):
                 raise TypeError(str(exception)) from exception
 
         else:
-            serializable_bases = tuple(
-                base for base in bases if isinstance(base, MetaSerializable)
-            )
-            bases_with_fields = tuple(
-                base for base in serializable_bases if base._meta.has_fields
-            )
+            serializable_bases = tuple(base for base in bases if isinstance(base, MetaSerializable))
+            bases_with_fields = tuple(base for base in serializable_bases if base._meta.has_fields)
 
             if len(bases_with_fields) == 0:
                 has_fields = False
@@ -330,9 +318,7 @@ class MetaSerializable(abc.ABCMeta):
         if sedes is None:
             raise Exception('Invariant: sedes has been initialized earlier')
         if len(fields) == 0:
-            raise Exception(
-                'Invariant: number of fields has been checked at initializion of sedes'
-            )
+            raise Exception('Invariant: number of fields has been checked at initializion of sedes')
 
         field_names, _ = zip(*fields)
         _validate_field_names(field_names)
@@ -357,9 +343,7 @@ class MetaSerializable(abc.ABCMeta):
             field_names=field_names,
             field_attrs=field_attrs,
         )
-        return super().__new__(
-            mcls, name, bases, merge(namespace, field_props, {'_meta': meta})
-        )
+        return super().__new__(mcls, name, bases, merge(namespace, field_props, {'_meta': meta}))
 
     #
     # Implement BaseSedes methods as pass-throughs to the container sedes

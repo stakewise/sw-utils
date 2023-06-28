@@ -21,9 +21,7 @@ def get_base_key(sedes: TSedes, value: Any) -> bytes:
 
 
 @to_tuple
-def get_merkle_leaves_without_cache(
-    value: Any, element_sedes: TSedes
-) -> Iterable[Hash32]:
+def get_merkle_leaves_without_cache(value: Any, element_sedes: TSedes) -> Iterable[Hash32]:
     for element in value:
         yield element_sedes.get_hash_tree_root(element)
 

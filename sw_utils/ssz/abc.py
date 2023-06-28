@@ -146,9 +146,7 @@ class HashableStructureEvolverAPI(ABC, Generic[TStructure, TElement]):
         ...
 
 
-class ResizableHashableStructureEvolverAPI(
-    HashableStructureEvolverAPI[TStructure, TElement]
-):
+class ResizableHashableStructureEvolverAPI(HashableStructureEvolverAPI[TStructure, TElement]):
     @abstractmethod
     def append(self, element: TElement) -> None:
         ...

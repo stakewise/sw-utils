@@ -14,6 +14,7 @@ class EventProcessor(ABC):
     """
     Processor of the events.
     """
+
     contract: AsyncContract
     contract_event: str
 

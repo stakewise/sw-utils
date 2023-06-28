@@ -51,10 +51,9 @@ def compute_deposit_message(
     public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int
 ) -> DepositMessage:
     return DepositMessage(
-        pubkey=public_key,
-        withdrawal_credentials=withdrawal_credentials,
-        amount=amount_gwei
+        pubkey=public_key, withdrawal_credentials=withdrawal_credentials, amount=amount_gwei
     )
+
 
 def compute_deposit_data(
     public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int, signature: bytes
@@ -63,7 +62,7 @@ def compute_deposit_data(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
         amount=amount_gwei,
-        signature=signature
+        signature=signature,
     )
 
 
@@ -96,7 +95,7 @@ def is_valid_exit_signature(
     public_key: BLSPubkey,
     signature: BLSSignature,
     genesis_validators_root: Bytes32,
-    fork: ConsensusFork
+    fork: ConsensusFork,
 ) -> bool:
     """Checks whether exit signature is valid."""
     # pylint: disable=protected-access
@@ -109,9 +108,7 @@ def is_valid_exit_signature(
 
 
 def get_exit_message_signing_root(
-    validator_index: int,
-    genesis_validators_root: Bytes32,
-    fork: ConsensusFork
+    validator_index: int, genesis_validators_root: Bytes32, fork: ConsensusFork
 ) -> bytes:
     """Signs exit message."""
     domain = _compute_exit_domain(genesis_validators_root, fork.version)

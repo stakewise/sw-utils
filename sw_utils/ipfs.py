@@ -212,7 +212,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(value)
+                logger.error(repr(value))
                 continue
 
             ipfs_hash = _strip_ipfs_prefix(value)
@@ -236,16 +236,16 @@ class IpfsMultiUploadClient(BaseUploadClient):
         )
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(value)
+                logger.error(repr(value))
                 continue
         return None
 
 
 class IpfsFetchClient:
     def __init__(
-            self,
-            endpoints: list[str],
-            timeout: int = 60,
+        self,
+        endpoints: list[str],
+        timeout: int = 60,
     ):
         self.endpoints = endpoints
         self.timeout = timeout
@@ -262,21 +262,19 @@ class IpfsFetchClient:
 
                 return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
-                logger.error(e)
+                logger.error(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(
-                    f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
-            ) as response:
+            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
                 response.raise_for_status()
                 return await response.read()
 
     def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         with ipfshttpclient.connect(
-                endpoint,
+            endpoint,
         ) as client:
             return client.cat(ipfs_hash, timeout=self.timeout)
 
@@ -293,21 +291,19 @@ class IpfsFetchClient:
 
                 return self._ipfs_fetch_json(endpoint, ipfs_hash)
             except Exception as e:
-                logger.error(e)
+                logger.error(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(
-                    f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
-            ) as response:
+            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
                 response.raise_for_status()
                 return await response.json()
 
     def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
         with ipfshttpclient.connect(
-                endpoint,
+            endpoint,
         ) as client:
             return client.get_json(ipfs_hash, timeout=self.timeout)
 

@@ -1,7 +1,18 @@
 import functools
 import itertools
-from typing import (Any, Dict, Generator, Iterable, Iterator, List, Optional,
-                    Sequence, Tuple, TypeVar, Union)
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from eth_typing import Hash32
 from eth_utils import to_dict, to_tuple
@@ -10,24 +21,22 @@ from pyrsistent import pvector
 from pyrsistent._transformations import transform
 from pyrsistent.typing import PVector
 
-from sw_utils.ssz.abc import (HashableStructureAPI,
-                              HashableStructureEvolverAPI,
-                              ResizableHashableStructureAPI,
-                              ResizableHashableStructureEvolverAPI)
+from sw_utils.ssz.abc import (
+    HashableStructureAPI,
+    HashableStructureEvolverAPI,
+    ResizableHashableStructureAPI,
+    ResizableHashableStructureEvolverAPI,
+)
 from sw_utils.ssz.constants import CHUNK_SIZE, ZERO_BYTES32
 from sw_utils.ssz.hash_tree import HashTree
 from sw_utils.ssz.sedes.base import BaseProperCompositeSedes
 
 TStructure = TypeVar('TStructure', bound='BaseHashableStructure')
-TResizableStructure = TypeVar(
-    'TResizableStructure', bound='BaseResizableHashableStructure'
-)
+TResizableStructure = TypeVar('TResizableStructure', bound='BaseResizableHashableStructure')
 TElement = TypeVar('TElement')
 
 
-def update_element_in_chunk(
-    original_chunk: Hash32, index: int, element: bytes
-) -> Hash32:
+def update_element_in_chunk(original_chunk: Hash32, index: int, element: bytes) -> Hash32:
     """
     Replace part of a chunk with a given element.
 
@@ -55,9 +64,7 @@ def update_element_in_chunk(
     return Hash32(prefix + element + suffix)
 
 
-def update_elements_in_chunk(
-    original_chunk: Hash32, updated_elements: Dict[int, bytes]
-) -> Hash32:
+def update_elements_in_chunk(original_chunk: Hash32, updated_elements: Dict[int, bytes]) -> Hash32:
     """
     Update multiple elements in a chunk.
 
@@ -120,13 +127,10 @@ def get_updated_chunks(
 
     for chunk_index, element_indices in element_indices_by_chunk.items():
         chunk_updates = {
-            element_index
-            % elements_per_chunk: effective_updated_elements[element_index]
+            element_index % elements_per_chunk: effective_updated_elements[element_index]
             for element_index in element_indices
         }
-        updated_chunk = update_elements_in_chunk(
-            original_chunks[chunk_index], chunk_updates
-        )
+        updated_chunk = update_elements_in_chunk(original_chunks[chunk_index], chunk_updates)
         yield chunk_index, updated_chunk
 
 
@@ -184,9 +188,7 @@ class BaseHashableStructure(HashableStructureAPI[TElement]):
             element_size=sedes.element_size_in_tree,
             num_padding_elements=0,
         )
-        hash_tree = HashTree.compute(
-            appended_chunks or [ZERO_BYTES32], sedes.chunk_count
-        )
+        hash_tree = HashTree.compute(appended_chunks or [ZERO_BYTES32], sedes.chunk_count)
         return cls(elements, hash_tree, sedes, max_length)
 
     @property
@@ -326,9 +328,7 @@ class HashableStructureEvolver(HashableStructureEvolverAPI[TStructure, TElement]
         }
         appended_elements = [
             sedes.serialize_element_for_tree(index, element)
-            for index, element in enumerate(
-                self._appended_elements, start=num_original_elements
-            )
+            for index, element in enumerate(self._appended_elements, start=num_original_elements)
         ]
 
         updated_chunks = get_updated_chunks(
@@ -346,9 +346,7 @@ class HashableStructureEvolver(HashableStructureEvolverAPI[TStructure, TElement]
         )
 
         elements = self._original_structure.elements.mset(
-            *itertools.chain.from_iterable(  # type: ignore
-                self._updated_elements.items()
-            )
+            *itertools.chain.from_iterable(self._updated_elements.items())  # type: ignore
         ).extend(self._appended_elements)
         hash_tree = self._original_structure.hash_tree.mset(
             *itertools.chain.from_iterable(updated_chunks.items())  # type: ignore
@@ -367,16 +365,12 @@ class BaseResizableHashableStructure(
         evolver.append(value)
         return evolver.persistent()
 
-    def extend(
-        self: TResizableStructure, values: Iterable[TElement]
-    ) -> TResizableStructure:
+    def extend(self: TResizableStructure, values: Iterable[TElement]) -> TResizableStructure:
         evolver = self.evolver()
         evolver.extend(values)
         return evolver.persistent()
 
-    def __add__(
-        self: TResizableStructure, values: Iterable[TElement]
-    ) -> TResizableStructure:
+    def __add__(self: TResizableStructure, values: Iterable[TElement]) -> TResizableStructure:
         return self.extend(values)
 
     def __mul__(self: TResizableStructure, times: int) -> TResizableStructure:
