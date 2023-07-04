@@ -54,7 +54,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
             except AiohttpRecoveredErrors as error:
                 if i == len(self._providers) - 1:
                     raise error
-                logger.error(error)
                 if isinstance(error, asyncio.TimeoutError):
                     logger.error('%s: asyncio.TimeoutError', provider.endpoint_uri)
                 else:
