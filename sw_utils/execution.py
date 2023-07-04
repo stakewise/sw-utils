@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Any
 
@@ -54,10 +53,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
             except AiohttpRecoveredErrors as error:
                 if i == len(self._providers) - 1:
                     raise error
-                if isinstance(error, asyncio.TimeoutError):
-                    logger.error('%s: asyncio.TimeoutError', provider.endpoint_uri)
-                else:
-                    logger.error('%s: %s', provider.endpoint_uri, error)
+                logger.error('%s: %s', provider.endpoint_uri, repr(error))
 
         return {}
 

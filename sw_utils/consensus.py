@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from enum import Enum
 from typing import Any
@@ -71,10 +70,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             except AiohttpRecoveredErrors as error:
                 if i == len(self.base_urls) - 1:
                     raise error
-                if isinstance(error, asyncio.TimeoutError):
-                    logger.error('%s: asyncio.TimeoutError', url)
-                else:
-                    logger.error('%s: %s', url, error)
+                logger.error('%s: %s', url, repr(error))
 
         return {}
 
