@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any
 
@@ -30,7 +31,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         endpoint_urls: list[str],
         request_kwargs: Any | None = None,
     ):
-        logger.debug({'msg': 'Initialize MultiHTTPProvider'})
         self._endpoint_urls = endpoint_urls
         self._providers = []
 
@@ -55,6 +55,10 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 if i == len(self._providers) - 1:
                     raise error
                 logger.error(error)
+                if isinstance(error, asyncio.TimeoutError):
+                    logger.error('%s: asyncio.TimeoutError', provider.endpoint_uri)
+                else:
+                    logger.error('%s: %s', provider.endpoint_uri, error)
 
         return {}
 
