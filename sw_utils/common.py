@@ -34,3 +34,7 @@ class InterruptHandler:
     def exit_default(self, signum: int, *args, **kwargs) -> None:
         # pylint: disable=unused-argument
         raise KeyboardInterrupt
+
+
+def urljoin(*args):
+    return '/'.join(map(lambda x: str(x).strip('/'), args))
