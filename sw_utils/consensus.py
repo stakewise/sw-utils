@@ -2,6 +2,7 @@ import logging
 from enum import Enum
 from typing import Any
 
+import aiohttp
 from eth_typing import URI
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
@@ -52,9 +53,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         self,
         base_urls: list[str],
         timeout: int = 60,
+        session: aiohttp.ClientSession = None,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
+        self.session = session
+
         super().__init__('')  # hack origin base_url param
 
     async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
@@ -65,6 +69,8 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
+                if self.session:
+                    return await self._make_session_get_request(uri)
                 return await async_json_make_get_request(uri, timeout=self.timeout)
 
             except AiohttpRecoveredErrors as error:
@@ -74,6 +80,17 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
         return {}
 
+    async def _make_session_get_request(self, uri):
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        logger.debug('GET %s', uri)
 
-def get_consensus_client(endpoints: list[str], timeout: int = 60) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_urls=endpoints, timeout=timeout)
+        async with self.session.get(uri, timeout=timeout) as response:
+            response.raise_for_status()
+            data = await response.json()
+            return data
+
+
+def get_consensus_client(
+    endpoints: list[str], timeout: int = 60, session: aiohttp.ClientSession = None
+) -> ExtendedAsyncBeacon:
+    return ExtendedAsyncBeacon(base_urls=endpoints, timeout=timeout, session=session)
