@@ -15,6 +15,7 @@ ipfshttpclient = "^0.8.0a2"
 types-requests = "^2.28.11.15"
 web3 = "==6.5.0"
 tenacity = "==8.2.2"
+pyrsistent = "0.19.3"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^2.14.5"
