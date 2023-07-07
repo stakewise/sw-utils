@@ -1,148 +1,42 @@
 import asyncio
-import functools
 import logging
+import typing
 
 import aiohttp
-import backoff
-import requests
+from tenacity import retry, retry_if_exception, stop_after_delay, wait_exponential
 
-from sw_utils.exceptions import (
-    AiohttpRecoveredErrors,
-    RecoverableServerError,
-    RequestsRecoveredErrors,
-)
-
-logger = logging.getLogger(__name__)
+default_logger = logging.getLogger(__name__)
 
 
-def wrap_aiohttp_500_errors(f):
-    """
-    Allows to distinguish between HTTP 400 and HTTP 500 errors.
-    Both are represented by `aiohttp.ClientResponseError`.
-    """
-
-    @functools.wraps(f)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await f(*args, **kwargs)
-        except aiohttp.ClientResponseError as e:
-            if e.status >= 500:
-                raise RecoverableServerError(e) from e
-            raise
-
-    return wrapper
+if typing.TYPE_CHECKING:
+    from tenacity import RetryCallState
 
 
-def backoff_aiohttp_errors(max_tries: int | None = None, max_time: int | None = None, **kwargs):
-    """
-    Can be used for:
-    * retrying web3 api calls
-    * retrying aiohttp calls to services
+def custom_before_log(logger, log_level):
+    def custom_log_it(retry_state: 'RetryCallState') -> None:
+        if retry_state.attempt_number <= 1:
+            return
+        msg = 'Retrying %s(), attempt %s'
+        args = (retry_state.fn.__name__, retry_state.attempt_number)  # type: ignore
+        logger.log(log_level, msg, *args)
 
-    DO NOT use `backoff_aiohttp_errors` for handling errors in IpfsFetchClient
-    or IpfsMultiUploadClient.
-    Catch `sw_utils/ipfs.py#IpfsException` instead.
+    return custom_log_it
 
-    Retry:
-      * connection errors
-      * HTTP 500 errors
-    Do not retry:
-      * HTTP 400 errors
-      * regular Python errors
-    """
 
-    backoff_decorator = backoff.on_exception(
-        backoff.expo,
-        AiohttpRecoveredErrors,
-        max_tries=max_tries,
-        max_time=max_time,
-        **kwargs,
+def can_be_retried_aiohttp_error(e: BaseException) -> bool:
+    if isinstance(e, (asyncio.TimeoutError, aiohttp.ClientConnectionError)):
+        return True
+
+    if isinstance(e, aiohttp.ClientResponseError) and e.status >= 500:
+        return True
+
+    return False
+
+
+def retry_aiohttp_errors(delay: int = 60):
+    return retry(
+        retry=retry_if_exception(can_be_retried_aiohttp_error),
+        wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
+        stop=stop_after_delay(delay),
+        before=custom_before_log(default_logger, logging.INFO),
     )
-
-    def decorator(f):
-        @functools.wraps(f)
-        async def wrapper(*args, **kwargs):
-            try:
-                return await backoff_decorator(wrap_aiohttp_500_errors(f))(*args, **kwargs)
-            except RecoverableServerError as e:
-                raise e.origin
-
-        return wrapper
-
-    return decorator
-
-
-def wrap_requests_500_errors(f):
-    """
-    Allows to distinguish between HTTP 400 and HTTP 500 errors.
-    Both are represented by `requests.HTTPError`.
-    """
-    if asyncio.iscoroutinefunction(f):
-
-        @functools.wraps(f)
-        async def async_wrapper(*args, **kwargs):
-            try:
-                return await f(*args, **kwargs)
-            except requests.HTTPError as e:
-                if e.response.status >= 500:
-                    raise RecoverableServerError(e) from e
-                raise
-
-        return async_wrapper
-
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except requests.HTTPError as e:
-            if e.response.status >= 500:
-                raise RecoverableServerError(e) from e
-            raise
-
-    return wrapper
-
-
-def backoff_requests_errors(max_tries: int | None = None, max_time: int | None = None, **kwargs):
-    """
-    DO NOT use `backoff_requests_errors` for handling errors in IpfsFetchClient
-    or IpfsMultiUploadClient.
-    Catch `sw_utils/ipfs.py#IpfsException` instead.
-
-    Retry:
-      * connection errors
-      * HTTP 500 errors
-    Do not retry:
-      * HTTP 400 errors
-      * regular Python errors
-    """
-
-    backoff_decorator = backoff.on_exception(
-        backoff.expo,
-        RequestsRecoveredErrors,
-        max_tries=max_tries,
-        max_time=max_time,
-        **kwargs,
-    )
-
-    def decorator(f):
-        if asyncio.iscoroutinefunction(f):
-
-            @functools.wraps(f)
-            async def async_wrapper(*args, **kwargs):
-                try:
-                    return await backoff_decorator(wrap_requests_500_errors(f))(*args, **kwargs)
-                except RecoverableServerError as e:
-                    raise e.origin
-
-            return async_wrapper
-
-        @functools.wraps(f)
-        def wrapper(*args, **kwargs):
-            try:
-                return backoff_decorator(wrap_requests_500_errors(f))(*args, **kwargs)
-            except RecoverableServerError as e:
-                raise e.origin
-
-        return wrapper
-
-    return decorator
