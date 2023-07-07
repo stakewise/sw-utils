@@ -3,9 +3,10 @@ from enum import Enum
 from typing import Any
 
 import aiohttp
-from eth_typing import URI
+from eth_typing import URI, HexStr
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
+from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
 
 from sw_utils.common import urljoin
 from sw_utils.exceptions import AiohttpRecoveredErrors
@@ -46,7 +47,10 @@ EXITED_STATUSES = [
 
 class ExtendedAsyncBeacon(AsyncBeacon):
     """
-    Provider with support for fallback endpoints.
+    Extended AsyncBeacon Provider with extra features:
+    - support for fallback endpoints
+    - single session requests
+    - post requests to consensus nodes
     """
 
     def __init__(
@@ -64,6 +68,27 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
         endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
+
+    async def submit_voluntary_exit(
+        self, epoch: int, validator_index: int, signature: HexStr
+    ) -> None:
+        data = {
+            'message': {'epoch': str(epoch), 'validator_index': str(validator_index)},
+            'signature': signature,
+        }
+        for i, url in enumerate(self.base_urls):
+            try:
+                uri = URI(urljoin(url, GET_VOLUNTARY_EXITS))
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(uri, json=data) as response:
+                        response.raise_for_status()
+                        return
+
+            except AiohttpRecoveredErrors as error:
+                if i == len(self.base_urls) - 1:
+                    raise error
+                logger.error('%s: %s', url, repr(error))
 
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
         for i, url in enumerate(self.base_urls):
