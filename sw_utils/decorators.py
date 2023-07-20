@@ -16,7 +16,7 @@ def custom_before_log(logger, log_level):
     def custom_log_it(retry_state: 'RetryCallState') -> None:
         if retry_state.attempt_number <= 1:
             return
-        msg = 'Retrying %s(), attempt %s'
+        msg = 'Retrying %s, attempt %s'
         args = (retry_state.fn.__name__, retry_state.attempt_number)  # type: ignore
         logger.log(log_level, msg, *args)
 
@@ -33,10 +33,10 @@ def can_be_retried_aiohttp_error(e: BaseException) -> bool:
     return False
 
 
-def retry_aiohttp_errors(delay: int = 60):
+def retry_aiohttp_errors(delay: int = 60, log_func=custom_before_log):
     return retry(
         retry=retry_if_exception(can_be_retried_aiohttp_error),
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
-        before=custom_before_log(default_logger, logging.INFO),
+        before=log_func(default_logger, logging.INFO),
     )

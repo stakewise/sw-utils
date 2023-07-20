@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from eth_typing import URI
 from web3 import AsyncWeb3
@@ -10,9 +10,14 @@ from web3.net import AsyncNet
 from web3.providers.async_rpc import AsyncHTTPProvider
 from web3.types import RPCEndpoint, RPCResponse
 
+from sw_utils.decorators import retry_aiohttp_errors
 from sw_utils.exceptions import AiohttpRecoveredErrors
 
 logger = logging.getLogger(__name__)
+
+
+if TYPE_CHECKING:
+    from tenacity import RetryCallState
 
 
 class ProtocolNotSupported(Exception):
@@ -31,9 +36,11 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self,
         endpoint_urls: list[str],
         request_kwargs: Any | None = None,
+        retry_timeout: int = 0,
     ):
         self._endpoint_urls = endpoint_urls
         self._providers = []
+        self.retry_timeout = retry_timeout
 
         if endpoint_urls:
             self.endpoint_uri = URI(endpoint_urls[0])
@@ -48,9 +55,30 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         super().__init__()
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+
+        if self.retry_timeout:
+
+            def custom_before_log(retry_logger, log_level):
+                def custom_log_it(retry_state: 'RetryCallState') -> None:
+                    if retry_state.attempt_number <= 1:
+                        return
+                    msg = 'Retrying execution method %s, attempt %s'
+                    args = (method, retry_state.attempt_number)
+                    retry_logger.log(log_level, msg, *args)
+
+                return custom_log_it
+
+            retry_decorator = retry_aiohttp_errors(
+                self.retry_timeout,
+                log_func=custom_before_log,
+            )
+            return await retry_decorator(self.make_request_inner)(method, params)
+
+        return await self.make_request_inner(method, params)
+
+    async def make_request_inner(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         if self._locker_provider:
             return await self._locker_provider.make_request(method, params)
-
         for i, provider in enumerate(self._providers):
             try:
                 response = await provider.make_request(method, params)
@@ -73,10 +101,15 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         finally:
             self._locker_provider = None
 
+    def set_retry_timeout(self, retry_timeout: int):
+        self.retry_timeout = retry_timeout
 
-def get_execution_client(endpoints: list[str], is_poa=False, timeout=60) -> AsyncWeb3:
+
+def get_execution_client(
+    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0
+) -> AsyncWeb3:
     provider = ExtendedAsyncHTTPProvider(
-        endpoint_urls=endpoints, request_kwargs={'timeout': timeout}
+        endpoint_urls=endpoints, request_kwargs={'timeout': timeout}, retry_timeout=retry_timeout
     )
     client = AsyncWeb3(
         provider,

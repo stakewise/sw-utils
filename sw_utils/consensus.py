@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 from eth_typing import URI, HexStr
@@ -9,6 +9,7 @@ from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
 
 from sw_utils.common import urljoin
+from sw_utils.decorators import retry_aiohttp_errors
 from sw_utils.exceptions import AiohttpRecoveredErrors
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ EXITED_STATUSES = [
     ValidatorStatus.WITHDRAWAL_DONE,
 ]
 
+if TYPE_CHECKING:
+    from tenacity import RetryCallState
+
 
 class ExtendedAsyncBeacon(AsyncBeacon):
     """
@@ -58,11 +62,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         base_urls: list[str],
         timeout: int = 60,
         session: aiohttp.ClientSession = None,
+        retry_timeout: int = 0,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
         self.session = session
-
+        self.retry_timeout = retry_timeout
         super().__init__('')  # hack origin base_url param
 
     async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
@@ -91,6 +96,27 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 logger.error('%s: %s', url, repr(error))
 
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
+        if self.retry_timeout:
+
+            def custom_before_log(retry_logger, log_level):
+                def custom_log_it(retry_state: 'RetryCallState') -> None:
+                    if retry_state.attempt_number <= 1:
+                        return
+                    msg = 'Retrying consensus uri %s(), attempt %s'
+                    args = (endpoint_uri, retry_state.attempt_number)
+                    retry_logger.log(log_level, msg, *args)
+
+                return custom_log_it
+
+            retry_decorator = retry_aiohttp_errors(
+                self.retry_timeout,
+                log_func=custom_before_log,
+            )
+            return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri)
+
+        return await self._async_make_get_request_inner(endpoint_uri)
+
+    async def _async_make_get_request_inner(self, endpoint_uri: str) -> dict[str, Any]:
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
@@ -114,8 +140,16 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             data = await response.json()
             return data
 
+    def set_retry_timeout(self, retry_timeout: int):
+        self.retry_timeout = retry_timeout
+
 
 def get_consensus_client(
-    endpoints: list[str], timeout: int = 60, session: aiohttp.ClientSession = None
+    endpoints: list[str],
+    timeout: int = 60,
+    session: aiohttp.ClientSession = None,
+    retry_timeout: int = 0,
 ) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_urls=endpoints, timeout=timeout, session=session)
+    return ExtendedAsyncBeacon(
+        base_urls=endpoints, timeout=timeout, session=session, retry_timeout=retry_timeout
+    )
