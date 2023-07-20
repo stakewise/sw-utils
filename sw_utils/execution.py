@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from typing import Any
 
@@ -24,6 +25,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     """
 
     _providers: list[AsyncHTTPProvider] = []
+    _locker_provider: AsyncHTTPProvider | None = None
 
     def __init__(
         self,
@@ -46,6 +48,9 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         super().__init__()
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+        if self._locker_provider:
+            return await self._locker_provider.make_request(method, params)
+
         for i, provider in enumerate(self._providers):
             try:
                 response = await provider.make_request(method, params)
@@ -56,6 +61,17 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 logger.error('%s: %s', provider.endpoint_uri, repr(error))
 
         return {}
+
+    @contextlib.contextmanager
+    def lock_endpoint(self, endpoint_uri: URI | str):
+        uri_providers = [prov for prov in self._providers if prov.endpoint_uri == endpoint_uri]
+        if not uri_providers:
+            raise ValueError(f'Invalid uri provider for execution client: {uri_providers}')
+        self._locker_provider = uri_providers[0]
+        try:
+            yield
+        finally:
+            self._locker_provider = None
 
 
 def get_execution_client(endpoints: list[str], is_poa=False, timeout=60) -> AsyncWeb3:
