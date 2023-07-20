@@ -68,8 +68,10 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         if not uri_providers:
             raise ValueError(f'Invalid uri provider for execution client: {uri_providers}')
         self._locker_provider = uri_providers[0]
-        yield
-        self._locker_provider = None
+        try:
+            yield
+        finally:
+            self._locker_provider = None
 
 
 def get_execution_client(endpoints: list[str], is_poa=False, timeout=60) -> AsyncWeb3:
