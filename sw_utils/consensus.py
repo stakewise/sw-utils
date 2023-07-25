@@ -3,14 +3,18 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
-from eth_typing import URI, HexStr
+from aiohttp import ClientResponseError
+from eth_typing import URI, BlockNumber, HexStr
+from web3 import Web3
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
+from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_aiohttp_errors
 from sw_utils.exceptions import AiohttpRecoveredErrors
+from sw_utils.typings import ChainHead, ConsensusFork
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +98,38 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 if i == len(self.base_urls) - 1:
                     raise error
                 logger.error('%s: %s', url, repr(error))
+
+    async def get_chain_finalized_head(self, slots_per_epoch: int) -> ChainHead:
+        """Fetches the fork safe chain head."""
+        checkpoints = await self.get_finality_checkpoint()
+        epoch: int = int(checkpoints['data']['finalized']['epoch'])
+        last_slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
+        for i in range(slots_per_epoch):
+            try:
+                slot = await self.get_block(str(last_slot_id - i))
+            except ClientResponseError as e:
+                if hasattr(e, 'status') and e.status == 404:
+                    # slot was not proposed, try the previous one
+                    continue
+                raise e
+
+            execution_payload = slot['data']['message']['body']['execution_payload']
+            return ChainHead(
+                epoch=epoch,
+                consensus_block=last_slot_id - i,
+                execution_block=BlockNumber(int(execution_payload['block_number'])),
+                execution_ts=Timestamp(int(execution_payload['timestamp'])),
+            )
+
+        raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
+
+    async def get_consensus_fork(self, state_id: str = 'head') -> ConsensusFork:
+        """Fetches current fork data."""
+        fork_data = (await self.get_fork_data(state_id))['data']
+        return ConsensusFork(
+            version=Web3.to_bytes(hexstr=fork_data['current_version']),
+            epoch=int(fork_data['epoch']),
+        )
 
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
         if self.retry_timeout:
