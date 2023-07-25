@@ -3,7 +3,15 @@ import logging
 import typing
 
 import aiohttp
-from tenacity import retry, retry_if_exception, stop_after_delay, wait_exponential
+from tenacity import (
+    retry,
+    retry_if_exception,
+    retry_if_exception_type,
+    stop_after_delay,
+    wait_exponential,
+)
+
+from .ipfs import IpfsException
 
 default_logger = logging.getLogger(__name__)
 
@@ -39,4 +47,13 @@ def retry_aiohttp_errors(delay: int = 60, log_func=custom_before_log):
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
         before=log_func(default_logger, logging.INFO),
+    )
+
+
+def retry_ipfs_exception(delay: int):
+    return retry(
+        retry=retry_if_exception_type(IpfsException),
+        wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
+        stop=stop_after_delay(delay),
+        before=custom_before_log(default_logger, logging.INFO),
     )
