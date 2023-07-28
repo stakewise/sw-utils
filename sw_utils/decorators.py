@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import typing
+from functools import wraps
+from typing import Callable
 
 import aiohttp
 from tenacity import (
@@ -18,6 +20,30 @@ default_logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from tenacity import RetryCallState
+
+
+def safe(func: Callable) -> Callable:
+    if asyncio.iscoroutinefunction(func):
+
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except BaseException as e:
+                default_logger.exception(e)
+                return None
+
+    else:
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except BaseException as e:
+                default_logger.exception(e)
+                return None
+
+    return wrapper
 
 
 def custom_before_log(logger, log_level):
