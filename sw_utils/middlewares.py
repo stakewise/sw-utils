@@ -7,7 +7,7 @@ from eth_keys.datatypes import PrivateKey
 from eth_typing import ChecksumAddress, HexStr
 from eth_utils.toolz import curry
 from web3 import AsyncWeb3, Web3
-from web3._utils.async_transactions import fill_transaction_defaults
+from web3._utils.async_transactions import async_fill_transaction_defaults
 from web3.middleware.signing import format_transaction, gen_normalized_accounts
 from web3.types import (
     AsyncMiddleware,
@@ -58,7 +58,7 @@ def construct_async_sign_and_send_raw_middleware(
                 return await make_request(method, params)
 
             transaction = await fill_nonce(_async_w3, params[0])
-            transaction = await fill_transaction_defaults(_async_w3, transaction)
+            transaction = await async_fill_transaction_defaults(_async_w3, transaction)
             transaction = format_transaction(transaction)
 
             if 'from' not in transaction:
