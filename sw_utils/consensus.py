@@ -57,7 +57,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     """
     Extended AsyncBeacon Provider with extra features:
     - support for fallback endpoints
-    - single session requests
     - post requests to consensus nodes
     """
 
@@ -65,12 +64,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         self,
         base_urls: list[str],
         timeout: int = 60,
-        session: aiohttp.ClientSession = None,
         retry_timeout: int = 0,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
-        self.session = session
         self.retry_timeout = retry_timeout
         super().__init__('')  # hack origin base_url param
 
@@ -156,8 +153,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
-                if self.session:
-                    return await self._make_session_get_request(uri)
                 return await async_json_make_get_request(uri, timeout=self.timeout)
 
             except AiohttpRecoveredErrors as error:
@@ -167,15 +162,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
         return {}
 
-    async def _make_session_get_request(self, uri):
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
-        logger.debug('GET %s', uri)
-
-        async with self.session.get(uri, timeout=timeout) as response:
-            response.raise_for_status()
-            data = await response.json()
-            return data
-
     def set_retry_timeout(self, retry_timeout: int):
         self.retry_timeout = retry_timeout
 
@@ -183,9 +169,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 def get_consensus_client(
     endpoints: list[str],
     timeout: int = 60,
-    session: aiohttp.ClientSession = None,
     retry_timeout: int = 0,
 ) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(
-        base_urls=endpoints, timeout=timeout, session=session, retry_timeout=retry_timeout
-    )
+    return ExtendedAsyncBeacon(base_urls=endpoints, timeout=timeout, retry_timeout=retry_timeout)
