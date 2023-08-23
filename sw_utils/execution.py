@@ -11,10 +11,9 @@ from web3.exceptions import MethodUnavailable
 from web3.middleware import async_geth_poa_middleware
 from web3.net import AsyncNet
 from web3.providers.async_rpc import AsyncHTTPProvider
-from web3.types import RPCEndpoint, RPCResponse, Wei
+from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse, Wei
 
-from sw_utils.decorators import retry_aiohttp_errors
-from sw_utils.exceptions import AiohttpRecoveredErrors
+from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +33,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     _providers: list[AsyncHTTPProvider] = []
     _locker_provider: AsyncHTTPProvider | None = None
+    _middlewares: tuple[AsyncMiddleware, ...] = ()
 
     def __init__(
         self,
@@ -83,9 +83,13 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
             try:
                 response = await provider.make_request(method, params)
                 return response
-            except AiohttpRecoveredErrors as error:
+            except Exception as error:
+                if not can_be_retried_aiohttp_error(error):
+                    raise error
+
                 if i == len(self._providers) - 1:
                     raise error
+
                 logger.error('%s: %s', provider.endpoint_uri, repr(error))
 
         return {}
