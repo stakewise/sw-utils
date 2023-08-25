@@ -33,6 +33,8 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     _providers: list[AsyncHTTPProvider] = []
     _locker_provider: AsyncHTTPProvider | None = None
+
+    # Turn off `async_http_retry_request_middleware`
     _middlewares: tuple[AsyncMiddleware, ...] = ()
 
     def __init__(
