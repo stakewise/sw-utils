@@ -131,19 +131,16 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
         if self.retry_timeout:
 
-            def custom_before_log(retry_logger, log_level):
-                def custom_log_it(retry_state: 'RetryCallState') -> None:
-                    if retry_state.attempt_number <= 1:
-                        return
-                    msg = 'Retrying consensus uri %s(), attempt %s'
-                    args = (endpoint_uri, retry_state.attempt_number)
-                    retry_logger.log(log_level, msg, *args)
-
-                return custom_log_it
+            def custom_before_log(retry_state: 'RetryCallState') -> None:
+                if retry_state.attempt_number <= 1:
+                    return
+                msg = 'Retrying consensus uri %s, attempt %s'
+                args = (endpoint_uri, retry_state.attempt_number)
+                logger.log(logging.INFO, msg, *args)
 
             retry_decorator = retry_aiohttp_errors(
                 self.retry_timeout,
-                log_func=custom_before_log,
+                before=custom_before_log,
             )
             return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri)
 
