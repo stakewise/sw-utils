@@ -61,19 +61,16 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
         if self.retry_timeout:
 
-            def custom_before_log(retry_logger, log_level):
-                def custom_log_it(retry_state: 'RetryCallState') -> None:
-                    if retry_state.attempt_number <= 1:
-                        return
-                    msg = 'Retrying execution method %s, attempt %s'
-                    args = (method, retry_state.attempt_number)
-                    retry_logger.log(log_level, msg, *args)
-
-                return custom_log_it
+            def custom_before_log(retry_state: 'RetryCallState') -> None:
+                if retry_state.attempt_number <= 1:
+                    return
+                msg = 'Retrying execution method %s, attempt %s'
+                args = (method, retry_state.attempt_number)
+                logger.log(logging.INFO, msg, *args)
 
             retry_decorator = retry_aiohttp_errors(
                 self.retry_timeout,
-                log_func=custom_before_log,
+                before=custom_before_log,
             )
             return await retry_decorator(self.make_request_inner)(method, params)
 
