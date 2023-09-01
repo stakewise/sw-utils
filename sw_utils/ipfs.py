@@ -278,7 +278,7 @@ class IpfsFetchClient:
         ) as client:
             return client.cat(ipfs_hash, timeout=self.timeout)
 
-    async def fetch_json(self, ipfs_hash: str) -> dict | list:
+    async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
@@ -295,13 +295,13 @@ class IpfsFetchClient:
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
-    async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
+    async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
             async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
                 response.raise_for_status()
                 return await response.json()
 
-    def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> dict | list:
+    def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
