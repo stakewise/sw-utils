@@ -13,23 +13,26 @@ faker = Faker()
 
 
 class Web3Provider(BaseProvider):
-    def public_key(self) -> str:
+    def private_key(self) -> int:
         seed = randbits(256).to_bytes(32, 'big')
         private_key = G2ProofOfPossession.KeyGen(seed)
-        return str(private_key)
+        return private_key
 
     def eth_address(self) -> str:
         account = w3.eth.account.create()
         return account.address
 
     def eth_proof(self) -> str:
+        # 32 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=64))
 
     def eth_signature(self) -> str:
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=194))
+        # 96 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
 
     def eth_public_key(self) -> str:
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=98))
+        # 48 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
 
     def wei_amount(self, start=10, stop=1000) -> Wei:
         eth_value = faker.random_int(start, stop)
