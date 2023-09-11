@@ -12,8 +12,7 @@ from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
 from web3.types import Timestamp
 
 from sw_utils.common import urljoin
-from sw_utils.decorators import retry_aiohttp_errors
-from sw_utils.exceptions import AiohttpRecoveredErrors
+from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 from sw_utils.typings import ChainHead, ConsensusFork
 
 logger = logging.getLogger(__name__)
@@ -91,7 +90,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                         response.raise_for_status()
                         return
 
-            except AiohttpRecoveredErrors as error:
+            except Exception as error:
+                if not can_be_retried_aiohttp_error(error):
+                    raise error
+
                 if i == len(self.base_urls) - 1:
                     raise error
                 logger.error('%s: %s', url, repr(error))
@@ -152,7 +154,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 uri = URI(urljoin(url, endpoint_uri))
                 return await async_json_make_get_request(uri, timeout=self.timeout)
 
-            except AiohttpRecoveredErrors as error:
+            except Exception as error:
+                if not can_be_retried_aiohttp_error(error):
+                    raise error
+
                 if i == len(self.base_urls) - 1:
                     raise error
                 logger.error('%s: %s', url, repr(error))
