@@ -224,7 +224,9 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
         if count < self.quorum:
-            logger.warning('quorum: %s, ipfs hashes: %s', self.quorum, ', '.join(ipfs_hashes.keys()))
+            logger.warning(
+                'quorum: %s, ipfs hashes: %s', self.quorum, ', '.join(ipfs_hashes.keys())
+            )
             raise IpfsException('Failed to reach the uploads quorum')
 
         return ipfs_hash
