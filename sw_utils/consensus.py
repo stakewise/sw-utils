@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 import aiohttp
 from aiohttp import ClientResponseError
@@ -70,7 +70,9 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         self.retry_timeout = retry_timeout
         super().__init__('')  # hack origin base_url param
 
-    async def get_validators_by_ids(self, validator_ids: list[str], state_id: str = 'head') -> dict:
+    async def get_validators_by_ids(
+        self, validator_ids: Sequence[str], state_id: str = 'head'
+    ) -> dict:
         endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
         return await self._async_make_get_request(endpoint)
 
