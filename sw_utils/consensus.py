@@ -158,7 +158,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         if len(uri) <= max_len:
             return uri
 
-        return f'{uri[:max_len]}...[cropped]'
+        return f'{uri[:max_len]}...'
 
     async def _async_make_get_request_inner(self, endpoint_uri: str) -> dict[str, Any]:
         for i, url in enumerate(self.base_urls):
