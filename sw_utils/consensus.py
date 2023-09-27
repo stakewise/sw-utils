@@ -64,10 +64,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         base_urls: list[str],
         timeout: int = 60,
         retry_timeout: int = 0,
+        log_uri_max_len: int | None = None,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
         self.retry_timeout = retry_timeout
+        self.log_uri_max_len = log_uri_max_len or 100
         super().__init__('')  # hack origin base_url param
 
     async def get_validators_by_ids(
@@ -139,7 +141,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 if retry_state.attempt_number <= 1:
                     return
                 msg = 'Retrying consensus uri %s, attempt %s'
-                args = (endpoint_uri, retry_state.attempt_number)
+                args = (self._format_uri(endpoint_uri), retry_state.attempt_number)
                 logger.log(logging.INFO, msg, *args)
 
             retry_decorator = retry_aiohttp_errors(
@@ -149,6 +151,14 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri)
 
         return await self._async_make_get_request_inner(endpoint_uri)
+
+    def _format_uri(self, uri: str):
+        max_len = self.log_uri_max_len
+
+        if len(uri) <= max_len:
+            return uri
+
+        return f'{uri[:max_len]}...'
 
     async def _async_make_get_request_inner(self, endpoint_uri: str) -> dict[str, Any]:
         for i, url in enumerate(self.base_urls):
@@ -174,5 +184,11 @@ def get_consensus_client(
     endpoints: list[str],
     timeout: int = 60,
     retry_timeout: int = 0,
+    log_uri_max_len: int | None = None,
 ) -> ExtendedAsyncBeacon:
-    return ExtendedAsyncBeacon(base_urls=endpoints, timeout=timeout, retry_timeout=retry_timeout)
+    return ExtendedAsyncBeacon(
+        base_urls=endpoints,
+        timeout=timeout,
+        retry_timeout=retry_timeout,
+        log_uri_max_len=log_uri_max_len,
+    )
