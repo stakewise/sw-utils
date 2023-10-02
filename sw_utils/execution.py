@@ -1,17 +1,14 @@
 import contextlib
 import logging
-import warnings
 from typing import TYPE_CHECKING, Any
 
 from eth_typing import URI
 from web3 import AsyncWeb3
-from web3._utils.fee_utils import async_fee_history_priority_fee
 from web3.eth import AsyncEth
-from web3.exceptions import MethodUnavailable
 from web3.middleware import async_geth_poa_middleware
 from web3.net import AsyncNet
 from web3.providers.async_rpc import AsyncHTTPProvider
-from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse, Wei
+from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse
 
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
@@ -111,30 +108,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self.retry_timeout = retry_timeout
 
 
-# pylint: disable=abstract-method
-class ExtendedAsyncEth(AsyncEth):
-    """
-    todo: remove when PR gets merged
-    https://github.com/ethereum/web3.py/pull/3084
-    """
-
-    @property
-    async def max_priority_fee(self) -> Wei:
-        """
-        Try to use eth_maxPriorityFeePerGas but, since this is not part
-        of the spec and is only supported by some clients, fall back to
-        an eth_feeHistory calculation with min and max caps.
-        """
-        try:
-            return await self._max_priority_fee()
-        except (ValueError, MethodUnavailable):
-            warnings.warn(
-                'There was an issue with the method eth_maxPriorityFeePerGas. '
-                'Calculating using eth_feeHistory.'
-            )
-            return await async_fee_history_priority_fee(self)
-
-
 def get_execution_client(
     endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0
 ) -> AsyncWeb3:
@@ -143,7 +116,7 @@ def get_execution_client(
     )
     client = AsyncWeb3(
         provider,
-        modules={'eth': (ExtendedAsyncEth,), 'net': AsyncNet},
+        modules={'eth': (AsyncEth,), 'net': AsyncNet},
     )
 
     if is_poa:
