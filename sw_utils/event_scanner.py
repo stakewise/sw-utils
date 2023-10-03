@@ -30,7 +30,7 @@ class EventProcessor(ABC):
 
     @staticmethod
     @abstractmethod
-    async def process_events(events: list[EventData], to_block: BlockNumber) -> None:
+    async def process_events(events: list[EventData]) -> None:
         """Process incoming events.
         This function takes raw events from Web3, transforms them to application's internal
         format, then saves it in a database.
@@ -70,7 +70,7 @@ class EventScanner:
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
             )
-            await self.processor.process_events(new_events, to_block=to_block)
+            await self.processor.process_events(new_events)
 
             if new_events:
                 logger.info(
