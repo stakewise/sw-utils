@@ -212,7 +212,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(repr(value))
+                logger.warning(repr(value))
                 continue
 
             ipfs_hash = _strip_ipfs_prefix(value)
@@ -239,7 +239,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         )
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(repr(value))
+                logger.warning(repr(value))
                 continue
         return None
 
@@ -265,7 +265,7 @@ class IpfsFetchClient:
 
                 return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
-                logger.error(repr(e))
+                logger.warning(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
@@ -294,7 +294,7 @@ class IpfsFetchClient:
 
                 return self._ipfs_fetch_json(endpoint, ipfs_hash)
             except Exception as e:
-                logger.error(repr(e))
+                logger.warning(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
