@@ -89,7 +89,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 if i == len(self._providers) - 1:
                     raise error
 
-                logger.error('%s: %s', provider.endpoint_uri, repr(error))
+                logger.warning('%s: %s', provider.endpoint_uri, repr(error))
 
         return {}
 
@@ -121,5 +121,5 @@ def get_execution_client(
 
     if is_poa:
         client.middleware_onion.inject(async_geth_poa_middleware, layer=0)
-        logger.info('Injected POA middleware')
+        logger.debug('Injected POA middleware')
     return client

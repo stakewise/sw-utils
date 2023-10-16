@@ -100,7 +100,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
                 if i == len(self.base_urls) - 1:
                     raise error
-                logger.error('%s: %s', url, repr(error))
+                logger.warning('%s: %s', url, repr(error))
 
     async def get_chain_finalized_head(self, slots_per_epoch: int) -> ChainHead:
         """Fetches the fork safe chain head."""
@@ -172,7 +172,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
                 if i == len(self.base_urls) - 1:
                     raise error
-                logger.error('%s: %s', url, repr(error))
+                logger.warning('%s: %s', url, repr(error))
 
         return {}
 
