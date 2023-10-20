@@ -118,7 +118,7 @@ class PinataUploadClient(BaseUploadClient):
     async def upload_json(self, data: dict | list) -> str:
         if not data:
             raise ValueError('Empty data provided')
-        return await self.upload_bytes(Json().encode(data))
+        return await self.upload_bytes(_dump_json(data))
 
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
