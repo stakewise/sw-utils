@@ -57,7 +57,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         super().__init__()
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
-
         if self.retry_timeout:
 
             def custom_before_log(retry_state: 'RetryCallState') -> None:
