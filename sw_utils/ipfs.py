@@ -118,16 +118,7 @@ class PinataUploadClient(BaseUploadClient):
     async def upload_json(self, data: dict | list) -> str:
         if not data:
             raise ValueError('Empty data provided')
-        headers = self.headers.copy()
-        headers['Content-Type'] = 'application/json'
-        async with ClientSession(headers=headers) as session:
-            async with session.post(
-                url=self.json_endpoint,
-                data=_dump_json({'pinataOptions': {'cidVersion': 1}, 'pinataContent': data}),
-            ) as response:
-                response.raise_for_status()
-                ipfs_id = (await response.json())['IpfsHash']
-        return _strip_ipfs_prefix(ipfs_id)
+        return await self.upload_bytes(_dump_json(data))
 
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
