@@ -12,6 +12,8 @@ from ipfshttpclient.exceptions import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
+IPFS_DEFAULT_TIMEOUT = 120
+
 
 class IpfsException(Exception):
     pass
@@ -32,10 +34,17 @@ class BaseUploadClient(ABC):
 
 
 class IpfsUploadClient(BaseUploadClient):
-    def __init__(self, endpoint: str, username: str | None = None, password: str | None = None):
+    def __init__(
+        self,
+        endpoint: str,
+        username: str | None = None,
+        password: str | None = None,
+        timeout: int = IPFS_DEFAULT_TIMEOUT,
+    ):
         self.endpoint = endpoint
         self.username = username
         self.password = password
+        self.timeout = timeout
 
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
@@ -45,6 +54,7 @@ class IpfsUploadClient(BaseUploadClient):
             self.endpoint,
             username=self.username,
             password=self.password,
+            timeout=self.timeout,
         ) as client:
             ipfs_id = client.add_bytes(data, opts={'cid-version': 1})
             client.pin.add(ipfs_id)
@@ -59,6 +69,7 @@ class IpfsUploadClient(BaseUploadClient):
             self.endpoint,
             username=self.username,
             password=self.password,
+            timeout=self.timeout,
         ) as client:
             ipfs_id = client.add_json(data, opts={'cid-version': 1})
             client.pin.add(ipfs_id)
@@ -73,6 +84,7 @@ class IpfsUploadClient(BaseUploadClient):
             self.endpoint,
             username=self.username,
             password=self.password,
+            timeout=self.timeout,
         ) as client:
             try:
                 client.pin.rm(_strip_ipfs_prefix(ipfs_hash))
@@ -86,6 +98,7 @@ class IpfsUploadClient(BaseUploadClient):
             self.endpoint,
             username=self.username,
             password=self.password,
+            timeout=self.timeout,
         ) as client:
             client.repo.gc(quiet=True)
 
@@ -95,14 +108,17 @@ class PinataUploadClient(BaseUploadClient):
     bytes_endpoint = 'https://api.pinata.cloud/pinning/pinFileToIPFS'
     unpin_endpoint = 'https://api.pinata.cloud/pinning/unpin/'
 
-    def __init__(self, api_key: str, secret_key: str):
+    def __init__(self, api_key: str, secret_key: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
         self.headers = {
             'pinata_api_key': api_key,
             'pinata_secret_api_key': secret_key,
         }
+        self.timeout = timeout
 
     async def upload_bytes(self, data: bytes) -> str:
-        async with ClientSession(headers=self.headers) as session:
+        async with ClientSession(
+            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
             form_data = aiohttp.FormData()
             form_data.add_field('pinataOptions', '{"cidVersion": 1}')
             form_data.add_field('file', data, content_type='Content-Type: application/octet-stream')
@@ -126,7 +142,9 @@ class PinataUploadClient(BaseUploadClient):
 
         headers = self.headers.copy()
         headers['Content-Type'] = 'application/json'
-        async with ClientSession(headers=headers) as session:
+        async with ClientSession(
+            headers=headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
             async with session.delete(url=urljoin(self.unpin_endpoint, ipfs_hash)) as response:
                 response.raise_for_status()
         return None
@@ -136,10 +154,11 @@ class WebStorageClient(BaseUploadClient):
     upload_endpoint = 'https://api.web3.storage/upload'
     unpin_endpoint = 'https://api.web3.storage/pins'
 
-    def __init__(self, api_token: str):
+    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
         self.headers = {
             'Authorization': f'bearer {api_token}',
         }
+        self.timeout = timeout
 
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
@@ -160,13 +179,17 @@ class WebStorageClient(BaseUploadClient):
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
-        async with ClientSession(headers=self.headers) as session:
+        async with ClientSession(
+            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
             async with session.delete(url=urljoin(self.unpin_endpoint, ipfs_hash)) as response:
                 response.raise_for_status()
         return None
 
     async def _upload(self, form_data: aiohttp.FormData) -> str:
-        async with ClientSession(headers=self.headers) as session:
+        async with ClientSession(
+            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
             async with session.post(
                 url=self.upload_endpoint,
                 data=form_data,
