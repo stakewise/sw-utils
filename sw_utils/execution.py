@@ -108,7 +108,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
 
 def get_execution_client(
-    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0, use_cache=False
+    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0, use_cache=True
 ) -> AsyncWeb3:
     provider = ExtendedAsyncHTTPProvider(
         endpoint_urls=endpoints, request_kwargs={'timeout': timeout}, retry_timeout=retry_timeout
