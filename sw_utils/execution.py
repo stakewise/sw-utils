@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from eth_typing import URI
 from web3 import AsyncWeb3
 from web3.eth import AsyncEth
-from web3.middleware import async_geth_poa_middleware
+from web3.middleware import async_geth_poa_middleware, async_simple_cache_middleware
 from web3.net import AsyncNet
 from web3.providers.async_rpc import AsyncHTTPProvider
 from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse
@@ -108,7 +108,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
 
 def get_execution_client(
-    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0
+    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0, use_cache=True
 ) -> AsyncWeb3:
     provider = ExtendedAsyncHTTPProvider(
         endpoint_urls=endpoints, request_kwargs={'timeout': timeout}, retry_timeout=retry_timeout
@@ -121,4 +121,8 @@ def get_execution_client(
     if is_poa:
         client.middleware_onion.inject(async_geth_poa_middleware, layer=0)
         logger.debug('Injected POA middleware')
+
+    if use_cache:
+        client.middleware_onion.add(async_simple_cache_middleware)
+
     return client
