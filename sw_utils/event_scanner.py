@@ -36,6 +36,7 @@ class EventProcessor(ABC):
         format, then saves it in a database.
 
         :param events: List of the event data
+        :param to_block: the last block number of the scanned chunk
         """
 
 
@@ -70,13 +71,14 @@ class EventScanner:
             current_to_block, new_events = await self._scan_chunk(
                 current_from_block, estimated_end_block
             )
-            await self.processor.process_events(new_events, to_block=to_block)
+            await self.processor.process_events(new_events, to_block=current_to_block)
 
             if new_events:
                 logger.info(
-                    'Scanned %s event: count=%d, block=%d/%d',
+                    'Scanned %s event: count=%d, block=%d/%d/%d',
                     self.processor.contract_event,
                     len(new_events),
+                    current_from_block,
                     current_to_block,
                     to_block,
                 )
