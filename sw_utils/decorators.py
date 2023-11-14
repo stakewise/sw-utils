@@ -57,6 +57,9 @@ def can_be_retried_aiohttp_error(e: BaseException) -> bool:
     if isinstance(e, aiohttp.ClientResponseError) and e.status >= 500:
         return True
 
+    if isinstance(e, aiohttp.ClientResponseError) and e.status == 429:
+        return True
+
     return False
 
 
