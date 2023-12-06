@@ -7,10 +7,10 @@ from .consensus import (
 )
 from .decorators import retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
+from .exceptions import IpfsException
 from .execution import get_execution_client
 from .ipfs import (
     BaseUploadClient,
-    IpfsException,
     IpfsFetchClient,
     IpfsMultiUploadClient,
     IpfsUploadClient,

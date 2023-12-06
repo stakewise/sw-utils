@@ -13,7 +13,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from .ipfs import IpfsException
+from sw_utils.exceptions import IpfsException
 
 default_logger = logging.getLogger(__name__)
 

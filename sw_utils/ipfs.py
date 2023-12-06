@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import aiohttp
@@ -10,13 +10,16 @@ from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
+from sw_utils.decorators import retry_ipfs_exception
+from sw_utils.exceptions import IpfsException
+
+if TYPE_CHECKING:
+    from tenacity import RetryCallState
+
+
 logger = logging.getLogger(__name__)
 
 IPFS_DEFAULT_TIMEOUT = 120
-
-
-class IpfsException(Exception):
-    pass
 
 
 class BaseUploadClient(ABC):
@@ -259,18 +262,26 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
 
 class IpfsFetchClient:
-    def __init__(
-        self,
-        endpoints: list[str],
-        timeout: int = 60,
-    ):
+    def __init__(self, endpoints: list[str], timeout: int = 60, retry_timeout: int = 120):
         self.endpoints = endpoints
         self.timeout = timeout
+        self.retry_timeout = retry_timeout
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
 
+        def custom_before_log(retry_state: 'RetryCallState') -> None:
+            if retry_state.attempt_number <= 1:
+                return
+            msg = 'Retrying fetch_bytes, attempt %s'
+            args = (retry_state.attempt_number,)
+            logger.log(logging.INFO, msg, *args)
+
+        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
+        return await retry_decorator(self._fetch_bytes_all_endpoints)(ipfs_hash)
+
+    async def _fetch_bytes_all_endpoints(self, ipfs_hash: str) -> bytes:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
         for endpoint in self.endpoints:
             try:
@@ -300,6 +311,17 @@ class IpfsFetchClient:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
 
+        def custom_before_log(retry_state: 'RetryCallState') -> None:
+            if retry_state.attempt_number <= 1:
+                return
+            msg = 'Retrying fetch_json, attempt %s'
+            args = (retry_state.attempt_number,)
+            logger.log(logging.INFO, msg, *args)
+
+        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
+        return await retry_decorator(self._fetch_json_all_endpoints)(ipfs_hash)
+
+    async def _fetch_json_all_endpoints(self, ipfs_hash: str) -> Any:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
         for endpoint in self.endpoints:
             try:
