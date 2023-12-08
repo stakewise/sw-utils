@@ -16,3 +16,7 @@ RequestsRecoveredErrors = (
     requests.ConnectionError,
     requests.Timeout,
 )
+
+
+class IpfsException(Exception):
+    pass
