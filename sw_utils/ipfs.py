@@ -274,9 +274,7 @@ class IpfsFetchClient:
         def custom_before_log(retry_state: 'RetryCallState') -> None:
             if retry_state.attempt_number <= 1:
                 return
-            msg = 'Retrying fetch_bytes, attempt %s'
-            args = (retry_state.attempt_number,)
-            logger.log(logging.INFO, msg, *args)
+            logger.info('Retrying fetch_bytes, attempt %s', retry_state.attempt_number)
 
         retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
         return await retry_decorator(self._fetch_bytes_all_endpoints)(ipfs_hash)
@@ -314,9 +312,7 @@ class IpfsFetchClient:
         def custom_before_log(retry_state: 'RetryCallState') -> None:
             if retry_state.attempt_number <= 1:
                 return
-            msg = 'Retrying fetch_json, attempt %s'
-            args = (retry_state.attempt_number,)
-            logger.log(logging.INFO, msg, *args)
+            logger.info('Retrying fetch_json, attempt %s', retry_state.attempt_number)
 
         retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
         return await retry_decorator(self._fetch_json_all_endpoints)(ipfs_hash)
