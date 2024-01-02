@@ -5,10 +5,14 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import aiohttp
+import boto3
+import botocore.config
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
+from ipfs_cid import cid_sha256_hash
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
+from multiformats import CID
 
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
@@ -203,6 +207,78 @@ class WebStorageClient(BaseUploadClient):
         return _strip_ipfs_prefix(ipfs_id)
 
 
+class FilebaseS3Client(BaseUploadClient):
+    """
+    Uploads to 3x replicated IPFS storage using S3-compatible api.
+    """
+
+    upload_endpoint = 'https://s3.filebase.com'
+    unpin_endpoint = ''
+
+    def __init__(
+        self,
+        aws_access_key_id: str,
+        aws_secret_access_key: str,
+        bucket: str,
+        timeout: int = IPFS_DEFAULT_TIMEOUT,
+    ):
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.bucket = bucket
+        self.read_timeout = timeout
+        self.connect_timeout = timeout
+
+    async def upload_bytes(self, data: bytes) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+        s3 = self.get_s3_client()
+
+        # S3 api requires unique key for each object
+        ipfs_hash = cid_sha256_hash(data)
+        logger.info('ipfs_hash %s', ipfs_hash)
+
+        # Warning: blocking call, not async
+        res = s3.put_object(Body=data, Bucket=self.bucket, Key=ipfs_hash)
+
+        cid_v0 = res['ResponseMetadata']['HTTPHeaders']['x-amz-meta-cid']
+        cid_v1 = _cid_v0_to_v1(cid_v0)
+
+        # `cid_v1` must be the same as `ipfs_hash`
+        # but there may be issues on Filebase side
+        # So use the cid returned from Filebase
+        return cid_v1
+
+    async def upload_json(self, data: dict | list) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+        return await self.upload_bytes(_dump_json(data))
+
+    async def remove(self, ipfs_hash: str) -> None:
+        if not ipfs_hash:
+            raise ValueError('Empty IPFS hash provided')
+
+        s3 = self.get_s3_client()
+
+        # Warning: blocking call, not async
+        s3.delete_object(Bucket=self.bucket, Key=ipfs_hash)
+
+        return None
+
+    def get_s3_client(self) -> Any:
+        config = botocore.config.Config(
+            read_timeout=self.read_timeout,
+            connect_timeout=self.connect_timeout,
+            retries={'max_attempts': 0},
+        )
+        return boto3.client(
+            's3',
+            config=config,
+            endpoint_url=self.upload_endpoint,
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+        )
+
+
 class IpfsMultiUploadClient(BaseUploadClient):
     def __init__(self, clients: list[BaseUploadClient], retry_timeout: int = 120):
         if len(clients) == 0:
@@ -369,3 +445,11 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
 
 def _dump_json(data: Any) -> bytes:
     return Json().encode(data)
+
+
+def _cid_v0_to_v1(cid: str) -> str:
+    cid_v0 = CID.decode(cid)
+    if cid_v0.version != 0:
+        raise ValueError('cid version is not v0')
+    cid_v1 = cid_v0.set(base='base32', version=1)
+    return cid_v1.encode()
