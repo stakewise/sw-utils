@@ -204,15 +204,26 @@ class WebStorageClient(BaseUploadClient):
 
 
 class IpfsMultiUploadClient(BaseUploadClient):
-    def __init__(self, clients: list[BaseUploadClient]):
+    def __init__(self, clients: list[BaseUploadClient], retry_timeout: int = 120):
         if len(clients) == 0:
             raise ValueError('Invalid number of clients')
         self.clients = clients
         self.quorum = (len(clients) // 2) + 1
+        self.retry_timeout = retry_timeout
 
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
             raise ValueError('Empty data provided')
+
+        def custom_before_log(retry_state: 'RetryCallState') -> None:
+            if retry_state.attempt_number <= 1:
+                return
+            logger.info('Retrying upload_bytes, attempt %s', retry_state.attempt_number)
+
+        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
+        return await retry_decorator(self._upload_bytes_all_clients)(data)
+
+    async def _upload_bytes_all_clients(self, data: bytes) -> str:
         coros = [client.upload_bytes(data) for client in self.clients]
         return await self._upload(coros)
 
@@ -220,6 +231,15 @@ class IpfsMultiUploadClient(BaseUploadClient):
         if not data:
             raise ValueError('Empty data provided')
 
+        def custom_before_log(retry_state: 'RetryCallState') -> None:
+            if retry_state.attempt_number <= 1:
+                return
+            logger.info('Retrying upload_json, attempt %s', retry_state.attempt_number)
+
+        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
+        return await retry_decorator(self._upload_json_all_clients)(data)
+
+    async def _upload_json_all_clients(self, data: dict | list) -> str:
         coros = [client.upload_json(data) for client in self.clients]
         return await self._upload(coros)
 
