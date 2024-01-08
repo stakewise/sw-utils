@@ -351,8 +351,9 @@ class IpfsMultiUploadClient(BaseUploadClient):
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
+        clients: list = self.upload_clients + self.pin_clients
         result = await asyncio.gather(
-            *[client.remove(ipfs_hash) for client in self.upload_clients], return_exceptions=True
+            *[client.remove(ipfs_hash) for client in clients], return_exceptions=True
         )
         for value in result:
             if isinstance(value, BaseException):
