@@ -50,7 +50,7 @@ def update_element_in_chunk(original_chunk: Hash32, index: int, element: bytes) 
     chunk_size = len(original_chunk)
 
     if element_size == 0:
-        raise ValueError(f'Element size is zero')
+        raise ValueError('Element size is zero')
     if chunk_size % element_size != 0:
         raise ValueError(f'Element size is not a divisor of chunk size: {element_size}')
     if not 0 <= index < chunk_size // element_size:

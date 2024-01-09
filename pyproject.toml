@@ -43,7 +43,12 @@ ignored-modules=["milagro_bls_binding"]
 
 [tool.flake8]
 max-line-length = 100
-select = ["E121"]
+extend-ignore = [
+    "E203",  # whitespace before ':'
+]
+exclude = [
+    "*/__init__.py",
+]
 
 [tool.isort]
 profile = "black"

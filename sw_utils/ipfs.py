@@ -36,6 +36,21 @@ class BaseUploadClient(ABC):
         raise NotImplementedError
 
 
+class BasePinClient(ABC):
+    """
+    Allows to re-pin existing CID.
+    https://ipfs.github.io/pinning-services-api-spec/
+    """
+
+    @abstractmethod
+    async def pin(self, ipfs_hash: str) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def remove(self, ipfs_hash: str) -> None:
+        raise NotImplementedError
+
+
 class IpfsUploadClient(BaseUploadClient):
     def __init__(
         self,
@@ -203,12 +218,67 @@ class WebStorageClient(BaseUploadClient):
         return _strip_ipfs_prefix(ipfs_id)
 
 
+class FilebasePinClient(BasePinClient):
+    """
+    https://docs.filebase.com/api-documentation/ipfs-pinning-service-api
+    """
+
+    base_url = 'https://api.filebase.io/v1/ipfs/'
+
+    def __init__(self, bucket: str, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
+        self.bucket = bucket
+        self.api_token = api_token
+        self.timeout = timeout
+
+    async def pin(self, ipfs_hash: str) -> str:
+        data = {
+            'cid': ipfs_hash,
+        }
+        response = await self._call('POST', 'pins', data=data)
+        cid = response['pin']['cid']
+        if cid != ipfs_hash:
+            raise ValueError(f'cid {cid} is not equal to ipfs_hash {ipfs_hash}')
+        return cid
+
+    async def remove(self, ipfs_hash: str) -> None:
+        pin_results = await self._call('GET', 'pins', data={'cid': ipfs_hash})
+
+        # Filebase returns the same request_id when pinning the same cid twice
+        request_id = pin_results['results'][0]['requestid']
+
+        await self._call('DELETE', f'pins/{request_id}')
+
+    async def _call(self, http_method: str, endpoint: str, data: dict | None = None) -> dict:
+        url = urljoin(self.base_url, endpoint)
+        logger.debug('%s %s', http_method, url)
+
+        # User and bucket are determined by token
+        headers = {'Authorization': f'Bearer {self.api_token}'}
+
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(self.timeout)) as session:
+            session_method = getattr(session, http_method.lower())
+            async with session_method(url, json=data, headers=headers) as response:
+                response.raise_for_status()
+                return await response.json()
+
+
 class IpfsMultiUploadClient(BaseUploadClient):
-    def __init__(self, clients: list[BaseUploadClient], retry_timeout: int = 120):
-        if len(clients) == 0:
-            raise ValueError('Invalid number of clients')
-        self.clients = clients
-        self.quorum = (len(clients) // 2) + 1
+    def __init__(self, clients: list[BaseUploadClient | BasePinClient], retry_timeout: int = 120):
+        self.upload_clients = []
+        self.pin_clients = []
+
+        for client in clients:
+            if isinstance(client, BaseUploadClient):
+                self.upload_clients.append(client)
+            elif isinstance(client, BasePinClient):
+                self.pin_clients.append(client)
+            else:
+                logger.warning('Unexpected client type %s', type(client))
+
+        if len(self.upload_clients) == 0:
+            raise ValueError('Invalid number of upload clients')
+
+        self.quorum = (len(self.upload_clients) // 2) + 1
         self.retry_timeout = retry_timeout
 
     async def upload_bytes(self, data: bytes) -> str:
@@ -224,8 +294,13 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return await retry_decorator(self._upload_bytes_all_clients)(data)
 
     async def _upload_bytes_all_clients(self, data: bytes) -> str:
-        coros = [client.upload_bytes(data) for client in self.clients]
-        return await self._upload(coros)
+        coros = [client.upload_bytes(data) for client in self.upload_clients]
+        ipfs_hash = await self._upload(coros)
+
+        if self.pin_clients:
+            await asyncio.gather(*(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients))
+
+        return ipfs_hash
 
     async def upload_json(self, data: dict | list) -> str:
         if not data:
@@ -240,8 +315,13 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return await retry_decorator(self._upload_json_all_clients)(data)
 
     async def _upload_json_all_clients(self, data: dict | list) -> str:
-        coros = [client.upload_json(data) for client in self.clients]
-        return await self._upload(coros)
+        coros = [client.upload_json(data) for client in self.upload_clients]
+        ipfs_hash = await self._upload(coros)
+
+        if self.pin_clients:
+            await asyncio.gather(*(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients))
+
+        return ipfs_hash
 
     async def _upload(self, coros: list) -> str:
         result = await asyncio.gather(*coros, return_exceptions=True)
@@ -271,8 +351,9 @@ class IpfsMultiUploadClient(BaseUploadClient):
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
+        clients: list = self.upload_clients + self.pin_clients
         result = await asyncio.gather(
-            *[client.remove(ipfs_hash) for client in self.clients], return_exceptions=True
+            *[client.remove(ipfs_hash) for client in clients], return_exceptions=True
         )
         for value in result:
             if isinstance(value, BaseException):
