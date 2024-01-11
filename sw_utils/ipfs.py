@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator, cast
 from urllib.parse import urljoin
 
 import aiohttp
@@ -241,14 +241,16 @@ class FilebasePinClient(BasePinClient):
         return cid
 
     async def remove(self, ipfs_hash: str) -> None:
-        pin_results = await self._call('GET', 'pins', data={'cid': ipfs_hash})
+        pin_results = await self._call('GET', 'pins', params={'cid': ipfs_hash})
 
         # Filebase returns the same request_id when pinning the same cid twice
         request_id = pin_results['results'][0]['requestid']
 
         await self._call('DELETE', f'pins/{request_id}')
 
-    async def _call(self, http_method: str, endpoint: str, data: dict | None = None) -> dict:
+    async def _call(
+        self, http_method: str, endpoint: str, data: dict | None = None, params: dict | None = None
+    ) -> dict:
         url = urljoin(self.base_url, endpoint)
         logger.debug('%s %s', http_method, url)
 
@@ -257,9 +259,94 @@ class FilebasePinClient(BasePinClient):
 
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(self.timeout)) as session:
             session_method = getattr(session, http_method.lower())
-            async with session_method(url, json=data, headers=headers) as response:
+            async with session_method(url, json=data, params=params, headers=headers) as response:
                 response.raise_for_status()
                 return await response.json()
+
+
+class QuicknodePinClient(BasePinClient):
+    """
+    https://www.quicknode.com/docs/ipfs/getting-started
+    """
+
+    base_url = 'https://api.quicknode.com/ipfs/rest/'
+
+    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT, page_size: int = 100):
+        self.api_token = api_token
+        self.timeout = timeout
+        self.page_size = page_size
+
+    async def pin(self, ipfs_hash: str) -> str:
+        data = {
+            'cid': ipfs_hash,
+            'name': ipfs_hash,
+        }
+        response = cast(dict, await self._call('POST', 'v1/pinning', data=data))
+        cid = response['cid']
+        if cid != ipfs_hash:
+            raise ValueError(f'cid {cid} is not equal to ipfs_hash {ipfs_hash}')
+        return cid
+
+    async def remove(self, ipfs_hash: str) -> None:
+        request_id = await self._get_request_id_by_ipfs_hash(ipfs_hash)
+
+        if not request_id:
+            raise ValueError(f'ipfs_hash {ipfs_hash} not found among pinned objects')
+
+        await self._call('DELETE', f'v1/pinning/{request_id}', parse_json=False)
+
+    async def _get_request_id_by_ipfs_hash(self, ipfs_hash: str) -> str | None:
+        """
+        'get-pins-list' endpoint can not filter by ipfs_hash.
+        I have to search manually :\
+        """
+        async for pin_result in self._iter_pins():
+            if pin_result['cid'] == ipfs_hash:
+                # Multiple requests with same CID are not allowed by Quicknode.
+                return pin_result['requestId']
+
+        return None
+
+    async def _iter_pins(self) -> AsyncIterator[dict]:
+        """
+        Iterator allows to search specific item without fetching all pages
+        """
+        page_number = 1
+        total_pages = None
+
+        while total_pages is None or page_number <= total_pages:
+            params = {
+                'pageNumber': page_number,
+                'perPage': self.page_size,
+            }
+            pin_results = cast(dict, await self._call('GET', 'v1/pinning', params=params))
+            for pin_result in pin_results['data']:
+                yield pin_result
+
+            page_number += 1
+            total_pages = pin_results['totalPages']
+
+    # pylint: disable-next=too-many-arguments
+    async def _call(
+        self,
+        http_method: str,
+        endpoint: str,
+        data: dict | None = None,
+        params: dict | None = None,
+        parse_json: bool = True,
+    ) -> dict | bytes:
+        url = urljoin(self.base_url, endpoint)
+        logger.debug('%s %s', http_method, url)
+
+        headers = {'x-api-key': self.api_token}
+
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(self.timeout)) as session:
+            session_method = getattr(session, http_method.lower())
+            async with session_method(url, params=params, json=data, headers=headers) as response:
+                response.raise_for_status()
+                if parse_json:
+                    return await response.json()
+                return await response.read()
 
 
 class IpfsMultiUploadClient(BaseUploadClient):
