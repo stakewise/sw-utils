@@ -307,10 +307,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         retry_timeout: int = 120,
     ):
         self.upload_clients = upload_clients
-        if pin_clients:
-            self.pin_clients = pin_clients
-        else:
-            self.pin_clients = []
+        self.pin_clients = pin_clients or []
 
         if len(self.upload_clients) == 0:
             raise ValueError('Invalid number of upload clients')
