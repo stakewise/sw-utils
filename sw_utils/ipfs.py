@@ -300,17 +300,17 @@ class QuicknodePinClient(BasePinClient):
 
 
 class IpfsMultiUploadClient(BaseUploadClient):
-    def __init__(self, clients: list[BaseUploadClient | BasePinClient], retry_timeout: int = 120):
-        self.upload_clients = []
-        self.pin_clients = []
-
-        for client in clients:
-            if isinstance(client, BaseUploadClient):
-                self.upload_clients.append(client)
-            elif isinstance(client, BasePinClient):
-                self.pin_clients.append(client)
-            else:
-                logger.warning('Unexpected client type %s', type(client))
+    def __init__(
+        self,
+        upload_clients: list[BaseUploadClient],
+        pin_clients: list[BasePinClient] | None = None,
+        retry_timeout: int = 120,
+    ):
+        self.upload_clients = upload_clients
+        if pin_clients:
+            self.pin_clients = pin_clients
+        else:
+            self.pin_clients = []
 
         if len(self.upload_clients) == 0:
             raise ValueError('Invalid number of upload clients')
@@ -388,7 +388,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
             raise ValueError('Empty IPFS hash provided')
-        clients: list = self.upload_clients + self.pin_clients
+        clients: list[BaseUploadClient | BasePinClient] = self.upload_clients + self.pin_clients
         result = await asyncio.gather(
             *[client.remove(ipfs_hash) for client in clients], return_exceptions=True
         )
