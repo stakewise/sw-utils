@@ -168,56 +168,6 @@ class PinataUploadClient(BaseUploadClient):
         return None
 
 
-class WebStorageClient(BaseUploadClient):
-    upload_endpoint = 'https://api.web3.storage/upload'
-    unpin_endpoint = 'https://api.web3.storage/pins'
-
-    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
-        self.headers = {
-            'Authorization': f'bearer {api_token}',
-        }
-        self.timeout = timeout
-
-    async def upload_bytes(self, data: bytes) -> str:
-        if not data:
-            raise ValueError('Empty data provided')
-
-        form_data = aiohttp.FormData()
-        form_data.add_field('file', data, content_type='Content-Type: application/octet-stream')
-        return await self._upload(form_data)
-
-    async def upload_json(self, data: dict | list) -> str:
-        if not data:
-            raise ValueError('Empty data provided')
-
-        form_data = aiohttp.FormData()
-        form_data.add_field('file', _dump_json(data), content_type='Content-Type: application/json')
-        return await self._upload(form_data)
-
-    async def remove(self, ipfs_hash: str) -> None:
-        if not ipfs_hash:
-            raise ValueError('Empty IPFS hash provided')
-        async with ClientSession(
-            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
-        ) as session:
-            async with session.delete(url=urljoin(self.unpin_endpoint, ipfs_hash)) as response:
-                response.raise_for_status()
-        return None
-
-    async def _upload(self, form_data: aiohttp.FormData) -> str:
-        async with ClientSession(
-            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
-        ) as session:
-            async with session.post(
-                url=self.upload_endpoint,
-                data=form_data,
-            ) as response:
-                response.raise_for_status()
-                ipfs_id = (await response.json())['cid']
-
-        return _strip_ipfs_prefix(ipfs_id)
-
-
 class FilebasePinClient(BasePinClient):
     """
     https://docs.filebase.com/api-documentation/ipfs-pinning-service-api

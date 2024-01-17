@@ -15,7 +15,6 @@ from .ipfs import (
     IpfsMultiUploadClient,
     IpfsUploadClient,
     PinataUploadClient,
-    WebStorageClient,
 )
 from .middlewares import construct_async_sign_and_send_raw_middleware
 from .password import generate_password
