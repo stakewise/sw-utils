@@ -173,6 +173,7 @@ class FilebasePinClient(BasePinClient):
     https://docs.filebase.com/api-documentation/ipfs-pinning-service-api
     """
 
+    # base_url must end with "/"
     base_url = 'https://api.filebase.io/v1/ipfs/'
 
     def __init__(self, bucket: str, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
@@ -219,6 +220,7 @@ class QuicknodePinClient(BasePinClient):
     https://www.quicknode.com/docs/ipfs/getting-started
     """
 
+    # base_url must end with "/"
     base_url = 'https://api.quicknode.com/ipfs/rest/'
 
     def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT, page_size: int = 100):
@@ -405,7 +407,8 @@ class IpfsFetchClient:
         retry_timeout: int = 120,
     ):
         self.ipfs_endpoints = ipfs_endpoints
-        self.s3_endpoints = s3_endpoints
+        self.s3_endpoints = [_ensure_ends_with_slash(e) for e in s3_endpoints]
+
         self.timeout = timeout
         self.retry_timeout = retry_timeout
 
@@ -455,7 +458,7 @@ class IpfsFetchClient:
     async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
             # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(f"{endpoint.rstrip('/')}/{ipfs_hash}") as response:
+            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
                 response.raise_for_status()
                 return await response.read()
 
@@ -506,7 +509,7 @@ class IpfsFetchClient:
     async def _s3_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
             # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(f"{endpoint.rstrip('/')}/{ipfs_hash}") as response:
+            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
                 response.raise_for_status()
                 return await response.json()
 
@@ -517,3 +520,9 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
 
 def _dump_json(data: Any) -> bytes:
     return Json().encode(data)
+
+
+def _ensure_ends_with_slash(url: str) -> str:
+    if url.endswith('/'):
+        return url
+    return url + '/'
