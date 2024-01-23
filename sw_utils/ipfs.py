@@ -173,6 +173,7 @@ class FilebasePinClient(BasePinClient):
     https://docs.filebase.com/api-documentation/ipfs-pinning-service-api
     """
 
+    # base_url must end with "/"
     base_url = 'https://api.filebase.io/v1/ipfs/'
 
     def __init__(self, bucket: str, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
@@ -219,6 +220,7 @@ class QuicknodePinClient(BasePinClient):
     https://www.quicknode.com/docs/ipfs/getting-started
     """
 
+    # base_url must end with "/"
     base_url = 'https://api.quicknode.com/ipfs/rest/'
 
     def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT, page_size: int = 100):
@@ -397,8 +399,16 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
 
 class IpfsFetchClient:
-    def __init__(self, endpoints: list[str], timeout: int = 60, retry_timeout: int = 120):
-        self.endpoints = endpoints
+    def __init__(
+        self,
+        ipfs_endpoints: list[str],
+        s3_endpoints: list[str],
+        timeout: int = 60,
+        retry_timeout: int = 120,
+    ):
+        self.ipfs_endpoints = ipfs_endpoints
+        self.s3_endpoints = [_ensure_ends_with_slash(e) for e in s3_endpoints]
+
         self.timeout = timeout
         self.retry_timeout = retry_timeout
 
@@ -416,12 +426,18 @@ class IpfsFetchClient:
 
     async def _fetch_bytes_all_endpoints(self, ipfs_hash: str) -> bytes:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        for endpoint in self.endpoints:
+        for endpoint in self.ipfs_endpoints:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
 
                 return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
+            except Exception as e:
+                logger.warning(repr(e))
+
+        for endpoint in self.s3_endpoints:
+            try:
+                return await self._s3_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
@@ -439,6 +455,13 @@ class IpfsFetchClient:
         ) as client:
             return client.cat(ipfs_hash, timeout=self.timeout)
 
+    async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
+            # No "ipfs" part in url path, compare with ipfs gateway
+            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
+                response.raise_for_status()
+                return await response.read()
+
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
         if not ipfs_hash:
@@ -454,12 +477,18 @@ class IpfsFetchClient:
 
     async def _fetch_json_all_endpoints(self, ipfs_hash: str) -> Any:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        for endpoint in self.endpoints:
+        for endpoint in self.ipfs_endpoints:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_json(endpoint, ipfs_hash)
 
                 return self._ipfs_fetch_json(endpoint, ipfs_hash)
+            except Exception as e:
+                logger.warning(repr(e))
+
+        for endpoint in self.s3_endpoints:
+            try:
+                return await self._s3_fetch_json(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
@@ -477,6 +506,13 @@ class IpfsFetchClient:
         ) as client:
             return client.get_json(ipfs_hash, timeout=self.timeout)
 
+    async def _s3_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
+        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
+            # No "ipfs" part in url path, compare with ipfs gateway
+            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
+                response.raise_for_status()
+                return await response.json()
+
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
     return ipfs_hash.replace('ipfs://', '').replace('/ipfs/', '')
@@ -484,3 +520,9 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
 
 def _dump_json(data: Any) -> bytes:
     return Json().encode(data)
+
+
+def _ensure_ends_with_slash(url: str) -> str:
+    if url.endswith('/'):
+        return url
+    return url + '/'

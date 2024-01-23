@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "0.4.1"
+version = "0.5.0"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -11,7 +11,6 @@ python = "^3.10"
 milagro-bls-binding = "==1.9.0"
 py-ecc = "^6.0.0"
 ipfshttpclient = "^0.8.0a2"
-types-requests = "^2.28.11.15"
 web3 = "==6.11.1"
 tenacity = "==8.2.3"
 pyrsistent = "0.19.3"
@@ -27,8 +26,9 @@ bandit = {version = "^1.7.4", extras = ["toml"]}
 faker = "^19.11.0"
 pytest = "^7"
 pytest-asyncio = "^0.21.1"
-flake8-datetime-utcnow-plugin = "==0.1.2"
 flake8-print = "==5.0.0"
+flake8-datetimez = "==20.10.0"
+types-requests = "^2.28.11.15"
 
 [tool.bandit]
 exclude_dirs = ["sw_utils/tests/"]
