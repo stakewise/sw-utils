@@ -402,11 +402,12 @@ class IpfsFetchClient:
     def __init__(
         self,
         ipfs_endpoints: list[str],
-        s3_endpoints: list[str],
+        s3_endpoints: list[str] | None = None,
         timeout: int = 60,
         retry_timeout: int = 120,
     ):
         self.ipfs_endpoints = ipfs_endpoints
+        s3_endpoints = s3_endpoints or []
         self.s3_endpoints = [_ensure_ends_with_slash(e) for e in s3_endpoints]
 
         self.timeout = timeout
