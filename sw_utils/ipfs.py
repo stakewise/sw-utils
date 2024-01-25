@@ -176,8 +176,7 @@ class FilebasePinClient(BasePinClient):
     # base_url must end with "/"
     base_url = 'https://api.filebase.io/v1/ipfs/'
 
-    def __init__(self, bucket: str, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
-        self.bucket = bucket
+    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
         self.api_token = api_token
         self.timeout = timeout
 
