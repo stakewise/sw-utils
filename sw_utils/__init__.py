@@ -18,6 +18,7 @@ from .ipfs import (
 )
 from .middlewares import construct_async_sign_and_send_raw_middleware
 from .password import generate_password
+from .protocol_config import build_protocol_config
 from .signing import (
     DepositData,
     DepositMessage,
@@ -30,3 +31,4 @@ from .signing import (
     is_valid_deposit_data_signature,
     is_valid_exit_signature,
 )
+from .typings import ChainHead, ConsensusFork, Oracle, ProtocolConfig
