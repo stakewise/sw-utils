@@ -222,17 +222,32 @@ class QuicknodePinClient(BasePinClient):
     # base_url must end with "/"
     base_url = 'https://api.quicknode.com/ipfs/rest/'
 
-    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT, page_size: int = 100):
+    def __init__(
+        self,
+        api_token: str,
+        timeout: int = IPFS_DEFAULT_TIMEOUT,
+        page_size: int = 100,
+        ignore_pin_conflicts=True,
+    ):
         self.api_token = api_token
         self.timeout = timeout
         self.page_size = page_size
+        self.ignore_pin_conflicts = ignore_pin_conflicts
 
     async def pin(self, ipfs_hash: str) -> str:
         data = {
             'cid': ipfs_hash,
             'name': ipfs_hash,
         }
-        response = cast(dict, await self._call('POST', 'v1/pinning', data=data))
+        try:
+            response = cast(dict, await self._call('POST', 'v1/pinning', data=data))
+        except aiohttp.ClientResponseError as e:
+            # Quicknode returns status 409 when pinning the same hash twice
+            if e.status == 409 and self.ignore_pin_conflicts:
+                logger.info('Ignoring pin conflict')
+                return ipfs_hash
+            raise
+
         cid = response['cid']
         if cid != ipfs_hash:
             raise ValueError(f'cid {cid} is not equal to ipfs_hash {ipfs_hash}')
