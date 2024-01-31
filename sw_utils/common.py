@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import signal
 from typing import Any
@@ -35,6 +36,14 @@ class InterruptHandler:
     def exit_default(self, signum: int, *args: Any, **kwargs: Any) -> None:
         # pylint: disable=unused-argument
         raise KeyboardInterrupt
+
+    async def sleep(self, seconds: int | float) -> None:
+        """
+        Interruptible version of `asyncio.sleep()`
+        """
+        while not self.exit and seconds > 0:
+            await asyncio.sleep(min(seconds, 1))
+            seconds -= 1
 
 
 def urljoin(*args):
