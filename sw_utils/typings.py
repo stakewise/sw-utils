@@ -4,7 +4,7 @@ from typing import NewType
 from eth_keys.datatypes import PublicKey
 from eth_typing import BlockNumber, HexStr
 from web3 import Web3
-from web3.types import Timestamp
+from web3.types import ChecksumAddress, Timestamp
 
 Bytes32 = NewType('Bytes32', bytes)
 
@@ -29,7 +29,7 @@ class Oracle:
     public_key: HexStr
 
     @property
-    def address(self):
+    def address(self) -> ChecksumAddress:
         public_key = PublicKey(Web3.to_bytes(hexstr=self.public_key))
         return public_key.to_checksum_address()
 
