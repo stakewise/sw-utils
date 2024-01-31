@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from functools import wraps
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import aiohttp
 from tenacity import (
@@ -60,7 +60,7 @@ def can_be_retried_aiohttp_error(e: BaseException) -> bool:
     return False
 
 
-def retry_aiohttp_errors(delay: int = 60, before: Optional[Callable] = None):
+def retry_aiohttp_errors(delay: int = 60, before: Optional[Callable] = None) -> Any:
     return retry(
         retry=retry_if_exception(can_be_retried_aiohttp_error),
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
@@ -69,7 +69,7 @@ def retry_aiohttp_errors(delay: int = 60, before: Optional[Callable] = None):
     )
 
 
-def retry_ipfs_exception(delay: int, before: Optional[Callable] = None):
+def retry_ipfs_exception(delay: int, before: Optional[Callable] = None) -> Any:
     return retry(
         retry=retry_if_exception_type(IpfsException),
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),

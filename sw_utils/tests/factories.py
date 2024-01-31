@@ -34,7 +34,7 @@ class Web3Provider(BaseProvider):
         # 48 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
 
-    def wei_amount(self, start=10, stop=1000) -> Wei:
+    def wei_amount(self, start: int = 10, stop: int = 1000) -> Wei:
         eth_value = faker.random_int(start, stop)
         return w3.to_wei(eth_value, 'ether')
 

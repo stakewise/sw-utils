@@ -225,7 +225,7 @@ class QuicknodePinClient(BasePinClient):
         api_token: str,
         timeout: int = IPFS_DEFAULT_TIMEOUT,
         page_size: int = 100,
-        ignore_pin_conflicts=True,
+        ignore_pin_conflicts: bool = True,
     ):
         self.api_token = api_token
         self.timeout = timeout

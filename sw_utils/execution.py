@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterator
 
 from eth_typing import URI
 from web3 import AsyncWeb3
@@ -93,7 +93,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         return {}
 
     @contextlib.contextmanager
-    def lock_endpoint(self, endpoint_uri: URI | str):
+    def lock_endpoint(self, endpoint_uri: URI | str) -> Iterator:
         uri_providers = [prov for prov in self._providers if prov.endpoint_uri == endpoint_uri]
         if not uri_providers:
             raise ValueError(f'Invalid uri provider for execution client: {uri_providers}')
@@ -103,12 +103,16 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         finally:
             self._locker_provider = None
 
-    def set_retry_timeout(self, retry_timeout: int):
+    def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
 
 
 def get_execution_client(
-    endpoints: list[str], is_poa=False, timeout=60, retry_timeout=0, use_cache=True
+    endpoints: list[str],
+    is_poa: bool = False,
+    timeout: int = 60,
+    retry_timeout: int = 0,
+    use_cache: bool = True,
 ) -> AsyncWeb3:
     provider = ExtendedAsyncHTTPProvider(
         endpoint_urls=endpoints, request_kwargs={'timeout': timeout}, retry_timeout=retry_timeout
