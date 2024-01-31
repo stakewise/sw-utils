@@ -1,5 +1,6 @@
 import logging
 import signal
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +25,14 @@ class InterruptHandler:
         signal.signal(signal.SIGINT, self.exit_default)
         signal.signal(signal.SIGTERM, self.exit_default)
 
-    def exit_gracefully(self, signum: int, *args, **kwargs) -> None:
+    def exit_gracefully(self, signum: int, *args: Any, **kwargs: Any) -> None:
         # pylint: disable=unused-argument
         if self.exit:
             raise KeyboardInterrupt
         logger.info('Received interrupt signal %s, exiting...', signum)
         self.exit = True
 
-    def exit_default(self, signum: int, *args, **kwargs) -> None:
+    def exit_default(self, signum: int, *args: Any, **kwargs: Any) -> None:
         # pylint: disable=unused-argument
         raise KeyboardInterrupt
 

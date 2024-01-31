@@ -152,7 +152,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
         return await self._async_make_get_request_inner(endpoint_uri)
 
-    def _format_uri(self, uri: str):
+    def _format_uri(self, uri: str) -> str:
         max_len = self.log_uri_max_len
 
         if len(uri) <= max_len:
@@ -176,7 +176,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
         return {}
 
-    def set_retry_timeout(self, retry_timeout: int):
+    def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
 
 

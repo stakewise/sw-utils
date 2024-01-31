@@ -4,7 +4,7 @@ import string
 SPECIAL_CHARS = '!@#$%^&*()_'
 
 
-def generate_password(length=20) -> str:
+def generate_password(length: int = 20) -> str:
     alphabet = string.ascii_letters + string.digits + SPECIAL_CHARS
     lower_set = set(string.ascii_lowercase)
     upper_set = set(string.ascii_uppercase)
