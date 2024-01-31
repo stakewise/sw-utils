@@ -37,4 +37,9 @@ class InterruptHandler:
 
 
 def urljoin(*args):
+    """
+    Better version of `urllib.parse.urljoin`
+    Allows multiple arguments.
+    Consistent behavior with or without ending slashes.
+    """
     return '/'.join(map(lambda x: str(x).strip('/'), args))

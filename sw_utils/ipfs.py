@@ -2,7 +2,6 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, AsyncIterator, cast
-from urllib.parse import urljoin
 
 import aiohttp
 import ipfshttpclient
@@ -10,6 +9,7 @@ from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
+from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
 
@@ -173,7 +173,6 @@ class FilebasePinClient(BasePinClient):
     https://docs.filebase.com/api-documentation/ipfs-pinning-service-api
     """
 
-    # base_url must end with "/"
     base_url = 'https://api.filebase.io/v1/ipfs/'
 
     def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
@@ -219,20 +218,34 @@ class QuicknodePinClient(BasePinClient):
     https://www.quicknode.com/docs/ipfs/getting-started
     """
 
-    # base_url must end with "/"
     base_url = 'https://api.quicknode.com/ipfs/rest/'
 
-    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT, page_size: int = 100):
+    def __init__(
+        self,
+        api_token: str,
+        timeout: int = IPFS_DEFAULT_TIMEOUT,
+        page_size: int = 100,
+        ignore_pin_conflicts=True,
+    ):
         self.api_token = api_token
         self.timeout = timeout
         self.page_size = page_size
+        self.ignore_pin_conflicts = ignore_pin_conflicts
 
     async def pin(self, ipfs_hash: str) -> str:
         data = {
             'cid': ipfs_hash,
             'name': ipfs_hash,
         }
-        response = cast(dict, await self._call('POST', 'v1/pinning', data=data))
+        try:
+            response = cast(dict, await self._call('POST', 'v1/pinning', data=data))
+        except aiohttp.ClientResponseError as e:
+            # Quicknode returns status 409 when pinning the same hash twice
+            if e.status == 409 and self.ignore_pin_conflicts:
+                logger.info('Ignoring pin conflict')
+                return ipfs_hash
+            raise
+
         cid = response['cid']
         if cid != ipfs_hash:
             raise ValueError(f'cid {cid} is not equal to ipfs_hash {ipfs_hash}')
@@ -406,8 +419,7 @@ class IpfsFetchClient:
         retry_timeout: int = 120,
     ):
         self.ipfs_endpoints = ipfs_endpoints
-        s3_endpoints = s3_endpoints or []
-        self.s3_endpoints = [_ensure_ends_with_slash(e) for e in s3_endpoints]
+        self.s3_endpoints = s3_endpoints or []
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
@@ -520,9 +532,3 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
 
 def _dump_json(data: Any) -> bytes:
     return Json().encode(data)
-
-
-def _ensure_ends_with_slash(url: str) -> str:
-    if url.endswith('/'):
-        return url
-    return url + '/'
