@@ -61,5 +61,5 @@ class ProtocolConfig:
 
     exit_signature_recover_threshold: int
 
-    validators_threshold: int | None = None
-    rewards_threshold: int | None = None
+    validators_threshold: int = 0
+    rewards_threshold: int = 0

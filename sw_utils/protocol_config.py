@@ -1,8 +1,8 @@
 from sw_utils.typings import Oracle, ProtocolConfig
 
 
-async def build_protocol_config(
-    config_data: dict, rewards_threshold: int | None = None, validators_threshold: int | None = None
+def build_protocol_config(
+    config_data: dict, rewards_threshold: int = 0, validators_threshold: int = 0
 ) -> ProtocolConfig:
     oracles = []
     for oracle in config_data['oracles']:
