@@ -1,7 +1,7 @@
 from sw_utils.typings import Oracle, ProtocolConfig
 
 
-async def build_protocol_config(
+def build_protocol_config(
     config_data: dict, rewards_threshold: int | None = None, validators_threshold: int | None = None
 ) -> ProtocolConfig:
     oracles = []
@@ -13,10 +13,10 @@ async def build_protocol_config(
             )
         )
 
-    if rewards_threshold and not 1 <= rewards_threshold <= len(oracles):
+    if rewards_threshold is not None and not 1 <= rewards_threshold <= len(oracles):
         raise ValueError('Invalid rewards threshold')
 
-    if validators_threshold and not 1 <= validators_threshold <= len(oracles):
+    if validators_threshold is not None and not 1 <= validators_threshold <= len(oracles):
         raise ValueError('Invalid validators threshold')
 
     public_keys = [oracle.public_key for oracle in oracles]
@@ -30,8 +30,8 @@ async def build_protocol_config(
 
     return ProtocolConfig(
         oracles=oracles,
-        rewards_threshold=rewards_threshold,
-        validators_threshold=validators_threshold,
+        rewards_threshold=rewards_threshold or 0,
+        validators_threshold=validators_threshold or 0,
         exit_signature_recover_threshold=exit_signature_recover_threshold,
         supported_relays=config_data['supported_relays'],
         vault_fee_max_bps=config_data['vault_max_fee'],
