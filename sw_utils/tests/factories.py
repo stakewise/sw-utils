@@ -46,7 +46,7 @@ faker.add_provider(Web3Provider)
 
 # pylint: disable=too-many-arguments
 def get_mocked_protocol_config(
-    oracles: list[Oracle],
+    oracles: list[Oracle] | None = None,
     oracles_count: int = 1,
     rewards_threshold: int = 1,
     validators_threshold: int = 1,
