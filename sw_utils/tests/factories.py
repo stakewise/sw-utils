@@ -68,7 +68,7 @@ def get_mocked_protocol_config(
         oracles=oracles
         or [
             Oracle(
-                public_key=faker.eth_uncompressed_public_key(),
+                public_key=faker.ecies_public_key(),
                 endpoints=[f'https://example{i}.com'],
             )
             for i in range(oracles_count)
