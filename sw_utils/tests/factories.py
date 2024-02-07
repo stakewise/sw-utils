@@ -36,6 +36,10 @@ class Web3Provider(BaseProvider):
         # 48 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
 
+    def ecies_public_key(self) -> str:
+        # 64 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=128))
+
     def wei_amount(self, start: int = 10, stop: int = 1000) -> Wei:
         eth_value = faker.random_int(start, stop)
         return w3.to_wei(eth_value, 'ether')
@@ -63,7 +67,10 @@ def get_mocked_protocol_config(
     return ProtocolConfig(
         oracles=oracles
         or [
-            Oracle(public_key=faker.eth_public_key(), endpoints=[f'https://example{i}.com'])
+            Oracle(
+                public_key=faker.eth_uncompressed_public_key(),
+                endpoints=[f'https://example{i}.com'],
+            )
             for i in range(oracles_count)
         ],
         supported_relays=[
