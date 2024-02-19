@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
+GET_ATTESTATION_REWARDS = 'eth/v1/beacon/rewards/attestations/{0}'
+GET_SYNC_COMMITTEE_REWARDS = 'eth/v1/beacon/rewards/sync_committee/{0}'
 
 
 class ValidatorStatus(Enum):
@@ -102,6 +104,14 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                     raise error
                 logger.warning('%s: %s', url, repr(error))
 
+    async def get_attestation_rewards(self, epoch: int, validators: list[str]) -> dict:
+        endpoint = GET_ATTESTATION_REWARDS.format(epoch)
+        return await self._async_make_post_request(endpoint_uri=endpoint, data=validators)
+
+    async def get_sync_committee_rewards(self, epoch: int, validators: list[str]) -> dict:
+        endpoint = GET_SYNC_COMMITTEE_REWARDS.format(epoch)
+        return await self._async_make_post_request(endpoint_uri=endpoint, data=validators)
+
     async def get_chain_finalized_head(self, slots_per_epoch: int) -> ChainHead:
         """Fetches the fork safe chain head."""
         checkpoints = await self.get_finality_checkpoint()
@@ -151,6 +161,28 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri)
 
         return await self._async_make_get_request_inner(endpoint_uri)
+
+    async def _async_make_post_request(
+        self, endpoint_uri: str, data: list | dict
+    ) -> dict[str, Any]:
+        for i, url in enumerate(self.base_urls):
+            try:
+                uri = URI(urljoin(url, endpoint_uri))
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(uri, json=data) as response:
+                        response.raise_for_status()
+                        return await response.json()
+
+            except Exception as error:
+                if not can_be_retried_aiohttp_error(error):
+                    raise error
+
+                if i == len(self.base_urls) - 1:
+                    raise error
+                logger.warning('%s: %s', url, repr(error))
+
+        return {}
 
     def _format_uri(self, uri: str) -> str:
         max_len = self.log_uri_max_len
