@@ -9,6 +9,7 @@ from .decorators import retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
 from .exceptions import IpfsException
 from .execution import get_execution_client
+from .gnosis import MGNO_RATE, WAD, convert_to_gno, convert_to_mgno
 from .ipfs import (
     BaseUploadClient,
     IpfsFetchClient,
