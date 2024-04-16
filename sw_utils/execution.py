@@ -160,7 +160,6 @@ def _create_jwt_auth_token(jwt_secret: str) -> str:
     try:
         secret = unhexlify(jwt_secret.strip())
     except Exception as e:
-        logger.error('Error decoding JWT secret: %s', e)
         raise ValueError('Invalid JWT secret format') from e
 
     expiration_time = datetime.now(timezone.utc) + timedelta(hours=72)
@@ -174,5 +173,4 @@ def _create_jwt_auth_token(jwt_secret: str) -> str:
         token = jwt.encode(claims, secret, algorithm='HS256')
         return token
     except Exception as e:
-        logger.error('Error signing the JWT: %s', e)
         raise ValueError('Error signing the JWT') from e
