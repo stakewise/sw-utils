@@ -118,10 +118,11 @@ def get_execution_client(
     retry_timeout: int = 0,
     use_cache: bool = True,
     jwt_secret: str | None = None,
+    jwt_expire_time: int = 8760,
 ) -> AsyncWeb3:
     headers = {}
     if jwt_secret:
-        token = _create_jwt_auth_token(jwt_secret)
+        token = _create_jwt_auth_token(jwt_secret, jwt_expire_time)
         headers['Authorization'] = f'Bearer {token}'
         logger.debug('JWT Authentication enabled')
 
@@ -145,7 +146,7 @@ def get_execution_client(
     return client
 
 
-def _create_jwt_auth_token(jwt_secret: str) -> str:
+def _create_jwt_auth_token(jwt_secret: str, jwt_expire_time: int) -> str:
     """Generate a JWT token using the provided secret.
 
     Args:
@@ -162,7 +163,7 @@ def _create_jwt_auth_token(jwt_secret: str) -> str:
     except Exception as e:
         raise ValueError('Invalid JWT secret format') from e
 
-    expiration_time = datetime.now(timezone.utc) + timedelta(hours=8760)
+    expiration_time = datetime.now(timezone.utc) + timedelta(hours=jwt_expire_time)
     claims = {
         'exp': expiration_time,
         'iat': datetime.now(timezone.utc),
