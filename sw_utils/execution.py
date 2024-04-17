@@ -1,7 +1,10 @@
 import contextlib
 import logging
+from binascii import unhexlify
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Iterator
 
+import jwt
 from eth_typing import URI
 from web3 import AsyncWeb3
 from web3.eth import AsyncEth
@@ -13,6 +16,9 @@ from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
 logger = logging.getLogger(__name__)
+
+
+JWT_EXPIRATION_HOURS = 8760
 
 
 if TYPE_CHECKING:
@@ -107,15 +113,25 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self.retry_timeout = retry_timeout
 
 
+# pylint: disable-next=too-many-arguments
 def get_execution_client(
     endpoints: list[str],
     is_poa: bool = False,
     timeout: int = 60,
     retry_timeout: int = 0,
     use_cache: bool = True,
+    jwt_secret: str | None = None,
 ) -> AsyncWeb3:
+    headers = {}
+    if jwt_secret:
+        token = _create_jwt_auth_token(jwt_secret)
+        headers['Authorization'] = f'Bearer {token}'
+        logger.debug('JWT Authentication enabled')
+
     provider = ExtendedAsyncHTTPProvider(
-        endpoint_urls=endpoints, request_kwargs={'timeout': timeout}, retry_timeout=retry_timeout
+        endpoint_urls=endpoints,
+        request_kwargs={'timeout': timeout, 'headers': headers},
+        retry_timeout=retry_timeout,
     )
     client = AsyncWeb3(
         provider,
@@ -130,3 +146,34 @@ def get_execution_client(
         client.middleware_onion.add(async_simple_cache_middleware)
 
     return client
+
+
+def _create_jwt_auth_token(jwt_secret: str) -> str:
+    """Generate a JWT token using the provided secret.
+
+    Args:
+    jwt_secret (str): The JWT secret in hexadecimal format.
+
+    Returns:
+    str: A JWT token.
+
+    Raises:
+    ValueError: If there is an issue with the JWT secret format or token signing.
+    """
+    try:
+        secret = unhexlify(jwt_secret.strip())
+    except Exception as e:
+        raise ValueError('Invalid JWT secret format') from e
+
+    expiration_time = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    claims = {
+        'exp': expiration_time,
+        'iat': datetime.now(timezone.utc),
+        'nbf': datetime.now(timezone.utc),
+    }
+
+    try:
+        token = jwt.encode(claims, secret, algorithm='HS256')
+        return token
+    except Exception as e:
+        raise ValueError('Error signing the JWT') from e
