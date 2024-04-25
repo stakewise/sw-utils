@@ -122,7 +122,10 @@ def get_execution_client(
     use_cache: bool = True,
     jwt_secret: str | None = None,
 ) -> AsyncWeb3:
-    headers = {}
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
     if jwt_secret:
         token = _create_jwt_auth_token(jwt_secret)
         headers['Authorization'] = f'Bearer {token}'
