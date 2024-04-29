@@ -61,6 +61,7 @@ def get_mocked_protocol_config(
     signature_validity_period: int = 60,
     until_force_exit_epochs: int = 1000,
     validators_exit_queued_assets_bps: int = 500,  # 5%
+    inactive_validator_balance: Wei = Web3.to_wei(31.75, 'ether'),
     validator_min_active_epochs: int = 2250,  # 10 days
     vault_fee_max_bps: int = 1500,  # 15%
 ) -> ProtocolConfig:
@@ -79,6 +80,7 @@ def get_mocked_protocol_config(
         vault_fee_max_bps=vault_fee_max_bps,
         validator_min_active_epochs=validator_min_active_epochs,
         validators_exit_queued_assets_bps=validators_exit_queued_assets_bps,
+        inactive_validator_balance=inactive_validator_balance,
         validators_approval_batch_limit=validators_approval_batch_limit,
         validators_exit_rotation_batch_limit=validators_exit_rotation_batch_limit,
         exit_signature_epoch=exit_signature_epoch,
