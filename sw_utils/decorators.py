@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, Callable, NoReturn, Optional
 
 import aiohttp
 from tenacity import (
@@ -51,6 +51,8 @@ def default_log_before(retry_state: 'RetryCallState') -> None:
 
 
 def default_after(future: Any) -> NoReturn:
+    """Reraises the original exception from the Future, suppressing 'RetryError' messages.
+    """
     raise future.outcome.exception()
 
 
