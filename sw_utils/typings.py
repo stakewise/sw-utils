@@ -4,7 +4,7 @@ from typing import NewType
 from eth_keys.datatypes import PublicKey
 from eth_typing import BlockNumber, HexStr
 from web3 import Web3
-from web3.types import ChecksumAddress, Timestamp
+from web3.types import ChecksumAddress, Timestamp, Wei
 
 Bytes32 = NewType('Bytes32', bytes)
 
@@ -50,6 +50,8 @@ class ProtocolConfig:
     validator_min_active_epochs: int
     # 1 percent = 100 bps
     validators_exit_queued_assets_bps: int
+
+    inactive_validator_balance: Wei
 
     validators_approval_batch_limit: int
     validators_exit_rotation_batch_limit: int

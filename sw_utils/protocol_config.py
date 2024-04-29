@@ -1,3 +1,5 @@
+from web3.types import Wei
+
 from sw_utils.typings import Oracle, ProtocolConfig
 
 
@@ -37,6 +39,7 @@ def build_protocol_config(
         vault_fee_max_bps=config_data['vault_max_fee'],
         validator_min_active_epochs=config_data['validator_min_active_epochs'],
         validators_exit_queued_assets_bps=config_data['validators_exit_queued_assets_bps'],
+        inactive_validator_balance=Wei(int(config_data['inactive_validator_balance'])),
         validators_approval_batch_limit=config_data['validators_approval_batch_limit'],
         validators_exit_rotation_batch_limit=config_data['validators_exit_rotation_batch_limit'],
         exit_signature_epoch=config_data['exit_signature_epoch'],
