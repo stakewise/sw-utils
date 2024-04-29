@@ -50,7 +50,7 @@ def default_log_before(retry_state: 'RetryCallState') -> None:
     default_logger.log(logging.INFO, msg, *args)
 
 
-def default_after(future: Any) -> None:
+def default_after(future: Any) -> NoReturn:
     raise future.outcome.exception()
 
 
