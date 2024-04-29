@@ -51,8 +51,7 @@ def default_log_before(retry_state: 'RetryCallState') -> None:
 
 
 def default_after(future: Any) -> NoReturn:
-    """Reraises the original exception from the Future, suppressing 'RetryError' messages.
-    """
+    """Reraises the original exception from the Future, suppressing 'RetryError' messages."""
     raise future.outcome.exception()
 
 
