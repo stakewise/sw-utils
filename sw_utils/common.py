@@ -2,6 +2,7 @@ import asyncio
 import logging
 import signal
 from typing import Any
+from urllib.parse import urlparse, urlunparse, urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,17 @@ class InterruptHandler:
             seconds -= 1
 
 
-def urljoin(*args):
+def urljoin(base, *args):
     """
     Better version of `urllib.parse.urljoin`
     Allows multiple arguments.
     Consistent behavior with or without ending slashes.
+    Preserves query parameters in the base URL.
     """
-    return '/'.join(map(lambda x: str(x).strip('/'), args))
+    url_parts = list(urlparse(base))
+    path = '/'.join(map(lambda x: str(x).strip('/'), args))
+    if url_parts[2]:
+        url_parts[2] = '/'.join([url_parts[2].strip('/'), path.strip('/')])
+    else:
+        url_parts[2] = path
+    return urlunparse(url_parts)
