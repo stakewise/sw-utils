@@ -47,17 +47,21 @@ class InterruptHandler:
             seconds -= 1
 
 
-def urljoin(base, *args):
+def urljoin(base: str, *args: str) -> str:
     """
     Better version of `urllib.parse.urljoin`
     Allows multiple arguments.
     Consistent behavior with or without ending slashes.
     Preserves query parameters in the base URL.
     """
-    url_parts = list(urlparse(base))
-    path = '/'.join(map(lambda x: str(x).strip('/'), args))
-    if url_parts[2]:
-        url_parts[2] = '/'.join([url_parts[2].strip('/'), path.strip('/')])
-    else:
-        url_parts[2] = path
-    return urlunparse(url_parts)
+    appended_path = _join_paths(*args)
+    if not appended_path:
+        return base
+
+    url_parts = urlparse(base)
+    new_path = _join_paths(url_parts.path, appended_path)
+    return urlunparse(url_parts._replace(path=new_path))
+
+
+def _join_paths(*args: str) -> str:
+    return '/'.join(str(x).lstrip('/') for x in args)
