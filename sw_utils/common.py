@@ -2,7 +2,7 @@ import asyncio
 import logging
 import signal
 from typing import Any
-from urllib.parse import urlparse, urlunparse, urlencode
+from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
 
