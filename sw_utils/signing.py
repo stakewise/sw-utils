@@ -1,11 +1,9 @@
-# pylint: disable=W0511
-# TODO: remove once https://github.com/ethereum/py-ssz/issues/127 fixed
 import milagro_bls_binding as bls
 from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
 from py_ecc.bls import G2ProofOfPossession
+from ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 
-from .ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 from .typings import Bytes32, ConsensusFork
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
