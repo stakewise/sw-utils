@@ -3,6 +3,9 @@ from web3.types import Wei
 from sw_utils.typings import Oracle, ProtocolConfig
 
 
+DEFAULT_REWARD_VOTE_EPOCH_DIVIDER = 3
+
+
 def build_protocol_config(
     config_data: dict, rewards_threshold: int | None = None, validators_threshold: int | None = None
 ) -> ProtocolConfig:
@@ -45,4 +48,7 @@ def build_protocol_config(
         exit_signature_epoch=config_data['exit_signature_epoch'],
         signature_validity_period=config_data['signature_validity_period'],
         until_force_exit_epochs=config_data['until_force_exit_epochs'],
+        reward_vote_epoch_divider=config_data.get(
+            'reward_vote_epoch_divider', DEFAULT_REWARD_VOTE_EPOCH_DIVIDER
+        ),
     )

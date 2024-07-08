@@ -67,5 +67,9 @@ class ProtocolConfig:
 
     exit_signature_recover_threshold: int
 
+    # Vote for rewards every n epochs
+    reward_vote_epoch_divider: int = 0
+
+    # values from contracts
     validators_threshold: int = 0
     rewards_threshold: int = 0
