@@ -326,8 +326,10 @@ class IpfsMultiUploadClient(BaseUploadClient):
         if len(self.upload_clients) == 0:
             raise ValueError('Invalid number of upload clients')
 
-        self.quorum = (len(self.upload_clients) // 2) + 1
         self.retry_timeout = retry_timeout
+
+    def get_quorum(self, num_responses: int) -> int:
+        return num_responses // 2 + 1
 
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
@@ -388,10 +390,11 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
-        if count < self.quorum:
-            logger.warning(
-                'quorum: %s, ipfs hashes: %s', self.quorum, ', '.join(ipfs_hashes.keys())
-            )
+        num_responses = sum(ipfs_hashes.values(), 0)
+        quorum = self.get_quorum(num_responses)
+
+        if count < quorum:
+            logger.warning('quorum: %s, ipfs hashes: %s', quorum, ', '.join(ipfs_hashes.keys()))
             raise IpfsException('Failed to reach the uploads quorum')
 
         return ipfs_hash
