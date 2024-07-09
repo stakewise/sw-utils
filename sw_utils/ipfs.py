@@ -390,7 +390,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
-        num_responses = sum(ipfs_hashes.values(), 0)
+        num_responses = sum(ipfs_hashes.values())
         quorum = self.get_quorum(num_responses)
 
         if count < quorum:
