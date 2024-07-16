@@ -18,7 +18,7 @@ from sw_utils.typings import ChainHead, ConsensusFork
 logger = logging.getLogger(__name__)
 
 
-GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators{1}'
+GET_VALIDATORS = '/eth/v1/beacon/states/{0}/validators'
 GET_ATTESTATION_REWARDS = 'eth/v1/beacon/rewards/attestations/{0}'
 GET_SYNC_COMMITTEE_REWARDS = 'eth/v1/beacon/rewards/sync_committee/{0}'
 
@@ -77,8 +77,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     async def get_validators_by_ids(
         self, validator_ids: Sequence[str], state_id: str = 'head'
     ) -> dict:
-        endpoint = GET_VALIDATORS.format(state_id, f"?id={'&id='.join(validator_ids)}")
-        return await self._async_make_get_request(endpoint)
+        endpoint = GET_VALIDATORS.format(state_id)
+        return await self._async_make_post_request(
+            endpoint_uri=endpoint, data={'ids': validator_ids}
+        )
 
     async def submit_voluntary_exit(
         self, epoch: int, validator_index: int, signature: HexStr
