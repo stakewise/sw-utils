@@ -5,4 +5,3 @@ dist
 .idea
 local.env
 *.env
-*.DS_Store
