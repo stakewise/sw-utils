@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from functools import wraps
-from typing import Any, Callable, NoReturn, Optional
+from typing import Any, Callable, Optional
 
 import aiohttp
 from tenacity import (
@@ -50,11 +50,6 @@ def default_log_before(retry_state: 'RetryCallState') -> None:
     default_logger.log(logging.INFO, msg, *args)
 
 
-def default_after(future: Any) -> NoReturn:
-    """Reraises the original exception from the Future, suppressing 'RetryError' messages."""
-    raise future.outcome.exception()
-
-
 def can_be_retried_aiohttp_error(e: BaseException) -> bool:
     if isinstance(e, (asyncio.TimeoutError, aiohttp.ClientConnectionError)):
         return True
@@ -65,29 +60,19 @@ def can_be_retried_aiohttp_error(e: BaseException) -> bool:
     return False
 
 
-def retry_aiohttp_errors(
-    delay: int = 60,
-    before: Optional[Callable] = None,
-    after: Optional[Callable] = None,
-) -> Any:
+def retry_aiohttp_errors(delay: int = 60, before: Optional[Callable] = None) -> Any:
     return retry(
         retry=retry_if_exception(can_be_retried_aiohttp_error),
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
         before=before or default_log_before,
-        after=after or default_after,
     )
 
 
-def retry_ipfs_exception(
-    delay: int = 60,
-    before: Optional[Callable] = None,
-    after: Optional[Callable] = None,
-) -> Any:
+def retry_ipfs_exception(delay: int, before: Optional[Callable] = None) -> Any:
     return retry(
         retry=retry_if_exception_type(IpfsException),
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
         before=before or default_log_before,
-        after=after or default_after,
     )
