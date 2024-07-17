@@ -64,4 +64,4 @@ def urljoin(base: str, *args: str) -> str:
 
 
 def _join_paths(*args: str) -> str:
-    return '/'.join(str(x).lstrip('/') for x in args)
+    return '/'.join(str(x).strip('/') for x in args)

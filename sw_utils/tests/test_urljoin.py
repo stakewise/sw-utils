@@ -41,3 +41,15 @@ def test_urljoin_edge_cases():
     assert urljoin('http://example.com/', '/', '/') == 'http://example.com/'
     assert urljoin('http://example.com//', 'path') == 'http://example.com/path'
     assert urljoin('http://example.com/', '//path') == 'http://example.com/path'
+    assert (
+        urljoin('http://example.com/test/', 'path1', 'path2')
+        == 'http://example.com/test/path1/path2'
+    )
+    assert (
+        urljoin('http://example.com/test/', 'path1/', 'path2')
+        == 'http://example.com/test/path1/path2'
+    )
+    assert (
+        urljoin('http://example.com/test/', '/path1/', '/path2')
+        == 'http://example.com/test/path1/path2'
+    )
