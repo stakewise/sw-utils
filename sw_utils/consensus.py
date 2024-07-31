@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING, Any, Sequence
 import aiohttp
 from aiohttp import ClientResponseError
 from eth_typing import URI, BlockNumber, HexStr
-from web3 import Web3
+from web3 import AsyncWeb3, Web3
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
+from web3.exceptions import BlockNotFound
 from web3.types import Timestamp
 
 from sw_utils.common import urljoin
@@ -135,6 +136,43 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 execution_block=BlockNumber(int(execution_payload['block_number'])),
                 execution_ts=Timestamp(int(execution_payload['timestamp'])),
             )
+
+        raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
+
+    async def get_chain_epoch_head(
+        self, epoch: int, slots_per_epoch: int, execution_client: AsyncWeb3
+    ) -> ChainHead:
+        """Fetches the epoch chain head."""
+        slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
+        for i in range(slots_per_epoch):
+            try:
+                slot = await self.get_block(str(slot_id - i))
+            except ClientResponseError as e:
+                if hasattr(e, 'status') and e.status == 404:
+                    # slot was not proposed, try the previous one
+                    continue
+                raise e
+            try:
+                execution_payload = slot['data']['message']['body']['execution_payload']
+                return ChainHead(
+                    epoch=epoch,
+                    consensus_block=slot_id - i,
+                    execution_block=BlockNumber(int(execution_payload['block_number'])),
+                    execution_ts=Timestamp(int(execution_payload['timestamp'])),
+                )
+            except KeyError:  # pre shapella slot
+                block_hash = slot['data']['message']['body']['eth1_data']['block_hash']
+                try:
+                    block = await execution_client.eth.get_block(block_hash)
+                except BlockNotFound:
+                    continue
+
+                return ChainHead(
+                    epoch=epoch,
+                    consensus_block=slot_id - i,
+                    execution_block=BlockNumber(int(block['number'])),
+                    execution_ts=Timestamp(int(block['timestamp'])),
+                )
 
         raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
 
