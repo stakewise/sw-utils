@@ -3,6 +3,8 @@ from .consensus import (
     PENDING_STATUSES,
     ExtendedAsyncBeacon,
     ValidatorStatus,
+    get_chain_epoch_head,
+    get_chain_finalized_head,
     get_consensus_client,
 )
 from .decorators import retry_aiohttp_errors, retry_ipfs_exception, safe
