@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING, Any, Sequence
 import aiohttp
 from aiohttp import ClientResponseError
 from eth_typing import URI, BlockNumber, HexStr
-from web3 import Web3
+from web3 import AsyncWeb3, Web3
 from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
+from web3.exceptions import BlockNotFound
 from web3.types import Timestamp
 
 from sw_utils.common import urljoin
@@ -114,30 +115,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         endpoint = GET_SYNC_COMMITTEE_REWARDS.format(epoch)
         return await self._async_make_post_request(endpoint_uri=endpoint, data=validators)
 
-    async def get_chain_finalized_head(self, slots_per_epoch: int) -> ChainHead:
-        """Fetches the fork safe chain head."""
-        checkpoints = await self.get_finality_checkpoint()
-        epoch: int = int(checkpoints['data']['finalized']['epoch'])
-        last_slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
-        for i in range(slots_per_epoch):
-            try:
-                slot = await self.get_block(str(last_slot_id - i))
-            except ClientResponseError as e:
-                if hasattr(e, 'status') and e.status == 404:
-                    # slot was not proposed, try the previous one
-                    continue
-                raise e
-
-            execution_payload = slot['data']['message']['body']['execution_payload']
-            return ChainHead(
-                epoch=epoch,
-                consensus_block=last_slot_id - i,
-                execution_block=BlockNumber(int(execution_payload['block_number'])),
-                execution_ts=Timestamp(int(execution_payload['timestamp'])),
-            )
-
-        raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
-
     async def get_consensus_fork(self, state_id: str = 'head') -> ConsensusFork:
         """Fetches current fork data."""
         fork_data = (await self.get_fork_data(state_id))['data']
@@ -226,3 +203,71 @@ def get_consensus_client(
         retry_timeout=retry_timeout,
         log_uri_max_len=log_uri_max_len,
     )
+
+
+async def get_chain_finalized_head(
+    consensus_client: ExtendedAsyncBeacon, slots_per_epoch: int
+) -> ChainHead:
+    """Fetches the fork safe chain head."""
+    checkpoints = await consensus_client.get_finality_checkpoint()
+    epoch: int = int(checkpoints['data']['finalized']['epoch'])
+    last_slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
+    for i in range(slots_per_epoch):
+        try:
+            slot = await consensus_client.get_block(str(last_slot_id - i))
+        except ClientResponseError as e:
+            if hasattr(e, 'status') and e.status == 404:
+                # slot was not proposed, try the previous one
+                continue
+            raise e
+
+        execution_payload = slot['data']['message']['body']['execution_payload']
+        return ChainHead(
+            epoch=epoch,
+            consensus_block=last_slot_id - i,
+            execution_block=BlockNumber(int(execution_payload['block_number'])),
+            execution_ts=Timestamp(int(execution_payload['timestamp'])),
+        )
+
+    raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
+
+
+async def get_chain_epoch_head(
+    epoch: int,
+    slots_per_epoch: int,
+    execution_client: AsyncWeb3,
+    consensus_client: ExtendedAsyncBeacon,
+) -> ChainHead:
+    """Fetches the epoch chain head."""
+    slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
+    for i in range(slots_per_epoch):
+        try:
+            slot = await consensus_client.get_block(str(slot_id - i))
+        except ClientResponseError as e:
+            if hasattr(e, 'status') and e.status == 404:
+                # slot was not proposed, try the previous one
+                continue
+            raise e
+        try:
+            execution_payload = slot['data']['message']['body']['execution_payload']
+            return ChainHead(
+                epoch=epoch,
+                consensus_block=slot_id - i,
+                execution_block=BlockNumber(int(execution_payload['block_number'])),
+                execution_ts=Timestamp(int(execution_payload['timestamp'])),
+            )
+        except KeyError:  # pre shapella slot
+            block_hash = slot['data']['message']['body']['eth1_data']['block_hash']
+            try:
+                block = await execution_client.eth.get_block(block_hash)
+            except BlockNotFound:
+                continue
+
+            return ChainHead(
+                epoch=epoch,
+                consensus_block=slot_id - i,
+                execution_block=BlockNumber(int(block['number'])),
+                execution_ts=Timestamp(int(block['timestamp'])),
+            )
+
+    raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
