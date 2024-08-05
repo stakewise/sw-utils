@@ -14,7 +14,7 @@ from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
-from sw_utils.typings import ChainHead, ConsensusFork
+from sw_utils.typings import ChainHead, ConsensusFork, Finality
 
 logger = logging.getLogger(__name__)
 
@@ -206,11 +206,11 @@ def get_consensus_client(
 
 
 async def get_chain_finalized_head(
-    consensus_client: ExtendedAsyncBeacon, slots_per_epoch: int
+    consensus_client: ExtendedAsyncBeacon, slots_per_epoch: int, finality: Finality = 'finalized'
 ) -> ChainHead:
     """Fetches the fork safe chain head."""
     checkpoints = await consensus_client.get_finality_checkpoint()
-    epoch: int = int(checkpoints['data']['finalized']['epoch'])
+    epoch: int = int(checkpoints['data'][finality]['epoch'])
     last_slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
     for i in range(slots_per_epoch):
         try:

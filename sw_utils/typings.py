@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import NewType
+from typing import Literal, NewType, TypeAlias
 
 from eth_keys.datatypes import PublicKey
 from eth_typing import BlockNumber, HexStr
@@ -7,6 +7,8 @@ from web3 import Web3
 from web3.types import ChecksumAddress, Timestamp, Wei
 
 Bytes32 = NewType('Bytes32', bytes)
+
+Finality: TypeAlias = Literal['finalized', 'current_justified', 'previous_justified']
 
 
 @dataclass
