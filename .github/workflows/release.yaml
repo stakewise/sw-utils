@@ -35,7 +35,4 @@ jobs:
         run: |
           echo "project_version=`poetry version --short`" >> $GITHUB_ENV;
           echo "tag_name=${{ github.ref_name }}" >> $GITHUB_ENV;
-          if [ "$project_version" != "$tag_name" ]; then
-            echo "Release version mismatch"
-            exit 1
-          fi
+          [ "$project_version" == "$tag_name" ]
