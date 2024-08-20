@@ -6,7 +6,7 @@ on:
 
 jobs:
   checks:
-    name: Version check
+    name: Check project version matches tag name
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,6 +33,4 @@ jobs:
 
       - name: Check version
         run: |
-          echo "project_version=`poetry version --short`" >> $GITHUB_ENV;
-          echo "tag_name=${{ github.ref_name }}" >> $GITHUB_ENV;
-          [ "$project_version" == "$tag_name" ]
+          [ "`poetry version --short`" == "${{ github.ref_name }}" ]
