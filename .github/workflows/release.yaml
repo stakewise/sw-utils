@@ -33,7 +33,7 @@ jobs:
 
       - name: Check version
         run: |
-          project_name=${{ github.event.repository.name }}
-          project_version=`poetry version`
-          tag_name=${{ github.ref_name }}
-          [ $project_version == "$project_name $tag_name" ]
+          "project_name=${{ github.event.repository.name }}" >> $GITHUB_ENV
+          "project_version=`poetry version`" >> $GITHUB_ENV
+          "tag_name=${{ github.ref_name }}" >> $GITHUB_ENV
+          [ $project_version = "$project_name $tag_name" ]
