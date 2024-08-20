@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check version
-        run: '[ "${{ release.tag_name }}" == `poetry version` ]'
+        run: '[ "${{ github.ref_name }}" == `poetry version` ]'
