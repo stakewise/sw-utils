@@ -6,7 +6,7 @@ on:
 
 jobs:
   checks:
-    name: Check project version matches tag name
+    name: Check version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -31,6 +31,6 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - name: Check version
+      - name: Check project version matches tag name
         run: |
           [ "`poetry version --short`" == "${{ github.ref_name }}" ]
