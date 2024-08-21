@@ -9,7 +9,6 @@ from web3.types import ChecksumAddress, Timestamp, Wei
 Bytes32 = NewType('Bytes32', bytes)
 
 Finality: TypeAlias = Literal['finalized', 'current_justified', 'previous_justified']
-State: TypeAlias = Literal['genesis', 'finalized', 'justified'] | str
 
 
 @dataclass
@@ -21,13 +20,17 @@ class ConsensusFork:
 @dataclass
 class ChainHead:
     epoch: int
-    consensus_block: int
-    execution_block: BlockNumber
+    slot: int
+    block_number: BlockNumber
     execution_ts: Timestamp
 
     @property
-    def slot(self) -> int:
-        return self.consensus_block
+    def consensus_block(self) -> int:
+        return self.slot
+
+    @property
+    def execution_block(self) -> BlockNumber:
+        return self.block_number
 
 
 @dataclass

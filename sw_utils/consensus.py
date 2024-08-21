@@ -14,7 +14,7 @@ from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
-from sw_utils.typings import ChainHead, ConsensusFork, Finality, State
+from sw_utils.typings import ChainHead, ConsensusFork, Finality
 
 logger = logging.getLogger(__name__)
 
@@ -209,13 +209,12 @@ async def get_chain_finalized_head(
     consensus_client: ExtendedAsyncBeacon,
     slots_per_epoch: int,
     finality: Finality = 'finalized',
-    state: State = 'finalized',
 ) -> ChainHead:
     """Fetches the fork safe chain head."""
-    checkpoints = await consensus_client.get_finality_checkpoint(state)
+    checkpoints = await consensus_client.get_finality_checkpoint()
     epoch: int = int(checkpoints['data'][finality]['epoch'])
-    last_slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
-    for i in range(slots_per_epoch):
+    last_slot_id: int = epoch * slots_per_epoch
+    for i in range(slots_per_epoch + 1):
         try:
             slot = await consensus_client.get_block(str(last_slot_id - i))
         except ClientResponseError as e:
@@ -227,8 +226,8 @@ async def get_chain_finalized_head(
         execution_payload = slot['data']['message']['body']['execution_payload']
         return ChainHead(
             epoch=epoch,
-            consensus_block=last_slot_id - i,
-            execution_block=BlockNumber(int(execution_payload['block_number'])),
+            slot=last_slot_id - i,
+            block_number=BlockNumber(int(execution_payload['block_number'])),
             execution_ts=Timestamp(int(execution_payload['timestamp'])),
         )
 
@@ -255,8 +254,8 @@ async def get_chain_epoch_head(
             execution_payload = slot['data']['message']['body']['execution_payload']
             return ChainHead(
                 epoch=epoch,
-                consensus_block=slot_id - i,
-                execution_block=BlockNumber(int(execution_payload['block_number'])),
+                slot=slot_id - i,
+                block_number=BlockNumber(int(execution_payload['block_number'])),
                 execution_ts=Timestamp(int(execution_payload['timestamp'])),
             )
         except KeyError:  # pre shapella slot
@@ -268,8 +267,8 @@ async def get_chain_epoch_head(
 
             return ChainHead(
                 epoch=epoch,
-                consensus_block=slot_id - i,
-                execution_block=BlockNumber(int(block['number'])),
+                slot=slot_id - i,
+                block_number=BlockNumber(int(block['number'])),
                 execution_ts=Timestamp(int(block['timestamp'])),
             )
 
