@@ -55,9 +55,14 @@ exclude = [
 profile = "black"
 
 [tool.mypy]
+exclude = ["test"]
 ignore_missing_imports = true
 python_version = "3.10"
+disallow_untyped_defs = true
 disallow_incomplete_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = "sw_utils.ssz.*"
