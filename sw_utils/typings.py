@@ -9,7 +9,6 @@ from web3.types import ChecksumAddress, Timestamp, Wei
 Bytes32 = NewType('Bytes32', bytes)
 
 Finality: TypeAlias = Literal['finalized', 'current_justified', 'previous_justified']
-State: TypeAlias = Literal['genesis', 'finalized', 'justified'] | str
 
 
 @dataclass
