@@ -20,13 +20,17 @@ class ConsensusFork:
 @dataclass
 class ChainHead:
     epoch: int
-    consensus_block: int
-    execution_block: BlockNumber
+    slot: int
+    block_number: BlockNumber
     execution_ts: Timestamp
 
     @property
-    def slot(self) -> int:
-        return self.consensus_block
+    def consensus_block(self) -> int:
+        return self.slot
+
+    @property
+    def execution_block(self) -> BlockNumber:
+        return self.block_number
 
 
 @dataclass
