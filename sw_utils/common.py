@@ -23,7 +23,7 @@ class InterruptHandler:
         signal.signal(signal.SIGTERM, self.exit_gracefully)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore
         signal.signal(signal.SIGINT, self.exit_default)
         signal.signal(signal.SIGTERM, self.exit_default)
 

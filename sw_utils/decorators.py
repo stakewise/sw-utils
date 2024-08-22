@@ -22,7 +22,7 @@ def safe(func: Callable) -> Callable:
     if asyncio.iscoroutinefunction(func):
 
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):  # type: ignore
             try:
                 return await func(*args, **kwargs)
             except BaseException as e:
@@ -32,7 +32,7 @@ def safe(func: Callable) -> Callable:
     else:
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs):  # type: ignore
             try:
                 return func(*args, **kwargs)
             except BaseException as e:
