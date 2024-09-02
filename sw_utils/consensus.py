@@ -209,7 +209,7 @@ async def get_chain_finalized_head(
     consensus_client: ExtendedAsyncBeacon,
     slots_per_epoch: int,
 ) -> ChainHead:
-    """Fetches the fork safe chain head."""
+    """Fetches the fork finalized chain head."""
     block_data = await consensus_client.get_block('finalized')
     slot = int(block_data['data']['message']['slot'])
 
@@ -260,7 +260,7 @@ async def get_chain_epoch_head(
     consensus_client: ExtendedAsyncBeacon,
 ) -> ChainHead:
     """Fetches the epoch chain head."""
-    slot_id: int = (epoch * slots_per_epoch) + slots_per_epoch - 1
+    slot_id: int = epoch * slots_per_epoch
     for i in range(slots_per_epoch):
         try:
             slot = await consensus_client.get_block(str(slot_id - i))
