@@ -24,14 +24,6 @@ class ChainHead:
     block_number: BlockNumber
     execution_ts: Timestamp
 
-    @property
-    def consensus_block(self) -> int:
-        return self.slot
-
-    @property
-    def execution_block(self) -> BlockNumber:
-        return self.block_number
-
 
 @dataclass
 class Oracle:
