@@ -225,7 +225,7 @@ async def get_chain_finalized_head(
     )
 
 
-async def get_chain_safe_head(
+async def get_chain_justified_head(
     consensus_client: ExtendedAsyncBeacon,
     slots_per_epoch: int,
 ) -> ChainHead:
