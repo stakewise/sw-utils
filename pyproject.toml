@@ -36,7 +36,6 @@ exclude_dirs = ["sw_utils/tests/"]
 
 [tool.pylint."pre-commit-hook"]
 disable=["C0103", "C0114", "C0115", "C0116", "R0801", "R0903", "W0703", "W1514", "W0511"]
-ignore-paths = ["^sw_utils/ssz/.*$"]
 
 [tool.pylint."BASIC"]
 good-names = ["i", "el", "e", "w", "f", "w3"]
@@ -63,10 +62,6 @@ disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_unused_configs = true
-
-[[tool.mypy.overrides]]
-module = "sw_utils.ssz.*"
-ignore_errors = true
 
 [tool.black]
 line-length = 100
