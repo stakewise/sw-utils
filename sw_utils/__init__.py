@@ -19,7 +19,6 @@ from .ipfs import (
     IpfsUploadClient,
     PinataUploadClient,
 )
-from .middlewares import construct_async_sign_and_send_raw_middleware
 from .password import generate_password
 from .protocol_config import build_protocol_config
 from .signing import (
