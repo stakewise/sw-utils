@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, cast
 
 import aiohttp
 import ipfshttpclient
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientSession, ClientTimeout, ContentTypeError
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
@@ -498,12 +498,16 @@ class IpfsFetchClient:
                     return await self._http_gateway_fetch_json(endpoint, ipfs_hash)
 
                 return self._ipfs_fetch_json(endpoint, ipfs_hash)
+            except ContentTypeError:
+                raise
             except Exception as e:
                 logger.warning(repr(e))
 
         for endpoint in self.s3_endpoints:
             try:
                 return await self._s3_fetch_json(endpoint, ipfs_hash)
+            except ContentTypeError:
+                raise
             except Exception as e:
                 logger.warning(repr(e))
 
