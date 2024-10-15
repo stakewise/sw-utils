@@ -66,6 +66,7 @@ def retry_aiohttp_errors(delay: int = 60, before: Optional[Callable] = None) -> 
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
         before=before or default_log_before,
+        reraise=True,
     )
 
 
@@ -75,4 +76,5 @@ def retry_ipfs_exception(delay: int, before: Optional[Callable] = None) -> Any:
         wait=wait_exponential(multiplier=1, min=1, max=delay // 2),
         stop=stop_after_delay(delay),
         before=before or default_log_before,
+        reraise=True,
     )
