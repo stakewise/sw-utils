@@ -18,7 +18,7 @@ GNO_NETWORKS = [GNOSIS, CHIADO]
 
 @dataclass
 # pylint: disable-next=too-many-instance-attributes
-class DefaultNetworkConfig:
+class BaseNetworkConfig:
     SLOTS_PER_EPOCH: int
     SECONDS_PER_SLOT: int
     GENESIS_TIMESTAMP: Timestamp
@@ -65,7 +65,7 @@ class DefaultNetworkConfig:
 
 
 NETWORKS = {
-    MAINNET: DefaultNetworkConfig(
+    MAINNET: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
         SECONDS_PER_SLOT=12,
         GENESIS_TIMESTAMP=Timestamp(1606824023),
@@ -107,7 +107,7 @@ NETWORKS = {
         SHAPELLA_EPOCH=194048,
         SHAPELLA_BLOCK=BlockNumber(17034870),
     ),
-    HOLESKY: DefaultNetworkConfig(
+    HOLESKY: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
         SECONDS_PER_SLOT=12,
         KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
@@ -147,7 +147,7 @@ NETWORKS = {
         SHAPELLA_EPOCH=256,
         SHAPELLA_BLOCK=BlockNumber(6698),
     ),
-    GNOSIS: DefaultNetworkConfig(
+    GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
         SECONDS_PER_SLOT=5,
         KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
@@ -191,7 +191,7 @@ NETWORKS = {
         SHAPELLA_EPOCH=648704,
         SHAPELLA_BLOCK=BlockNumber(29242932),
     ),
-    CHIADO: DefaultNetworkConfig(
+    CHIADO: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
         SECONDS_PER_SLOT=5,
         KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
