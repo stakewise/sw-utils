@@ -66,7 +66,7 @@ class ProtocolConfig:
     exit_signature_recover_threshold: int
 
     # max exiting validators bps for genesis vault
-    # zero value means threshold is not set
+    # zero value means limit is not set
     vault_exiting_validators_limit_bps: int = 0
 
     # Keeper settings
