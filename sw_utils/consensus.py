@@ -1,12 +1,11 @@
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import aiohttp
 from aiohttp import ClientResponseError
 from eth_typing import URI, BlockNumber, HexStr
 from web3 import AsyncWeb3, Web3
-from web3._utils.request import async_json_make_get_request
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VOLUNTARY_EXITS
 from web3.exceptions import BlockNotFound
@@ -65,12 +64,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     def __init__(
         self,
         base_urls: list[str],
-        timeout: int = 60,
+        request_timeout: int = 60,
         retry_timeout: int = 0,
         log_uri_max_len: int | None = None,
     ) -> None:
         self.base_urls = base_urls
-        self.timeout = timeout
+        self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.log_uri_max_len = log_uri_max_len or 100
         super().__init__('')  # hack origin base_url param
@@ -123,7 +122,9 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             epoch=int(fork_data['epoch']),
         )
 
-    async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
+    async def _async_make_get_request(
+        self, endpoint_uri: str, params: Optional[dict[str, str]] = None
+    ) -> dict[str, Any]:
         if self.retry_timeout:
 
             def custom_before_log(retry_state: 'RetryCallState') -> None:
@@ -137,9 +138,9 @@ class ExtendedAsyncBeacon(AsyncBeacon):
                 self.retry_timeout,
                 before=custom_before_log,
             )
-            return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri)
+            return await retry_decorator(self._async_make_get_request_inner)(endpoint_uri, params)
 
-        return await self._async_make_get_request_inner(endpoint_uri)
+        return await self._async_make_get_request_inner(endpoint_uri, params)
 
     async def _async_make_post_request(
         self, endpoint_uri: str, data: list | dict
@@ -171,11 +172,15 @@ class ExtendedAsyncBeacon(AsyncBeacon):
 
         return f'{uri[:max_len]}...'
 
-    async def _async_make_get_request_inner(self, endpoint_uri: str) -> dict[str, Any]:
+    async def _async_make_get_request_inner(
+        self, endpoint_uri: str, params: Optional[dict[str, str]]
+    ) -> dict[str, Any]:
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
-                return await async_json_make_get_request(uri, timeout=self.timeout)
+                return await self._request_session_manager.async_json_make_get_request(
+                    uri, params=params, timeout=aiohttp.ClientTimeout(self.request_timeout)
+                )
 
             except Exception as error:
                 if not can_be_retried_aiohttp_error(error):
@@ -199,7 +204,7 @@ def get_consensus_client(
 ) -> ExtendedAsyncBeacon:
     return ExtendedAsyncBeacon(
         base_urls=endpoints,
-        timeout=timeout,
+        request_timeout=timeout,
         retry_timeout=retry_timeout,
         log_uri_max_len=log_uri_max_len,
     )

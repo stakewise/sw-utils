@@ -8,10 +8,10 @@ import jwt
 from eth_typing import URI
 from web3 import AsyncWeb3
 from web3.eth import AsyncEth
-from web3.middleware import async_geth_poa_middleware, async_simple_cache_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 from web3.net import AsyncNet
-from web3.providers.async_rpc import AsyncHTTPProvider
-from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse
+from web3.providers.rpc.async_rpc import AsyncHTTPProvider
+from web3.types import RPCEndpoint, RPCResponse
 
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
@@ -37,14 +37,12 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     _providers: list[AsyncHTTPProvider] = []
     _locker_provider: AsyncHTTPProvider | None = None
 
-    # Turn off `async_http_retry_request_middleware`
-    _middlewares: tuple[AsyncMiddleware, ...] = ()
-
     def __init__(
         self,
         endpoint_urls: list[str],
         request_kwargs: Any | None = None,
         retry_timeout: int = 0,
+        use_cache: bool = True,
     ):
         self._endpoint_urls = endpoint_urls
         self._providers = []
@@ -55,7 +53,14 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
         for host_uri in endpoint_urls:
             if host_uri.startswith('http'):
-                self._providers.append(AsyncHTTPProvider(host_uri, request_kwargs))
+                self._providers.append(
+                    AsyncHTTPProvider(
+                        host_uri,
+                        request_kwargs,
+                        retry_configuration=None,  # disable built-in retries
+                        cache_allowed_requests=use_cache,
+                    )
+                )
             else:
                 protocol = host_uri.split('://')[0]
                 raise ProtocolNotSupported(f'Protocol "{protocol}" is not supported.')
@@ -112,8 +117,14 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
 
+    async def connect(self) -> None:
+        raise NotImplementedError('Persistent connection providers must implement this method')
 
-# pylint: disable-next=too-many-arguments
+    async def disconnect(self) -> None:
+        raise NotImplementedError('Persistent connection providers must implement this method')
+
+
+# pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def get_execution_client(
     endpoints: list[str],
     is_poa: bool = False,
@@ -135,6 +146,7 @@ def get_execution_client(
         endpoint_urls=endpoints,
         request_kwargs={'timeout': timeout, 'headers': headers},
         retry_timeout=retry_timeout,
+        use_cache=use_cache,
     )
     client = AsyncWeb3(
         provider,
@@ -142,11 +154,8 @@ def get_execution_client(
     )
 
     if is_poa:
-        client.middleware_onion.inject(async_geth_poa_middleware, layer=0)
+        client.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         logger.debug('Injected POA middleware')
-
-    if use_cache:
-        client.middleware_onion.add(async_simple_cache_middleware)
 
     return client
 
