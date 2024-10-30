@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.6.27"
+version = "v0.6.28"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -14,7 +14,7 @@ tenacity = "==8.2.3"
 pyjwt = "==2.8.0"
 ssz = "==0.5.0"
 web3 = "==7.4.0"
-py-ecc = "==7.0.1"
+py-ecc = "^7.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.1"
