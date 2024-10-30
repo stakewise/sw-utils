@@ -8,7 +8,6 @@ import jwt
 from eth_typing import URI
 from web3 import AsyncWeb3
 from web3.eth import AsyncEth
-from web3.middleware import ExtraDataToPOAMiddleware
 from web3.net import AsyncNet
 from web3.providers.rpc.async_rpc import AsyncHTTPProvider
 from web3.types import RPCEndpoint, RPCResponse
@@ -127,7 +126,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 # pylint: disable-next=too-many-arguments, too-many-positional-arguments
 def get_execution_client(
     endpoints: list[str],
-    is_poa: bool = False,
     timeout: int = 60,
     retry_timeout: int = 0,
     use_cache: bool = True,
@@ -152,10 +150,6 @@ def get_execution_client(
         provider,
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
     )
-
-    if is_poa:
-        client.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        logger.debug('Injected POA middleware')
 
     return client
 

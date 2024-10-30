@@ -38,7 +38,6 @@ class BaseNetworkConfig:
     GNO_TOKEN_CONTRACT_ADDRESS: ChecksumAddress
     GENESIS_VALIDATORS_IPFS_HASH: str
     CHAIN_ID: int
-    IS_POA: bool
     FAR_FUTURE_EPOCH: int
     SHAPELLA_FORK_VERSION: bytes
     SHAPELLA_EPOCH: int
@@ -101,7 +100,6 @@ NETWORKS = {
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         GENESIS_VALIDATORS_IPFS_HASH='bafybeigzq2ntq5zw4tdym5vckbf66mla5q3ge2fzdgqslhckdytlmm7k7y',
         CHAIN_ID=1,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
@@ -141,7 +139,6 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x01017000')),
         CHAIN_ID=17000,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x04017000')),
         SHAPELLA_EPOCH=256,
@@ -185,7 +182,6 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x00000064')),
         CHAIN_ID=100,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
@@ -227,7 +223,6 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0000006f')),
         CHAIN_ID=10200,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
         SHAPELLA_EPOCH=244224,
