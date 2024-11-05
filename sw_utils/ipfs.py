@@ -290,7 +290,7 @@ class QuicknodePinClient(BasePinClient):
             page_number += 1
             total_pages = pin_results['totalPages']
 
-    # pylint: disable-next=too-many-arguments, too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments
     async def _call(
         self,
         http_method: str,

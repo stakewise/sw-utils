@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.6.28"
+version = "v0.6.29"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -9,12 +9,12 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 sw-milagro-bls-binding = "==1.9.0"
+py-ecc = "^6.0.0"
 ipfshttpclient = "^0.8.0a2"
+web3 = "==6.15.1"
 tenacity = "==8.2.3"
 pyjwt = "==2.8.0"
 ssz = "==0.5.0"
-web3 = "==7.4.0"
-py-ecc = "^7.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.1"
