@@ -33,7 +33,7 @@ def build_protocol_config(
 
     vault_exiting_validators_limit_bps = config_data.get('vault_exiting_validators_limit_bps') or 0
     os_token_vaults = [
-        Web3.to_checksum_address(v) for v in config_data.get('os_token_vaults') or []
+        Web3.to_checksum_address(v) for v in config_data.get('os_token_vaults', [])
     ]
 
     return ProtocolConfig(
