@@ -1,3 +1,4 @@
+from web3 import Web3
 from web3.types import Wei
 
 from sw_utils.typings import Oracle, ProtocolConfig
@@ -31,6 +32,7 @@ def build_protocol_config(
         raise ValueError('Invalid exit signature threshold')
 
     vault_exiting_validators_limit_bps = config_data.get('vault_exiting_validators_limit_bps') or 0
+    os_token_vaults = [Web3.to_checksum_address(v) for v in config_data.get('os_token_vaults', [])]
 
     return ProtocolConfig(
         oracles=oracles,
@@ -48,4 +50,5 @@ def build_protocol_config(
         signature_validity_period=config_data['signature_validity_period'],
         until_force_exit_epochs=config_data['until_force_exit_epochs'],
         vault_exiting_validators_limit_bps=vault_exiting_validators_limit_bps,
+        os_token_vaults=os_token_vaults,
     )
