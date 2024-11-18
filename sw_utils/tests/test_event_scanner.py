@@ -27,15 +27,23 @@ class TestExitSignatureCrud:
     async def test_basic(self):
         default_chunk_size = 500000
         p = MockedEventProcessor()
-        s = EventScanner(processor=p)
-        s._contract_call = fetch_events
-        assert s.chunk_size == default_chunk_size
+        scanner = EventScanner(processor=p)
+        scanner._contract_call = fetch_events
+        assert scanner.chunk_size == default_chunk_size
 
-        s._contract_call = fetch_events_broken
-        s.max_request_retries = 1
+        scanner._contract_call = fetch_events_broken
+        scanner.request_retry_seconds = 0
+        scanner.max_request_retries = 1
         with pytest.raises(ConnectionError):
-            await s.process_new_events(888)
-            assert s.chunk_size == default_chunk_size / 2
+            await scanner.process_new_events(888)
+        assert scanner.chunk_size == default_chunk_size
 
-            await s.process_new_events(888)
-            assert s.chunk_size == default_chunk_size / 4
+        scanner.max_request_retries = 2
+        with pytest.raises(ConnectionError):
+            await scanner.process_new_events(888)
+        assert scanner.chunk_size == default_chunk_size // 2
+
+        scanner.max_request_retries = 3
+        with pytest.raises(ConnectionError):
+            await scanner.process_new_events(888)
+        assert scanner.chunk_size == default_chunk_size // 8

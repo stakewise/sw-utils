@@ -105,7 +105,6 @@ class EventScanner:
                 if i < retries - 1:
                     # Decrease the `eth_getBlocks` range
                     self.chunk_size = self.chunk_size // 2
-                    to_block = BlockNumber(from_block + self.chunk_size)
                     # Let the JSON-RPC to recover e.g. from restart
                     await sleep(self.request_retry_seconds)
                     continue
