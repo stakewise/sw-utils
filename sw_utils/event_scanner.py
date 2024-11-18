@@ -51,6 +51,7 @@ class EventScanner:
         self,
         processor: EventProcessor,
         argument_filters: dict[str, Any] | None = None,
+        chunk_size: int | None = None,
     ):
         self.processor = processor
         self.argument_filters = argument_filters
@@ -58,19 +59,18 @@ class EventScanner:
             processor.contract.events, processor.contract_event
         ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
+        # Start with half of max chunk size. 1kk chunks works only with powerful nodes.
+        start_chunk_size = self.max_scan_chunk_size // 2
+        # Scan in chunks, commit between.
+        self.chunk_size = chunk_size or start_chunk_size
+
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
         if current_from_block >= to_block:
             return
 
-        # Scan in chunks, commit between
-        chunk_size = self.max_scan_chunk_size
-
         while current_from_block < to_block:
-            estimated_end_block = min(to_block, BlockNumber(current_from_block + chunk_size))
-            current_to_block, new_events = await self._scan_chunk(
-                current_from_block, estimated_end_block
-            )
+            current_to_block, new_events = await self._scan_chunk(current_from_block, to_block)
             await self.processor.process_events(new_events, to_block=current_to_block)
 
             if new_events:
@@ -83,14 +83,13 @@ class EventScanner:
                     to_block,
                 )
 
-            # Try to guess how many blocks to fetch over `eth_getLogs` API next time
-            chunk_size = self._estimate_next_chunk_size(chunk_size)
-
+            # Try to increase blocks range for the next time
+            self._estimate_next_chunk_size()
             # Set where the next chunk starts
             current_from_block = BlockNumber(current_to_block + 1)
 
     async def _scan_chunk(
-        self, from_block: BlockNumber, to_block: BlockNumber
+        self, from_block: BlockNumber, last_block: BlockNumber
     ) -> tuple[BlockNumber, list[EventData]]:
         """
         Read and process events between block numbers.
@@ -99,22 +98,22 @@ class EventScanner:
         """
         retries = self.max_request_retries
         for i in range(retries):
+            to_block = min(last_block, BlockNumber(from_block + self.chunk_size))
             try:
                 return to_block, await self._contract_call(from_block, to_block)
             except Exception as e:
                 if i < retries - 1:
                     # Decrease the `eth_getBlocks` range
-                    to_block = BlockNumber(from_block + ((to_block - from_block) // 2))
+                    self.chunk_size = self.chunk_size // 2
                     # Let the JSON-RPC to recover e.g. from restart
                     await sleep(self.request_retry_seconds)
                     continue
 
                 raise e
 
-        raise RuntimeError(f'Failed to sync chunk: from block={from_block}, to block={to_block}')
+        raise RuntimeError(f'Failed to sync chunk: from block={from_block}, to block={last_block}')
 
-    def _estimate_next_chunk_size(self, current_chuck_size: int) -> int:
-        current_chuck_size *= self.chunk_size_multiplier
-        current_chuck_size = max(self.min_scan_chunk_size, current_chuck_size)
-        current_chuck_size = min(self.max_scan_chunk_size, current_chuck_size)
-        return current_chuck_size
+    def _estimate_next_chunk_size(self) -> None:
+        self.chunk_size *= self.chunk_size_multiplier
+        self.chunk_size = max(self.min_scan_chunk_size, self.chunk_size)
+        self.chunk_size = min(self.max_scan_chunk_size, self.chunk_size)
