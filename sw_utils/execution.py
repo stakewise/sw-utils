@@ -109,15 +109,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         finally:
             self._locker_provider = None
 
-    @contextlib.contextmanager
-    def disable_retries(self) -> Iterator:
-        cache = self.retry_timeout
-        self.retry_timeout = 0
-        try:
-            yield
-        finally:
-            self.retry_timeout = cache
-
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
 
