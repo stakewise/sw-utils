@@ -58,8 +58,11 @@ class EventScanner:
         self._contract_call = lambda from_block, to_block: getattr(
             processor.contract.events, processor.contract_event
         ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
-        # Scan in chunks, commit between
-        self.chunk_size = chunk_size or self.max_scan_chunk_size // 2
+
+        # Start with half or max chunk size. 1kk chunks works only with powerful nodes.
+        start_chunk_size = self.max_scan_chunk_size // 2
+        # Scan in chunks, commit between.
+        self.chunk_size = chunk_size or start_chunk_size
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
