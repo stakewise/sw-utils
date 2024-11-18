@@ -58,8 +58,6 @@ class EventScanner:
         self._contract_call = lambda from_block, to_block: getattr(
             processor.contract.events, processor.contract_event
         ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
-        # todo: remove type ignore after move Contract wrapper to sw-utils
-        self.provider = self.processor.contract.contract.w3.provider  # type: ignore
         # Scan in chunks, commit between
         self.chunk_size = chunk_size or self.max_scan_chunk_size // 2
 
@@ -99,8 +97,7 @@ class EventScanner:
         for i in range(retries):
             to_block = min(last_block, BlockNumber(from_block + self.chunk_size))
             try:
-                with self.provider.disable_retries():
-                    return to_block, await self._contract_call(from_block, to_block)
+                return to_block, await self._contract_call(from_block, to_block)
             except Exception as e:
                 if i < retries - 1:
                     # Decrease the `eth_getBlocks` range
