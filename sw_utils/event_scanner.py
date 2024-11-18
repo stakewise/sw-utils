@@ -59,7 +59,7 @@ class EventScanner:
             processor.contract.events, processor.contract_event
         ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
-        # Start with half or max chunk size. 1kk chunks works only with powerful nodes.
+        # Start with half of max chunk size. 1kk chunks works only with powerful nodes.
         start_chunk_size = self.max_scan_chunk_size // 2
         # Scan in chunks, commit between.
         self.chunk_size = chunk_size or start_chunk_size
