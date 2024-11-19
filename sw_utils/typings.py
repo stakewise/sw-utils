@@ -65,9 +65,9 @@ class ProtocolConfig:
 
     exit_signature_recover_threshold: int
 
-    # Max exiting validators bps for genesis vault.
+    # Max exiting validators bps for os-token vaults.
     # Zero value means limit is not set.
-    vault_exiting_validators_limit_bps: int
+    os_token_vaults_exit_limit_bps: int
 
     # List of vaults used to determine osToken reward rate
     os_token_vaults: list[ChecksumAddress]
