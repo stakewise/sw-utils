@@ -5,3 +5,8 @@ dist
 .idea
 local.env
 *.env
+.python-version
+.vscode
+.history
+.DS_Store
+.coverage
