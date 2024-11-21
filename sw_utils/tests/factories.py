@@ -64,7 +64,7 @@ def get_mocked_protocol_config(
     inactive_validator_balance: Wei = Web3.to_wei(31.75, 'ether'),
     validator_min_active_epochs: int = 2250,  # 10 days
     vault_fee_max_bps: int = 1500,  # 15%
-    os_token_vaults_exit_limit_bps: int = 0,
+    os_token_vaults_exit_limit_bps: int = 10_000,  # 100%
     os_token_vaults: list[str] | None = None,
 ) -> ProtocolConfig:
     return ProtocolConfig(

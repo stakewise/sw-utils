@@ -31,7 +31,9 @@ def build_protocol_config(
     if validators_threshold and exit_signature_recover_threshold > validators_threshold:
         raise ValueError('Invalid exit signature threshold')
 
-    os_token_vaults_exit_limit_bps = config_data.get('os_token_vaults_exit_limit_bps') or 0
+    # default exit limit bps is 100%
+    os_token_vaults_exit_limit_bps = config_data.get('os_token_vaults_exit_limit_bps') or 10_000
+
     os_token_vaults = [Web3.to_checksum_address(v) for v in config_data.get('os_token_vaults', [])]
 
     return ProtocolConfig(
