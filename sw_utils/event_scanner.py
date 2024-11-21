@@ -75,10 +75,9 @@ class EventScanner:
 
             if new_events:
                 logger.info(
-                    'Scanned %s event: count=%d, block=%d/%d/%d',
-                    self.processor.contract_event,
+                    'Scanned %d %s events, block %d of %d',
                     len(new_events),
-                    current_from_block,
+                    self.processor.contract_event,
                     current_to_block,
                     to_block,
                 )
