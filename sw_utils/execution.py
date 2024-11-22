@@ -113,7 +113,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self.retry_timeout = retry_timeout
 
 
-# pylint: disable-next=too-many-arguments
+# pylint: disable-next=too-many-arguments,too-many-positional-arguments
 def get_execution_client(
     endpoints: list[str],
     is_poa: bool = False,
