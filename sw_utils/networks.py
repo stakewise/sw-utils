@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
-from ens.constants import EMPTY_ADDR_HEX
-from eth_typing import BlockNumber, ChecksumAddress, HexStr
+from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3 import Web3
 from web3.types import Timestamp
 
@@ -15,6 +14,8 @@ CHIADO = 'chiado'
 ETH_NETWORKS = [MAINNET, HOLESKY]
 GNO_NETWORKS = [GNOSIS, CHIADO]
 
+EMPTY_ADDR_HEX = HexAddress(HexStr('0x' + '00' * 20))
+
 
 @dataclass
 # pylint: disable-next=too-many-instance-attributes
@@ -27,6 +28,7 @@ class BaseNetworkConfig:
     KEEPER_CONTRACT_ADDRESS: ChecksumAddress
     KEEPER_GENESIS_BLOCK: BlockNumber
     KEEPER_GENESIS_TIMESTAMP: Timestamp
+    MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS: ChecksumAddress
     VALIDATORS_REGISTRY_CONTRACT_ADDRESS: ChecksumAddress  # eth2 deposit contract
     VALIDATORS_REGISTRY_GENESIS_BLOCK: BlockNumber  # eth2 deposit contract genesis
     SHARED_MEV_ESCROW_CONTRACT_ADDRESS: ChecksumAddress
@@ -80,6 +82,7 @@ NETWORKS = {
         ),
         KEEPER_GENESIS_BLOCK=BlockNumber(18470089),
         KEEPER_GENESIS_TIMESTAMP=Timestamp(1698755051),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
@@ -115,6 +118,7 @@ NETWORKS = {
         ),
         KEEPER_GENESIS_BLOCK=BlockNumber(215379),
         KEEPER_GENESIS_TIMESTAMP=Timestamp(1698670956),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x4242424242424242424242424242424242424242'
         ),
@@ -155,6 +159,7 @@ NETWORKS = {
         ),
         KEEPER_GENESIS_BLOCK=BlockNumber(34778552),
         KEEPER_GENESIS_TIMESTAMP=Timestamp(1720014665),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x0B98057eA310F4d31F2a452B414647007d1645d9'
         ),
@@ -199,6 +204,7 @@ NETWORKS = {
         ),
         KEEPER_GENESIS_BLOCK=BlockNumber(10627588),
         KEEPER_GENESIS_TIMESTAMP=Timestamp(1720027625),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xb97036A26259B7147018913bD58a774cf91acf25'
         ),
