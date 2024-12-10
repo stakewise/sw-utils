@@ -2,7 +2,7 @@ from gql import Client
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
 
-from sw_utils.decorators import retry_gql_errors
+from sw_utils.graph.decorators import retry_gql_errors
 
 
 class GraphClient:
