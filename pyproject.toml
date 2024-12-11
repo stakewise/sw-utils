@@ -33,11 +33,11 @@ flake8-datetimez = "==20.10.0"
 types-requests = "^2.28.11.15"
 
 [tool.bandit]
-exclude_dirs = ["sw_utils/tests/"]
+exclude_dirs = ["*/tests/*"]
 
 [tool.pylint."pre-commit-hook"]
 disable=["C0103", "C0114", "C0115", "C0116", "R0801", "R0903", "W0703", "W1514", "W0511"]
-ignore-paths=["sw_utils/tests/.*"]
+ignore-paths=[".*/tests/.*"]
 
 [tool.pylint."BASIC"]
 good-names = ["i", "el", "e", "w", "f", "w3"]
