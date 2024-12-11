@@ -19,31 +19,30 @@ class GraphClient:
         result = await retry_decorator(self.gql_client.execute_async)(query, variable_values=params)
         return result
 
+    async def fetch_pages(
+        self,
+        query: DocumentNode,
+        page_size: int,
+        params: dict | None = None,
+    ) -> list[dict] | None:
+        """
+        Fetches all pages of the query. Returns concatenated result.
+        """
+        skip = 0  # page offset
+        all_items = []
+        params = params.copy() if params else {}
 
-async def graph_fetch_pages(
-    graph_client: GraphClient,
-    query: DocumentNode,
-    page_size: int,
-    query_name: str,
-    params: dict | None = None,
-) -> list[dict] | None:
-    """
-    Fetches all pages of the query. Returns concatenated result.
-    """
-    skip = 0  # page offset
-    all_items = []
-    params = params.copy() if params else {}
+        while True:
+            params.update({'first': page_size, 'skip': skip})
+            res = await self.run_query(query, params)
 
-    while True:
-        params.update({'first': page_size, 'skip': skip})
-        res = await graph_client.run_query(query, params)
+            entity = list(res.keys())[0]
+            items = res[entity]
+            all_items.extend(items)
 
-        items = res[query_name]
-        all_items.extend(items)
+            if len(items) < page_size:
+                break
 
-        if len(items) < page_size:
-            break
+            skip += page_size
 
-        skip += page_size
-
-    return all_items
+        return all_items

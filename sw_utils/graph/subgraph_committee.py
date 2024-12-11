@@ -5,7 +5,7 @@ from typing import TypeAlias, cast
 from eth_typing import BlockNumber
 from graphql import DocumentNode
 
-from sw_utils.graph.client import GraphClient, graph_fetch_pages
+from sw_utils.graph.client import GraphClient
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +29,13 @@ class SubgraphCommittee:
             self.graph_clients.append(graph_client)
 
     async def fetch_votes(
-        self, query: DocumentNode, query_name: str, block_number: BlockNumber
+        self, query: DocumentNode, block_number: BlockNumber
     ) -> 'SubgraphCommitteeVotes':
         subgraph_votes = await asyncio.gather(
             *[
                 self._fetch_vote(
                     graph_client=graph_client,
                     query=query,
-                    query_name=query_name,
                     block_number=block_number,
                 )
                 for graph_client in self.graph_clients
@@ -48,15 +47,12 @@ class SubgraphCommittee:
         self,
         graph_client: GraphClient,
         query: DocumentNode,
-        query_name: str,
         block_number: BlockNumber,
     ) -> SubgraphVote | None:
         try:
-            return await graph_fetch_pages(
-                graph_client=graph_client,
+            return await graph_client.fetch_pages(
                 query=query,
                 page_size=self.page_size,
-                query_name=query_name,
                 params={'blockNumber': block_number},
             )
         except Exception as e:
