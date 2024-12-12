@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.6.34"
+version = "v0.7.0"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -15,6 +15,7 @@ web3 = "==6.15.1"
 tenacity = "==8.2.3"
 pyjwt = "==2.8.0"
 ssz = "==0.5.0"
+gql = "==3.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.1"
@@ -32,11 +33,11 @@ flake8-datetimez = "==20.10.0"
 types-requests = "^2.28.11.15"
 
 [tool.bandit]
-exclude_dirs = ["sw_utils/tests/"]
+exclude_dirs = ["*/tests/*"]
 
 [tool.pylint."pre-commit-hook"]
 disable=["C0103", "C0114", "C0115", "C0116", "R0801", "R0903", "W0703", "W1514", "W0511"]
-ignore-paths=["sw_utils/tests/.*"]
+ignore-paths=[".*/tests/.*"]
 
 [tool.pylint."BASIC"]
 good-names = ["i", "el", "e", "w", "f", "w3"]
