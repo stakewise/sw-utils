@@ -6,10 +6,17 @@ from sw_utils.graph.decorators import retry_gql_errors
 
 
 class GraphClient:
-    def __init__(self, endpoint: str, request_timeout: int = 10, retry_timeout: int = 60):
+    def __init__(
+        self,
+        endpoint: str,
+        request_timeout: int = 10,
+        retry_timeout: int = 60,
+        page_size: int = 100,
+    ) -> None:
         self.endpoint = endpoint
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
+        self.page_size = page_size
 
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
         self.gql_client = Client(transport=transport)
@@ -22,15 +29,19 @@ class GraphClient:
     async def fetch_pages(
         self,
         query: DocumentNode,
-        page_size: int,
+        page_size: int | None = None,
         params: dict | None = None,
     ) -> list[dict] | None:
         """
         Fetches all pages of the query. Returns concatenated result.
         """
+        if page_size is None:
+            page_size = self.page_size
+
+        params = params.copy() if params else {}
+
         skip = 0  # page offset
         all_items = []
-        params = params.copy() if params else {}
 
         while True:
             params.update({'first': page_size, 'skip': skip})
