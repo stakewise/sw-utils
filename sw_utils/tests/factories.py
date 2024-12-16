@@ -2,6 +2,7 @@ import random
 import string
 from secrets import randbits
 
+from eth_typing import ChecksumAddress
 from faker import Faker
 from faker.providers import BaseProvider
 from py_ecc.bls import G2ProofOfPossession
@@ -20,7 +21,7 @@ class Web3Provider(BaseProvider):
         private_key = G2ProofOfPossession.KeyGen(seed)
         return private_key
 
-    def eth_address(self) -> str:
+    def eth_address(self) -> ChecksumAddress:
         account = w3.eth.account.create()
         return account.address
 
@@ -29,16 +30,34 @@ class Web3Provider(BaseProvider):
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=64))
 
     def eth_signature(self) -> str:
+        # Deprecated. Use `validator_signature` or `account_signature`.
         # 96 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
 
+    def validator_signature(self) -> str:
+        # BLS signature, 96 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
+
+    def account_signature(self) -> str:
+        # ECDSA signature, 65 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=130))
+
     def eth_public_key(self) -> str:
+        # Deprecated. Use `validator_public_key` or `account_public_key`.
+        # 48 bytes
+        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
+
+    def validator_public_key(self) -> str:
         # 48 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
 
     def ecies_public_key(self) -> str:
         # 64 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=128))
+
+    def account_public_key(self) -> str:
+        # ECIES public key, 64 bytes
+        return self.ecies_public_key()
 
     def wei_amount(self) -> Wei:
         amount = random.randint(Web3.to_wei(1, 'gwei'), Web3.to_wei(100, 'ether'))
@@ -47,6 +66,12 @@ class Web3Provider(BaseProvider):
     def eth_amount(self, start: int = 10, stop: int = 1000) -> Wei:
         eth_value = faker.random_int(start, stop)
         return w3.to_wei(eth_value, 'ether')
+
+    def ipfs_hash(self) -> str:
+        """
+        Returns string of length 59 simulating an IPFS hash v1.
+        """
+        return 'bafk' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=55))
 
 
 faker.add_provider(Web3Provider)
