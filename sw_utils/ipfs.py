@@ -348,7 +348,14 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = await self._upload(coros)
 
         if self.pin_clients:
-            await asyncio.gather(*(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients))
+            result = await asyncio.gather(
+                *(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients),
+                return_exceptions=True,
+            )
+            for value in result:
+                if isinstance(value, BaseException):
+                    logger.error(repr(value))
+                    continue
 
         return ipfs_hash
 
@@ -379,7 +386,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                logger.warning(repr(value))
+                logger.error(repr(value))
                 continue
 
             ipfs_hash = _strip_ipfs_prefix(value)
@@ -408,7 +415,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         )
         for value in result:
             if isinstance(value, BaseException):
-                logger.warning(repr(value))
+                logger.error(repr(value))
                 continue
         return None
 
