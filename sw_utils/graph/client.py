@@ -29,9 +29,9 @@ class GraphClient:
     async def fetch_pages(
         self,
         query: DocumentNode,
-        page_size: int | None = None,
         params: dict | None = None,
-    ) -> list[dict] | None:
+        page_size: int | None = None,
+    ) -> list[dict]:
         """
         Fetches all pages of the query. Returns concatenated result.
         """
