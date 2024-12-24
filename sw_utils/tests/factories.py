@@ -29,11 +29,6 @@ class Web3Provider(BaseProvider):
         # 32 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=64))
 
-    def eth_signature(self) -> str:
-        # Deprecated. Use `validator_signature` or `account_signature`.
-        # 96 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
-
     def validator_signature(self) -> str:
         # BLS signature, 96 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
@@ -41,11 +36,6 @@ class Web3Provider(BaseProvider):
     def account_signature(self) -> str:
         # ECDSA signature, 65 bytes
         return '0x' + ''.join(random.choices('abcdef' + string.digits, k=130))
-
-    def eth_public_key(self) -> str:
-        # Deprecated. Use `validator_public_key` or `account_public_key`.
-        # 48 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
 
     def validator_public_key(self) -> str:
         # 48 bytes

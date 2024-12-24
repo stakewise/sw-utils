@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.7.4"
+version = "v0.7.5"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -15,7 +15,7 @@ web3 = "==6.15.1"
 tenacity = "==8.2.3"
 pyjwt = "==2.8.0"
 ssz = "==0.5.0"
-gql = "==3.5.0"
+gql = {extras = ["aiohttp"], version = "==3.5.0"}
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.0.1"
