@@ -66,7 +66,7 @@ class EventScanner:
         if current_from_block >= to_block:
             return
 
-        while current_from_block < to_block:
+        while current_from_block <= to_block:
             current_to_block, new_events = await self._scan_chunk(current_from_block, to_block)
             await self.processor.process_events(new_events, to_block=current_to_block)
 

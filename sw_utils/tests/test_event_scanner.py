@@ -73,7 +73,7 @@ class SimpleEventProcessor(EventProcessor):
 
     @staticmethod
     async def get_from_block() -> BlockNumber:
-        return 700
+        return 0
 
     @staticmethod
     async def process_events(events: list[EventData], to_block: BlockNumber) -> None:
@@ -87,23 +87,35 @@ class TestEventScannerFuzzing:
     Check that all events are scanned and processed.
     """
 
-    async def test_fuzzing(self):
+    @pytest.mark.parametrize(
+        'min_scan_chunk_size, max_scan_chunk_size, from_block, to_block',
+        [
+            (1, 2, 7, 100),
+            (10, 1000, 700, 10_000),
+        ],
+    )
+    async def test_fuzzing(self, min_scan_chunk_size, max_scan_chunk_size, from_block, to_block):
         for _ in range(100):
             try:
-                await self._run_single_test()
+                await self._run_single_test(
+                    min_scan_chunk_size, max_scan_chunk_size, from_block, to_block
+                )
             finally:
                 db.clear()
 
-    async def _run_single_test(self):
-        p = SimpleEventProcessor()
-        from_block = await p.get_from_block()
-
-        with mock.patch.object(EventScanner, 'max_scan_chunk_size', 1000):
+    async def _run_single_test(
+        self, min_scan_chunk_size, max_scan_chunk_size, from_block, to_block
+    ):
+        with (
+            mock.patch.object(EventScanner, 'min_scan_chunk_size', min_scan_chunk_size),
+            mock.patch.object(EventScanner, 'max_scan_chunk_size', max_scan_chunk_size),
+            mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=from_block),
+        ):
+            p = SimpleEventProcessor()
             scanner = EventScanner(processor=p)
             event = MockedAsyncEvent()
             scanner._contract_call = event.fetch_events
             scanner.request_retry_seconds = 0
-            to_block = 10_000
 
             await scanner.process_new_events(to_block=to_block)
 
