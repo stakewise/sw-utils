@@ -55,9 +55,6 @@ class EventScanner:
     ):
         self.processor = processor
         self.argument_filters = argument_filters
-        self._contract_call = lambda from_block, to_block: getattr(
-            processor.contract.events, processor.contract_event
-        ).get_logs(argument_filters=argument_filters, fromBlock=from_block, toBlock=to_block)
 
         # Start with half of max chunk size. 1kk chunks works only with powerful nodes.
         start_chunk_size = self.max_scan_chunk_size // 2
@@ -69,7 +66,7 @@ class EventScanner:
         if current_from_block >= to_block:
             return
 
-        while current_from_block < to_block:
+        while current_from_block <= to_block:
             current_to_block, new_events = await self._scan_chunk(current_from_block, to_block)
             await self.processor.process_events(new_events, to_block=current_to_block)
 
@@ -111,6 +108,14 @@ class EventScanner:
                 raise e
 
         raise RuntimeError(f'Failed to sync chunk: from block={from_block}, to block={last_block}')
+
+    async def _contract_call(
+        self, from_block: BlockNumber, to_block: BlockNumber
+    ) -> list[EventData]:
+        event_cls = getattr(self.processor.contract.events, self.processor.contract_event)
+        return await event_cls.get_logs(
+            argument_filters=self.argument_filters, fromBlock=from_block, toBlock=to_block
+        )
 
     def _estimate_next_chunk_size(self) -> None:
         self.chunk_size *= self.chunk_size_multiplier
