@@ -1,4 +1,5 @@
-from gql import Client
+from eth_typing import BlockNumber
+from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
 
@@ -57,3 +58,19 @@ class GraphClient:
             skip += page_size
 
         return all_items
+
+    async def get_finalized_block(self) -> BlockNumber:
+        query = gql(
+            """
+            query getBlock {
+              _meta {
+                block {
+                  number
+                }
+              }
+            }
+        """
+        )
+
+        res = await self.run_query(query)
+        return BlockNumber(res['_meta']['block']['number'])
