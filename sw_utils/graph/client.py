@@ -59,7 +59,7 @@ class GraphClient:
 
         return all_items
 
-    async def get_finalized_block(self) -> BlockNumber:
+    async def get_last_synced_block(self) -> BlockNumber:
         query = gql(
             """
             query getBlock {
