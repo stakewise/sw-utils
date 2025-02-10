@@ -39,6 +39,7 @@ class BaseNetworkConfig:
     GENESIS_VAULT_CONTRACT_ADDRESS: ChecksumAddress
     GNO_TOKEN_CONTRACT_ADDRESS: ChecksumAddress
     GENESIS_VALIDATORS_IPFS_HASH: str
+    GENESIS_VALIDATORS_LAST_BLOCK: BlockNumber
     CHAIN_ID: int
     IS_POA: bool
     FAR_FUTURE_EPOCH: int
@@ -105,6 +106,7 @@ NETWORKS = {
         ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         GENESIS_VALIDATORS_IPFS_HASH='bafybeih7iqn3ke2cydzctd6bmg5j3xyjdhpg352lvzhxd2fld7h2erzpuu',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(21245634),
         CHAIN_ID=1,
         IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
@@ -141,6 +143,7 @@ NETWORKS = {
         ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         GENESIS_VALIDATORS_IPFS_HASH='bafybeifg4pobtkdhav577d354d6j4wga3krvrnz3zbviqbm7rfqewh6foy',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(2791364),
         GENESIS_TIMESTAMP=Timestamp(1695902400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
@@ -188,6 +191,7 @@ NETWORKS = {
             '0x9C58BAcC331c9aa871AFD802DB6379a98e80CEdb'
         ),
         GENESIS_VALIDATORS_IPFS_HASH='bafybeih5addmhcgkuwliowdu5in3y2o5jtcayazol4mgi2jmcgm3dkxqpu',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(37195642),
         GENESIS_TIMESTAMP=Timestamp(1638993340),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
@@ -233,6 +237,7 @@ NETWORKS = {
             '0x19C653Da7c37c66208fbfbE8908A5051B57b4C70'
         ),
         GENESIS_VALIDATORS_IPFS_HASH='bafybeihkagspdbjaj4n5an4q5gzwyc6y3zu5s7xwjc5d7oqvzh7c4v4lfe',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(12906080),
         GENESIS_TIMESTAMP=Timestamp(1665396300),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
