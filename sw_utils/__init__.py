@@ -10,7 +10,7 @@ from .consensus import (
 from .decorators import retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
 from .exceptions import IpfsException
-from .execution import get_execution_client
+from .execution import GasManager, get_execution_client
 from .gnosis import MGNO_RATE, convert_to_gno, convert_to_mgno
 from .ipfs import (
     BaseUploadClient,
@@ -18,6 +18,16 @@ from .ipfs import (
     IpfsMultiUploadClient,
     IpfsUploadClient,
     PinataUploadClient,
+)
+from .networks import (
+    CHIADO,
+    ETH_NETWORKS,
+    GNO_NETWORKS,
+    GNOSIS,
+    HOLESKY,
+    MAINNET,
+    NETWORKS,
+    BaseNetworkConfig,
 )
 from .password import generate_password
 from .protocol_config import build_protocol_config
@@ -33,4 +43,4 @@ from .signing import (
     is_valid_deposit_data_signature,
     is_valid_exit_signature,
 )
-from .typings import ChainHead, ConsensusFork, Oracle, ProtocolConfig
+from .typings import Bytes32, ChainHead, ConsensusFork, Finality, Oracle, ProtocolConfig
