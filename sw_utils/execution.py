@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, Any, Iterator
 
 import jwt
 from eth_typing import URI
-from web3 import AsyncWeb3
+from web3 import AsyncWeb3, Web3
+from web3._utils.async_transactions import _max_fee_per_gas
 from web3.eth import AsyncEth
 from web3.middleware import async_geth_poa_middleware, async_simple_cache_middleware
 from web3.net import AsyncNet
 from web3.providers.async_rpc import AsyncHTTPProvider
-from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse
+from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse, TxParams, Wei
 
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
@@ -180,3 +181,73 @@ def _create_jwt_auth_token(jwt_secret: str) -> str:
         return token
     except Exception as e:
         raise ValueError('Error signing the JWT') from e
+
+
+class GasManager:
+    def __init__(
+        self,
+        execution_client: AsyncWeb3,
+        max_fee_per_gas_gwei: int = 100,
+        priority_fee_num_blocks: int = 10,
+        priority_fee_percentile: float = 80,
+    ) -> None:
+        self.execution_client = execution_client
+        self.max_fee_per_gas_gwei = max_fee_per_gas_gwei
+        self.priority_fee_num_blocks = priority_fee_num_blocks
+        self.priority_fee_percentile = priority_fee_percentile
+
+    async def check_gas_price(self, high_priority: bool = False) -> bool:
+        if high_priority:
+            tx_params = await self.get_high_priority_tx_params()
+            max_fee_per_gas = Wei(int(tx_params['maxFeePerGas']))
+        else:
+            # fallback to logic from web3
+            max_fee_per_gas = await _max_fee_per_gas(self.execution_client, {})
+
+        if max_fee_per_gas >= Web3.to_wei(self.max_fee_per_gas_gwei, 'gwei'):
+            logging.warning(
+                'Current gas price (%s gwei) is too high. '
+                'Will try to submit transaction on the next block if the gas '
+                'price is acceptable.',
+                Web3.from_wei(max_fee_per_gas, 'gwei'),
+            )
+            return False
+
+        return True
+
+    async def get_high_priority_tx_params(self) -> TxParams:
+        """
+        `maxPriorityFeePerGas <= maxFeePerGas` must be fulfilled
+        Because of that when increasing `maxPriorityFeePerGas` I have to adjust `maxFeePerGas`.
+        See https://eips.ethereum.org/EIPS/eip-1559 for details.
+        """
+        tx_params: TxParams = {}
+
+        max_priority_fee_per_gas = await self._calc_high_priority_fee()
+
+        # Reference: `_max_fee_per_gas` in web3/_utils/async_transactions.py
+        block = await self.execution_client.eth.get_block('latest')
+        max_fee_per_gas = Wei(max_priority_fee_per_gas + (2 * block['baseFeePerGas']))
+
+        tx_params['maxPriorityFeePerGas'] = max_priority_fee_per_gas
+        tx_params['maxFeePerGas'] = max_fee_per_gas
+        logger.debug('tx_params %s', tx_params)
+
+        return tx_params
+
+    async def _calc_high_priority_fee(self) -> Wei:
+        """
+        reference: "high" priority value from https://etherscan.io/gastracker
+        """
+        num_blocks = self.priority_fee_num_blocks
+        percentile = self.priority_fee_percentile
+        history = await self.execution_client.eth.fee_history(num_blocks, 'pending', [percentile])
+        validator_rewards = [r[0] for r in history['reward']]
+        mean_reward = int(sum(validator_rewards) / len(validator_rewards))
+
+        # prettify `mean_reward`
+        # same as `round(value, 1)` if value was in gwei
+        if mean_reward > Web3.to_wei(1, 'gwei'):
+            mean_reward = round(mean_reward, -8)
+
+        return Wei(mean_reward)
