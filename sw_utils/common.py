@@ -1,10 +1,12 @@
 import asyncio
 import logging
 import signal
-from typing import Any
+from typing import Any, Iterator, TypeVar
 from urllib.parse import urlparse, urlunparse
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
 
 
 class InterruptHandler:
@@ -45,6 +47,11 @@ class InterruptHandler:
         while not self.exit and seconds > 0:
             await asyncio.sleep(min(seconds, 1))
             seconds -= 1
+
+
+def chunkify(items: list[T], size: int) -> Iterator[list[T]]:
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
 
 
 def urljoin(base: str, *args: str) -> str:
