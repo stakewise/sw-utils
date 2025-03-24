@@ -159,7 +159,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x04017000')),
         SHAPELLA_EPOCH=256,
         SHAPELLA_BLOCK=BlockNumber(6698),
-        PECTRA_BLOCK=BlockNumber(0),
+        PECTRA_BLOCK=BlockNumber(3419704),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -255,6 +255,6 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
         SHAPELLA_EPOCH=244224,
         SHAPELLA_BLOCK=BlockNumber(4101611),
-        PECTRA_BLOCK=BlockNumber(0),
+        PECTRA_BLOCK=BlockNumber(14642217),
     ),
 }
