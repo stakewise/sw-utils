@@ -123,6 +123,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             epoch=int(fork_data['epoch']),
         )
 
+    async def get_pending_deposits(self, state_id: str = 'head') -> list[dict]:
+        """Fetches pending deposits."""
+        endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_deposits'
+        response = await self._async_make_get_request(endpoint_uri)
+        return response['data']
+
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
         if self.retry_timeout:
 
