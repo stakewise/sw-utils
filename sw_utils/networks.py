@@ -7,11 +7,11 @@ from web3.types import Timestamp
 from sw_utils.typings import Bytes32, ConsensusFork
 
 MAINNET = 'mainnet'
-HOLESKY = 'holesky'
+HOODI = 'hoodi'
 GNOSIS = 'gnosis'
 CHIADO = 'chiado'
 
-ETH_NETWORKS = [MAINNET, HOLESKY]
+ETH_NETWORKS = [MAINNET, HOODI]
 GNO_NETWORKS = [GNOSIS, CHIADO]
 
 EMPTY_ADDR_HEX = HexAddress(HexStr('0x' + '00' * 20))
@@ -46,6 +46,7 @@ class BaseNetworkConfig:
     SHAPELLA_FORK_VERSION: bytes
     SHAPELLA_EPOCH: int
     SHAPELLA_BLOCK: BlockNumber
+    PECTRA_EPOCH: int
     PECTRA_BLOCK: BlockNumber
 
     @property
@@ -114,52 +115,46 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
         SHAPELLA_BLOCK=BlockNumber(17034870),
+        PECTRA_EPOCH=BlockNumber(0),
         PECTRA_BLOCK=BlockNumber(0),
     ),
-    HOLESKY: BaseNetworkConfig(
+    HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
         SECONDS_PER_SLOT=12,
-        KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xB580799Bf7d62721D1a523f0FDF2f5Ed7BA4e259'
-        ),
-        KEEPER_GENESIS_BLOCK=BlockNumber(215379),
-        KEEPER_GENESIS_TIMESTAMP=Timestamp(1698670956),
-        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xC8Eb13a2F1799Fd7Eb1cE7393259962EE2cd6514'
-        ),
+        KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        KEEPER_GENESIS_BLOCK=BlockNumber(0),
+        KEEPER_GENESIS_TIMESTAMP=Timestamp(0),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x4242424242424242424242424242424242424242'
+            '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
         VALIDATORS_REGISTRY_GENESIS_BLOCK=BlockNumber(0),
-        SHARED_MEV_ESCROW_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xc98F25BcAA6B812a07460f18da77AF8385be7b56'
-        ),
-        SHARED_MEV_ESCROW_GENESIS_BLOCK=BlockNumber(215370),
+        SHARED_MEV_ESCROW_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        SHARED_MEV_ESCROW_GENESIS_BLOCK=BlockNumber(0),
         MULTICALL_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xcA11bde05977b3631167028862bE2a173976CA11'
         ),
         V2_POOL_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         V2_POOL_GENESIS_BLOCK=BlockNumber(0),
-        GENESIS_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x8A94e1d22D83990205843cda08376d16F150c9bb'
-        ),
+        GENESIS_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeifg4pobtkdhav577d354d6j4wga3krvrnz3zbviqbm7rfqewh6foy',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(2791364),
-        GENESIS_TIMESTAMP=Timestamp(1695902400),
+        GENESIS_VALIDATORS_IPFS_HASH='',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(0),
+        GENESIS_TIMESTAMP=Timestamp(1742213400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
-                hexstr=HexStr('0x9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1')
+                hexstr=HexStr('0x212f13fc4df078b6cb7db228f1c8307566dcecf900867401a92023d7ba99cb5f')
             )
         ),
-        GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x01017000')),
-        CHAIN_ID=17000,
+        GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x10000910')),
+        CHAIN_ID=560048,
         IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
-        SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x04017000')),
-        SHAPELLA_EPOCH=256,
-        SHAPELLA_BLOCK=BlockNumber(6698),
-        PECTRA_BLOCK=BlockNumber(3419704),
+        SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x40000910')),
+        SHAPELLA_EPOCH=0,
+        SHAPELLA_BLOCK=BlockNumber(0),
+        PECTRA_EPOCH=BlockNumber(2048),
+        PECTRA_BLOCK=BlockNumber(0),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -208,6 +203,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
         SHAPELLA_BLOCK=BlockNumber(29242932),
+        PECTRA_EPOCH=BlockNumber(0),
         PECTRA_BLOCK=BlockNumber(0),
     ),
     CHIADO: BaseNetworkConfig(
@@ -255,6 +251,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
         SHAPELLA_EPOCH=244224,
         SHAPELLA_BLOCK=BlockNumber(4101611),
+        PECTRA_EPOCH=BlockNumber(948224),
         PECTRA_BLOCK=BlockNumber(14642217),
     ),
 }

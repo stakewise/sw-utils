@@ -24,7 +24,7 @@ from .networks import (
     ETH_NETWORKS,
     GNO_NETWORKS,
     GNOSIS,
-    HOLESKY,
+    HOODI,
     MAINNET,
     NETWORKS,
     BaseNetworkConfig,
