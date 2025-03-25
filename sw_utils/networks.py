@@ -46,6 +46,7 @@ class BaseNetworkConfig:
     SHAPELLA_FORK_VERSION: bytes
     SHAPELLA_EPOCH: int
     SHAPELLA_BLOCK: BlockNumber
+    PECTRA_BLOCK: BlockNumber
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -113,6 +114,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
         SHAPELLA_BLOCK=BlockNumber(17034870),
+        PECTRA_BLOCK=BlockNumber(0),
     ),
     HOLESKY: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -157,6 +159,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x04017000')),
         SHAPELLA_EPOCH=256,
         SHAPELLA_BLOCK=BlockNumber(6698),
+        PECTRA_BLOCK=BlockNumber(3419704),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -205,6 +208,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
         SHAPELLA_BLOCK=BlockNumber(29242932),
+        PECTRA_BLOCK=BlockNumber(0),
     ),
     CHIADO: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -251,5 +255,6 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
         SHAPELLA_EPOCH=244224,
         SHAPELLA_BLOCK=BlockNumber(4101611),
+        PECTRA_BLOCK=BlockNumber(14642217),
     ),
 }
