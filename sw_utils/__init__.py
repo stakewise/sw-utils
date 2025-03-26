@@ -39,6 +39,8 @@ from .signing import (
     compute_deposit_message,
     compute_signing_root,
     get_eth1_withdrawal_credentials,
+    get_compounding_withdrawal_credentials,
+    get_withdrawal_credentials,
     get_exit_message_signing_root,
     is_valid_deposit_data_signature,
     is_valid_exit_signature,

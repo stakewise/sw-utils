@@ -1,3 +1,5 @@
+from ast import TypeAlias
+from typing import Literal
 import milagro_bls_binding as bls
 from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
@@ -7,6 +9,8 @@ from ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 from .typings import Bytes32, ConsensusFork
 
 ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
+COMPOUNDING_WITHDRAWAL_PREFIX = bytes.fromhex('02')
+
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
 DOMAIN_EXIT = bytes.fromhex('04000000')
 ZERO_BYTES32 = b'\x00' * 32
@@ -65,7 +69,15 @@ def compute_deposit_data(
 
 
 def get_eth1_withdrawal_credentials(vault: HexAddress) -> Bytes32:
-    withdrawal_credentials = ETH1_ADDRESS_WITHDRAWAL_PREFIX
+    return get_withdrawal_credentials(vault, ETH1_ADDRESS_WITHDRAWAL_PREFIX)
+
+
+def get_compounding_withdrawal_credentials(vault: HexAddress) -> Bytes32:
+    return get_withdrawal_credentials(vault, COMPOUNDING_WITHDRAWAL_PREFIX)
+
+
+def get_withdrawal_credentials(vault: HexAddress, prefix: bytes) -> Bytes32:
+    withdrawal_credentials = prefix
     withdrawal_credentials += b'\x00' * 11
     withdrawal_credentials += to_canonical_address(vault)
     return Bytes32(withdrawal_credentials)
