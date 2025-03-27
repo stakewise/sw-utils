@@ -65,11 +65,11 @@ def compute_deposit_data(
     )
 
 
-def get_01_withdrawal_credentials(vault: HexAddress) -> Bytes32:
+def get_v1_validator_withdrawal_credentials(vault: HexAddress) -> Bytes32:
     return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_01)
 
 
-def get_02_withdrawal_credentials(vault: HexAddress) -> Bytes32:
+def get_v2_validator_withdrawal_credentials(vault: HexAddress) -> Bytes32:
     return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_02)
 
 
