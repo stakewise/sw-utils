@@ -6,7 +6,8 @@ from ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 
 from .typings import Bytes32, ConsensusFork
 
-ETH1_ADDRESS_WITHDRAWAL_PREFIX = bytes.fromhex('01')
+ADDRESS_WITHDRAWAL_PREFIX_01 = bytes.fromhex('01')
+ADDRESS_WITHDRAWAL_PREFIX_02 = bytes.fromhex('02')
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
 DOMAIN_EXIT = bytes.fromhex('04000000')
 ZERO_BYTES32 = b'\x00' * 32
@@ -64,11 +65,12 @@ def compute_deposit_data(
     )
 
 
-def get_eth1_withdrawal_credentials(vault: HexAddress) -> Bytes32:
-    withdrawal_credentials = ETH1_ADDRESS_WITHDRAWAL_PREFIX
-    withdrawal_credentials += b'\x00' * 11
-    withdrawal_credentials += to_canonical_address(vault)
-    return Bytes32(withdrawal_credentials)
+def get_v1_withdrawal_credentials(vault: HexAddress) -> Bytes32:
+    return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_01)
+
+
+def get_v2_withdrawal_credentials(vault: HexAddress) -> Bytes32:
+    return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_02)
 
 
 def is_valid_deposit_data_signature(
@@ -126,6 +128,13 @@ def compute_deposit_domain(fork_version: bytes) -> bytes:
         genesis_validators_root=ZERO_BYTES32,
     ).hash_tree_root
     return DOMAIN_DEPOSIT + fork_data_root[:28]
+
+
+def _get_withdrawal_credentials(vault: HexAddress, prefix: bytes) -> Bytes32:
+    withdrawal_credentials = prefix
+    withdrawal_credentials += b'\x00' * 11
+    withdrawal_credentials += to_canonical_address(vault)
+    return Bytes32(withdrawal_credentials)
 
 
 def _compute_exit_domain(genesis_validators_root: Bytes32, fork_version: bytes) -> bytes:
