@@ -121,25 +121,33 @@ NETWORKS = {
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
         SECONDS_PER_SLOT=12,
-        KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        KEEPER_GENESIS_BLOCK=BlockNumber(0),
-        KEEPER_GENESIS_TIMESTAMP=Timestamp(0),
-        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xA7D1Ac9D6F32B404C75626874BA56f7654c1dC0f'
+        ),
+        KEEPER_GENESIS_BLOCK=BlockNumber(94074),
+        KEEPER_GENESIS_TIMESTAMP=Timestamp(1743444252),
+        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xc61847D6fc1F64162ff9f1D06205d9C4cDb2F239'
+        ),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
         VALIDATORS_REGISTRY_GENESIS_BLOCK=BlockNumber(0),
-        SHARED_MEV_ESCROW_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        SHARED_MEV_ESCROW_GENESIS_BLOCK=BlockNumber(0),
+        SHARED_MEV_ESCROW_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x51FD45BAEfB12f54766B5C4d639b360Ea50063bd'
+        ),
+        SHARED_MEV_ESCROW_GENESIS_BLOCK=BlockNumber(94050),
         MULTICALL_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xcA11bde05977b3631167028862bE2a173976CA11'
         ),
         V2_POOL_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         V2_POOL_GENESIS_BLOCK=BlockNumber(0),
-        GENESIS_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        GENESIS_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xba447498DC4c169f2b4f427B2c4D532320457E89'
+        ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        GENESIS_VALIDATORS_IPFS_HASH='',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(0),
+        GENESIS_VALIDATORS_IPFS_HASH='bafybeieual2aumusnnbetwovmurfdwqvqb5fa5uktq5c4t3mnsup6di4r4',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(133),
         GENESIS_TIMESTAMP=Timestamp(1742213400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
@@ -154,7 +162,7 @@ NETWORKS = {
         SHAPELLA_EPOCH=0,
         SHAPELLA_BLOCK=BlockNumber(0),
         PECTRA_EPOCH=BlockNumber(2048),
-        PECTRA_BLOCK=BlockNumber(0),
+        PECTRA_BLOCK=BlockNumber(60412),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
