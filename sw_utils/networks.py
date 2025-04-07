@@ -48,6 +48,7 @@ class BaseNetworkConfig:
     SHAPELLA_BLOCK: BlockNumber
     PECTRA_EPOCH: int
     PECTRA_BLOCK: BlockNumber
+    OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -117,6 +118,9 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(17034870),
         PECTRA_EPOCH=BlockNumber(0),
         PECTRA_BLOCK=BlockNumber(0),
+        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
+        ),
     ),
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -163,6 +167,9 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(0),
         PECTRA_EPOCH=BlockNumber(2048),
         PECTRA_BLOCK=BlockNumber(60412),
+        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
+        ),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -213,6 +220,9 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(29242932),
         PECTRA_EPOCH=BlockNumber(0),
         PECTRA_BLOCK=BlockNumber(0),
+        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
+        ),
     ),
     CHIADO: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -261,5 +271,8 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(4101611),
         PECTRA_EPOCH=BlockNumber(948224),
         PECTRA_BLOCK=BlockNumber(14642217),
+        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x5518052f2d898f062ee59964004A560F24E2eE7d'
+        ),
     ),
 }
