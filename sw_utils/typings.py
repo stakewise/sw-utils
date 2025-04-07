@@ -62,6 +62,10 @@ class ProtocolConfig:
 
     # Period for operators to rotate exit signatures
     until_force_exit_epochs: int
+    
+    # Time period (in seconds) to trigger force exits if the Operator fails to execute withdrawals.
+    # Effective starting from the Pectra upgrade.
+    force_withdrawals_period: int
 
     exit_signature_recover_threshold: int
 
