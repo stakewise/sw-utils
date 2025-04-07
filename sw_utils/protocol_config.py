@@ -51,6 +51,7 @@ def build_protocol_config(
         exit_signature_epoch=config_data['exit_signature_epoch'],
         signature_validity_period=config_data['signature_validity_period'],
         until_force_exit_epochs=config_data['until_force_exit_epochs'],
+        force_withdrawals_period=config_data['force_withdrawals_period'],
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
         os_token_vaults=os_token_vaults,
     )
