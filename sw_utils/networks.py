@@ -69,6 +69,10 @@ class BaseNetworkConfig:
             epoch=self.SHAPELLA_EPOCH,
         )
 
+    @property
+    def PECTRA_SLOT(self) -> int:
+        return self.PECTRA_EPOCH * self.SLOTS_PER_EPOCH
+
 
 NETWORKS = {
     MAINNET: BaseNetworkConfig(
