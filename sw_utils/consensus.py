@@ -60,6 +60,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     Extended AsyncBeacon Provider with extra features:
     - support for fallback endpoints
     - post requests to consensus nodes
+    - methods for Pectra: pending deposits, pending partial withdrawals
     """
 
     def __init__(
@@ -123,9 +124,15 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             epoch=int(fork_data['epoch']),
         )
 
-    async def get_pending_deposits(self, state_id: str = 'head') -> list[dict]:
+    async def get_pending_deposits(self, state_id: int | str = 'head') -> list[dict]:
         """Fetches pending deposits."""
         endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_deposits'
+        response = await self._async_make_get_request(endpoint_uri)
+        return response['data']
+
+    async def get_pending_partial_withdrawals(self, state_id: int | str = 'head') -> list[dict]:
+        """Fetches pending deposits."""
+        endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_partial_withdrawals'
         response = await self._async_make_get_request(endpoint_uri)
         return response['data']
 
