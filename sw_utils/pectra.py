@@ -1,4 +1,5 @@
 from eth_typing import ChecksumAddress
+
 from sw_utils.networks import GNOSIS, NETWORKS
 
 GNOSIS_GENESIS_VAULT_PECTRA_VERSION = 4
