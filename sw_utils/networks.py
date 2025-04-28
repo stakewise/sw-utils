@@ -121,7 +121,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
         SHAPELLA_BLOCK=BlockNumber(17034870),
-        PECTRA_EPOCH=BlockNumber(0),
+        PECTRA_EPOCH=364032,
         PECTRA_BLOCK=BlockNumber(0),
         PECTRA_VAULT_VERSION=5,
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
@@ -171,7 +171,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x40000910')),
         SHAPELLA_EPOCH=0,
         SHAPELLA_BLOCK=BlockNumber(0),
-        PECTRA_EPOCH=BlockNumber(2048),
+        PECTRA_EPOCH=2048,
         PECTRA_BLOCK=BlockNumber(60412),
         PECTRA_VAULT_VERSION=5,
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
@@ -225,7 +225,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
         SHAPELLA_BLOCK=BlockNumber(29242932),
-        PECTRA_EPOCH=BlockNumber(0),
+        PECTRA_EPOCH=1337856,
         PECTRA_BLOCK=BlockNumber(0),
         PECTRA_VAULT_VERSION=3,
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
@@ -277,7 +277,7 @@ NETWORKS = {
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
         SHAPELLA_EPOCH=244224,
         SHAPELLA_BLOCK=BlockNumber(4101611),
-        PECTRA_EPOCH=BlockNumber(948224),
+        PECTRA_EPOCH=948224,
         PECTRA_BLOCK=BlockNumber(14642217),
         PECTRA_VAULT_VERSION=3,
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
