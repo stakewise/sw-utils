@@ -6,8 +6,8 @@ from ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
 
 from .typings import Bytes32, ConsensusFork
 
-ADDRESS_WITHDRAWAL_PREFIX_01 = bytes.fromhex('01')
-ADDRESS_WITHDRAWAL_PREFIX_02 = bytes.fromhex('02')
+WITHDRAWAL_PREFIX_V1 = bytes.fromhex('01')
+WITHDRAWAL_PREFIX_V2 = bytes.fromhex('02')
 DOMAIN_DEPOSIT = bytes.fromhex('03000000')
 DOMAIN_EXIT = bytes.fromhex('04000000')
 ZERO_BYTES32 = b'\x00' * 32
@@ -66,11 +66,11 @@ def compute_deposit_data(
 
 
 def get_v1_withdrawal_credentials(vault: HexAddress) -> Bytes32:
-    return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_01)
+    return _get_withdrawal_credentials(vault, WITHDRAWAL_PREFIX_V1)
 
 
 def get_v2_withdrawal_credentials(vault: HexAddress) -> Bytes32:
-    return _get_withdrawal_credentials(vault, ADDRESS_WITHDRAWAL_PREFIX_02)
+    return _get_withdrawal_credentials(vault, WITHDRAWAL_PREFIX_V2)
 
 
 def is_valid_deposit_data_signature(
