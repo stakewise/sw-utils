@@ -36,6 +36,11 @@ def build_protocol_config(
 
     os_token_vaults = [Web3.to_checksum_address(v) for v in config_data.get('os_token_vaults', [])]
 
+    validators_consolidation_batch_limit = config_data.get(
+        'validators_consolidation_batch_limit', 100
+    )
+    force_withdrawals_period = config_data.get('force_withdrawals_period', 24 * 60 * 60)
+
     return ProtocolConfig(
         oracles=oracles,
         rewards_threshold=rewards_threshold or 0,
@@ -48,10 +53,11 @@ def build_protocol_config(
         inactive_validator_balance=Wei(int(config_data['inactive_validator_balance'])),
         validators_approval_batch_limit=config_data['validators_approval_batch_limit'],
         validators_exit_rotation_batch_limit=config_data['validators_exit_rotation_batch_limit'],
+        validators_consolidation_batch_limit=validators_consolidation_batch_limit,
         exit_signature_epoch=config_data['exit_signature_epoch'],
         signature_validity_period=config_data['signature_validity_period'],
         until_force_exit_epochs=config_data['until_force_exit_epochs'],
-        force_withdrawals_period=config_data['force_withdrawals_period'],
+        force_withdrawals_period=force_withdrawals_period,
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
         os_token_vaults=os_token_vaults,
     )
