@@ -77,8 +77,10 @@ def get_mocked_protocol_config(
     exit_signature_epoch: int = 0,
     validators_approval_batch_limit: int = 100,
     validators_exit_rotation_batch_limit: int = 1000,
+    validators_consolidation_batch_limit: int = 100,
     signature_validity_period: int = 60,
     until_force_exit_epochs: int = 1000,
+    force_withdrawals_period: int = 60 * 60 * 24,  # 1 day
     validators_exit_queued_assets_bps: int = 500,  # 5%
     inactive_validator_balance: Wei = Web3.to_wei(31.75, 'ether'),
     validator_min_active_epochs: int = 2250,  # 10 days
@@ -104,10 +106,12 @@ def get_mocked_protocol_config(
         inactive_validator_balance=inactive_validator_balance,
         validators_approval_batch_limit=validators_approval_batch_limit,
         validators_exit_rotation_batch_limit=validators_exit_rotation_batch_limit,
+        validators_consolidation_batch_limit=validators_consolidation_batch_limit,
         exit_signature_epoch=exit_signature_epoch,
         exit_signature_recover_threshold=exit_signature_recover_threshold,
         signature_validity_period=signature_validity_period,
         until_force_exit_epochs=until_force_exit_epochs,
+        force_withdrawals_period=force_withdrawals_period,
         rewards_threshold=rewards_threshold,
         validators_threshold=validators_threshold,
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
