@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3 import Web3
-from web3.types import Timestamp
+from web3.types import Timestamp, Wei
 
 from sw_utils.typings import Bytes32, ConsensusFork
 
@@ -50,6 +50,7 @@ class BaseNetworkConfig:
     PECTRA_BLOCK: BlockNumber
     PECTRA_VAULT_VERSION: int
     OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
+    MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -127,6 +128,7 @@ NETWORKS = {
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
+        MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
     ),
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -177,6 +179,7 @@ NETWORKS = {
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),
+        MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -231,6 +234,7 @@ NETWORKS = {
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
+        MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
     ),
     CHIADO: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -283,5 +287,6 @@ NETWORKS = {
         OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x5518052f2d898f062ee59964004A560F24E2eE7d'
         ),
+        MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
     ),
 }

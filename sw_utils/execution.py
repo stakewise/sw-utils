@@ -184,17 +184,20 @@ def _create_jwt_auth_token(jwt_secret: str) -> str:
 
 
 class GasManager:
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         execution_client: AsyncWeb3,
         max_fee_per_gas_gwei: int = 100,
         priority_fee_num_blocks: int = 10,
         priority_fee_percentile: float = 80,
+        min_effective_priority_fee_per_gas: Wei = Wei(0),
     ) -> None:
         self.execution_client = execution_client
         self.max_fee_per_gas_gwei = max_fee_per_gas_gwei
         self.priority_fee_num_blocks = priority_fee_num_blocks
         self.priority_fee_percentile = priority_fee_percentile
+        self.min_effective_priority_fee_per_gas = min_effective_priority_fee_per_gas
 
     async def check_gas_price(self, high_priority: bool = False) -> bool:
         if high_priority:
@@ -250,4 +253,6 @@ class GasManager:
         if mean_reward > Web3.to_wei(1, 'gwei'):
             mean_reward = round(mean_reward, -8)
 
+        if self.min_effective_priority_fee_per_gas:
+            return Wei(max(self.min_effective_priority_fee_per_gas, mean_reward))
         return Wei(mean_reward)
