@@ -188,13 +188,13 @@ class GasManager:
     def __init__(
         self,
         execution_client: AsyncWeb3,
-        max_fee_per_gas_gwei: int = 100,
         priority_fee_num_blocks: int = 10,
         priority_fee_percentile: float = 80,
+        max_fee_per_gas: Wei = Web3.to_wei(100, 'gwei'),
         min_effective_priority_fee_per_gas: Wei = Wei(0),
     ) -> None:
         self.execution_client = execution_client
-        self.max_fee_per_gas_gwei = max_fee_per_gas_gwei
+        self.max_fee_per_gas = max_fee_per_gas
         self.priority_fee_num_blocks = priority_fee_num_blocks
         self.priority_fee_percentile = priority_fee_percentile
         self.min_effective_priority_fee_per_gas = min_effective_priority_fee_per_gas
@@ -207,7 +207,7 @@ class GasManager:
             # fallback to logic from web3
             max_fee_per_gas = await _max_fee_per_gas(self.execution_client, {})
 
-        if max_fee_per_gas >= Web3.to_wei(self.max_fee_per_gas_gwei, 'gwei'):
+        if max_fee_per_gas >= self.max_fee_per_gas:
             logging.warning(
                 'Current gas price (%s gwei) is too high. '
                 'Will try to submit transaction on the next block if the gas '

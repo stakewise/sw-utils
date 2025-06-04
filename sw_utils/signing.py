@@ -3,6 +3,7 @@ from eth_typing import BLSPubkey, BLSSignature, HexAddress
 from eth_utils import to_canonical_address
 from py_ecc.bls import G2ProofOfPossession
 from ssz import Serializable, bytes4, bytes32, bytes48, bytes96, uint64
+from web3.types import Gwei
 
 from .typings import Bytes32, ConsensusFork
 
@@ -47,20 +48,20 @@ class VoluntaryExit(Serializable):
 
 
 def compute_deposit_message(
-    public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int
+    public_key: bytes, withdrawal_credentials: bytes, amount: Gwei
 ) -> DepositMessage:
     return DepositMessage(
-        pubkey=public_key, withdrawal_credentials=withdrawal_credentials, amount=amount_gwei
+        pubkey=public_key, withdrawal_credentials=withdrawal_credentials, amount=amount
     )
 
 
 def compute_deposit_data(
-    public_key: bytes, withdrawal_credentials: bytes, amount_gwei: int, signature: bytes
+    public_key: bytes, withdrawal_credentials: bytes, amount: Gwei, signature: bytes
 ) -> DepositData:
     return DepositData(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
-        amount=amount_gwei,
+        amount=amount,
         signature=signature,
     )
 
@@ -77,7 +78,7 @@ def is_valid_deposit_data_signature(
     public_key: BLSPubkey,
     withdrawal_credentials: Bytes32,
     signature: BLSSignature,
-    amount_gwei: int,
+    amount: Gwei,
     fork_version: bytes,
 ) -> bool:
     """Checks whether deposit data is valid."""
@@ -85,7 +86,7 @@ def is_valid_deposit_data_signature(
     deposit_message = DepositMessage(
         pubkey=public_key,
         withdrawal_credentials=withdrawal_credentials,
-        amount=amount_gwei,
+        amount=amount,
     )
     return bls.Verify(public_key, compute_signing_root(deposit_message, domain), signature)
 
