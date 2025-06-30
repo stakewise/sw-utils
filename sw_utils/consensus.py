@@ -188,12 +188,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         return f'{uri[:max_len]}...'
 
     async def _async_make_get_request_inner(self, endpoint_uri: str) -> dict[str, Any]:
+        headers = {}
+        if self.user_agent:
+            headers = {'User-Agent': self.user_agent}
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
-                headers = {}
-                if self.user_agent:
-                    headers = {'User-Agent': self.user_agent}
                 return await async_json_make_get_request(uri, timeout=self.timeout, headers=headers)
 
             except Exception as error:
