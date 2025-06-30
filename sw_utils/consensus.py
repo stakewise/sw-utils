@@ -63,17 +63,20 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     - methods for Pectra: pending deposits, pending partial withdrawals
     """
 
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         base_urls: list[str],
         timeout: int = 60,
         retry_timeout: int = 0,
         log_uri_max_len: int | None = None,
+        user_agent: str | None = None,
     ) -> None:
         self.base_urls = base_urls
         self.timeout = timeout
         self.retry_timeout = retry_timeout
         self.log_uri_max_len = log_uri_max_len or 100
+        self.user_agent = user_agent
         super().__init__('')  # hack origin base_url param
 
     async def get_validators_by_ids(
@@ -188,7 +191,10 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         for i, url in enumerate(self.base_urls):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
-                return await async_json_make_get_request(uri, timeout=self.timeout)
+                headers = {}
+                if self.user_agent:
+                    headers = {'User-Agent': self.user_agent}
+                return await async_json_make_get_request(uri, timeout=self.timeout, headers=headers)
 
             except Exception as error:
                 if not can_be_retried_aiohttp_error(error):
@@ -209,12 +215,14 @@ def get_consensus_client(
     timeout: int = 60,
     retry_timeout: int = 0,
     log_uri_max_len: int | None = None,
+    user_agent: str | None = None,
 ) -> ExtendedAsyncBeacon:
     return ExtendedAsyncBeacon(
         base_urls=endpoints,
         timeout=timeout,
         retry_timeout=retry_timeout,
         log_uri_max_len=log_uri_max_len,
+        user_agent=user_agent,
     )
 
 
