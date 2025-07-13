@@ -10,3 +10,4 @@ local.env
 .history
 .DS_Store
 .coverage
+local
