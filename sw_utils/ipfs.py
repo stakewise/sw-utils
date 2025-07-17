@@ -242,7 +242,7 @@ class QuicknodePinClient(BasePinClient):
         except aiohttp.ClientResponseError as e:
             # Quicknode returns status 409 when pinning the same hash twice
             if e.status == 409 and self.ignore_pin_conflicts:
-                logger.info('Ignoring pin conflict')
+                logger.debug('Ignoring pin conflict')
                 return ipfs_hash
             raise
 
