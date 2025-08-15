@@ -139,6 +139,12 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         response = await self._async_make_get_request(endpoint_uri)
         return response['data']
 
+    async def get_pending_consolidations(self, state_id: int | str = 'head') -> list[dict]:
+        """Fetches pending consolidations."""
+        endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_consolidations'
+        response = await self._async_make_get_request(endpoint_uri)
+        return response['data']
+
     async def _async_make_get_request(self, endpoint_uri: str) -> dict[str, Any]:
         if self.retry_timeout:
 
