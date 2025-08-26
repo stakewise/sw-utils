@@ -1,19 +1,18 @@
-import contextlib
 import logging
 from binascii import unhexlify
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any
 
 import jwt
 from eth_typing import URI
 from web3 import AsyncWeb3, Web3
 from web3._utils.async_transactions import _max_fee_per_gas
 from web3.eth import AsyncEth
-from web3.middleware import async_geth_poa_middleware, async_simple_cache_middleware
 from web3.net import AsyncNet
-from web3.providers.async_rpc import AsyncHTTPProvider
-from web3.types import AsyncMiddleware, RPCEndpoint, RPCResponse, TxParams, Wei
+from web3.providers import AsyncHTTPProvider
+from web3.types import RPCEndpoint, RPCResponse, TxParams, Wei
 
+from sw_utils.consensus import ExtendedHTTPSessionManager
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
 logger = logging.getLogger(__name__)
@@ -36,16 +35,13 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     """
 
     _providers: list[AsyncHTTPProvider] = []
-    _locker_provider: AsyncHTTPProvider | None = None
-
-    # Turn off `async_http_retry_request_middleware`
-    _middlewares: tuple[AsyncMiddleware, ...] = ()
 
     def __init__(
         self,
         endpoint_urls: list[str],
         request_kwargs: Any | None = None,
         retry_timeout: int = 0,
+        use_cache: bool = False,
     ):
         self._endpoint_urls = endpoint_urls
         self._providers = []
@@ -56,7 +52,14 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
         for host_uri in endpoint_urls:
             if host_uri.startswith('http'):
-                self._providers.append(AsyncHTTPProvider(host_uri, request_kwargs))
+                provider = AsyncHTTPProvider(
+                    host_uri,
+                    request_kwargs,
+                    exception_retry_configuration=None,  # disable built-in retries
+                    cache_allowed_requests=use_cache,
+                )
+                provider._request_session_manager = ExtendedHTTPSessionManager()
+                self._providers.append(provider)
             else:
                 protocol = host_uri.split('://')[0]
                 raise ProtocolNotSupported(f'Protocol "{protocol}" is not supported.')
@@ -82,8 +85,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         return await self.make_request_inner(method, params)
 
     async def make_request_inner(self, method: RPCEndpoint, params: Any) -> RPCResponse:
-        if self._locker_provider:
-            return await self._locker_provider.make_request(method, params)
         for i, provider in enumerate(self._providers):
             try:
                 response = await provider.make_request(method, params)
@@ -99,28 +100,22 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
         return {}
 
-    @contextlib.contextmanager
-    def lock_endpoint(self, endpoint_uri: URI | str) -> Iterator:
-        uri_providers = [prov for prov in self._providers if prov.endpoint_uri == endpoint_uri]
-        if not uri_providers:
-            raise ValueError(f'Invalid uri provider for execution client: {uri_providers}')
-        self._locker_provider = uri_providers[0]
-        try:
-            yield
-        finally:
-            self._locker_provider = None
-
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
+
+    async def connect(self) -> None:
+        raise NotImplementedError('Persistent connection providers must implement this method')
+
+    async def disconnect(self) -> None:
+        raise NotImplementedError('Persistent connection providers must implement this method')
 
 
 # pylint: disable-next=too-many-arguments,too-many-positional-arguments
 def get_execution_client(
     endpoints: list[str],
-    is_poa: bool = False,
     timeout: int = 60,
     retry_timeout: int = 0,
-    use_cache: bool = True,
+    use_cache: bool = False,
     jwt_secret: str | None = None,
     user_agent: str | None = None,
 ) -> AsyncWeb3:
@@ -139,18 +134,12 @@ def get_execution_client(
         endpoint_urls=endpoints,
         request_kwargs={'timeout': timeout, 'headers': headers},
         retry_timeout=retry_timeout,
+        use_cache=use_cache,
     )
     client = AsyncWeb3(
         provider,
         modules={'eth': (AsyncEth,), 'net': AsyncNet},
     )
-
-    if is_poa:
-        client.middleware_onion.inject(async_geth_poa_middleware, layer=0)
-        logger.debug('Injected POA middleware')
-
-    if use_cache:
-        client.middleware_onion.add(async_simple_cache_middleware)
 
     return client
 
@@ -208,7 +197,7 @@ class GasManager:
             max_fee_per_gas = Wei(int(tx_params['maxFeePerGas']))
         else:
             # fallback to logic from web3
-            max_fee_per_gas = await _max_fee_per_gas(self.execution_client, {})
+            max_fee_per_gas = await _max_fee_per_gas(self.execution_client, {}, {})
 
         if max_fee_per_gas >= self.max_fee_per_gas:
             logging.warning(
