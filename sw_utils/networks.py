@@ -158,8 +158,8 @@ NETWORKS = {
             '0xba447498DC4c169f2b4f427B2c4D532320457E89'
         ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeieual2aumusnnbetwovmurfdwqvqb5fa5uktq5c4t3mnsup6di4r4',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(133),
+        GENESIS_VALIDATORS_IPFS_HASH='bafybeihgdexvx4oca6proa5adhcumf66zo5ugy5oppunsh2wnlo4ejnxgm',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(1118796),
         GENESIS_TIMESTAMP=Timestamp(1742213400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
@@ -266,8 +266,8 @@ NETWORKS = {
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x19C653Da7c37c66208fbfbE8908A5051B57b4C70'
         ),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeihkagspdbjaj4n5an4q5gzwyc6y3zu5s7xwjc5d7oqvzh7c4v4lfe',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(12906080),
+        GENESIS_VALIDATORS_IPFS_HASH='bafybeiadmxoyehtmngnemixsdq25vnghhpnzwfl6qlnollovy2ph3s7bce',
+        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(17554561),
         GENESIS_TIMESTAMP=Timestamp(1665396300),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
