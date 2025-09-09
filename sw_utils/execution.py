@@ -104,9 +104,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self.retry_timeout = retry_timeout
 
     async def connect(self) -> None:
-        raise NotImplementedError('Persistent connection providers must implement this method')
-
-    async def disconnect(self) -> None:
+        """Hide pylint warning, method is used for persistent connection providers."""
         raise NotImplementedError('Persistent connection providers must implement this method')
 
 

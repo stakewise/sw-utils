@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, Any, Sequence
 from aiohttp import ClientResponseError, ClientTimeout
 from eth_typing import URI, BlockNumber, HexStr
 from web3 import AsyncWeb3, Web3
-from web3._utils.http import DEFAULT_HTTP_TIMEOUT
-from web3._utils.http_session_manager import HTTPSessionManager
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VALIDATORS, GET_VOLUNTARY_EXITS
 from web3.exceptions import BlockNotFound
@@ -14,6 +12,7 @@ from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
+from sw_utils.http_session_manager import ExtendedHTTPSessionManager
 from sw_utils.typings import ChainHead, ConsensusFork
 
 logger = logging.getLogger(__name__)
@@ -51,45 +50,6 @@ EXITED_STATUSES = [
 
 if TYPE_CHECKING:
     from tenacity import RetryCallState
-
-
-class ExtendedHTTPSessionManager(HTTPSessionManager):
-    async def async_json_make_get_request(
-        self, endpoint_uri: URI, *args: Any, **kwargs: Any
-    ) -> dict[str, Any]:
-        kwargs.setdefault('timeout', ClientTimeout(DEFAULT_HTTP_TIMEOUT))
-        session = await self.async_cache_and_return_session(
-            endpoint_uri, request_timeout=kwargs['timeout']
-        )
-        async with session:
-            response = await session.get(endpoint_uri, *args, **kwargs)
-            response.raise_for_status()
-            return await response.json()
-
-    async def async_make_post_request(
-        self, endpoint_uri: URI, data: bytes | dict[str, Any], **kwargs: Any
-    ) -> bytes:
-        kwargs.setdefault('timeout', ClientTimeout(DEFAULT_HTTP_TIMEOUT))
-        session = await self.async_cache_and_return_session(
-            endpoint_uri, request_timeout=kwargs['timeout']
-        )
-        async with session:
-            kwargs['data'] = data
-            response = await session.post(endpoint_uri, **kwargs)
-            response.raise_for_status()
-            return await response.read()
-
-    async def async_json_make_post_request(
-        self, endpoint_uri: URI, *args: Any, **kwargs: Any
-    ) -> dict[str, Any]:
-        kwargs.setdefault('timeout', ClientTimeout(DEFAULT_HTTP_TIMEOUT))
-        session = await self.async_cache_and_return_session(
-            endpoint_uri, request_timeout=kwargs['timeout']
-        )
-        async with session:
-            response = await session.post(endpoint_uri, **kwargs)
-            response.raise_for_status()
-            return await response.json()
 
 
 class ExtendedAsyncBeacon(AsyncBeacon):
