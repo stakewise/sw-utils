@@ -207,7 +207,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
             try:
                 uri = URI(urljoin(url, endpoint_uri))
                 return await self._request_session_manager.async_json_make_post_request(
-                    uri, json=body, timeout=self.request_timeout, headers=headers
+                    uri, json=body, timeout=ClientTimeout(self.request_timeout), headers=headers
                 )
 
             except Exception as error:
