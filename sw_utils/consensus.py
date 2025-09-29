@@ -280,6 +280,26 @@ async def get_chain_justified_head(
     raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
 
 
+async def get_chain_latest_head(
+    consensus_client: ExtendedAsyncBeacon,
+    slots_per_epoch: int,
+) -> ChainHead:
+    """Fetches the fork latest chain head."""
+    block_data = await consensus_client.get_block('head')
+    slot = int(block_data['data']['message']['slot'])
+
+    return ChainHead(
+        epoch=slot // slots_per_epoch,
+        slot=slot,
+        block_number=BlockNumber(
+            int(block_data['data']['message']['body']['execution_payload']['block_number'])
+        ),
+        execution_ts=Timestamp(
+            int(block_data['data']['message']['body']['execution_payload']['timestamp'])
+        ),
+    )
+
+
 async def get_chain_epoch_head(
     epoch: int,
     slots_per_epoch: int,
