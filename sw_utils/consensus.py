@@ -150,7 +150,7 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         if statuses:
             body['statuses'] = [s.value for s in statuses]
 
-        return (await self._async_make_post_request(endpoint_uri=endpoint, body=body))['data']
+        return await self._async_make_post_request(endpoint_uri=endpoint, body=body)
 
     async def _async_make_get_request(
         self, endpoint_uri: str, params: dict[str, str] | None = None
