@@ -80,10 +80,18 @@ class ExtendedAsyncBeacon(AsyncBeacon):
     async def get_validators_by_ids(
         self, validator_ids: Sequence[str], state_id: str = 'head'
     ) -> dict:
-        endpoint = GET_VALIDATORS.format(state_id)
-        return await self._async_make_post_request(
-            endpoint_uri=endpoint, body={'ids': validator_ids}
-        )
+        """
+        Makes POST request, filters by validator ids.
+        """
+        return await self._post_validators(state_id=state_id, validator_ids=validator_ids)
+
+    async def get_validators_by_statuses(
+        self, statuses: Sequence[ValidatorStatus], state_id: str = 'head'
+    ) -> dict:
+        """
+        Makes POST request, filters by statuses.
+        """
+        return await self._post_validators(state_id=state_id, statuses=statuses)
 
     async def submit_voluntary_exit(
         self, epoch: int, validator_index: int, signature: HexStr
@@ -123,6 +131,26 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_consolidations'
         response = await self._async_make_get_request(endpoint_uri)
         return response['data']
+
+    async def _post_validators(
+        self,
+        state_id: str = 'head',
+        validator_ids: Sequence[str] | None = None,
+        statuses: Sequence[ValidatorStatus] | None = None,
+    ) -> dict:
+        """
+        Makes POST request, filters by validator ids and statuses.
+        """
+        endpoint = GET_VALIDATORS.format(state_id)
+        body = {}
+
+        if validator_ids:
+            body['ids'] = validator_ids
+
+        if statuses:
+            body['statuses'] = [s.value for s in statuses]
+
+        return await self._async_make_post_request(endpoint_uri=endpoint, body=body)
 
     async def _async_make_get_request(
         self, endpoint_uri: str, params: dict[str, str] | None = None
