@@ -12,7 +12,6 @@ from web3.net import AsyncNet
 from web3.providers import AsyncHTTPProvider
 from web3.types import RPCEndpoint, RPCResponse, TxParams, Wei
 
-from sw_utils.consensus import ExtendedHTTPSessionManager
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 
 logger = logging.getLogger(__name__)
@@ -58,7 +57,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                     exception_retry_configuration=None,  # disable built-in retries
                     cache_allowed_requests=use_cache,
                 )
-                provider._request_session_manager = ExtendedHTTPSessionManager()
                 self._providers.append(provider)
             else:
                 protocol = host_uri.split('://')[0]
@@ -106,6 +104,19 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
     async def connect(self) -> None:
         """Hide pylint warning, method is used for persistent connection providers."""
         raise NotImplementedError('Persistent connection providers must implement this method')
+
+    async def disconnect(self) -> None:
+        """
+        Close aiohttp sessions in nested providers.
+        Got `Unclosed client session` otherwise.
+        https://github.com/ethereum/web3.py/issues/3524
+        """
+        for provider in self._providers:
+            # pylint: disable-next=protected-access
+            cache = provider._request_session_manager.session_cache
+            for _, session in cache.items():
+                await session.close()
+            cache.clear()
 
 
 # pylint: disable-next=too-many-arguments,too-many-positional-arguments
@@ -195,8 +206,10 @@ class GasManager:
             max_fee_per_gas = Wei(int(tx_params['maxFeePerGas']))
         else:
             # fallback to logic from web3
-            max_fee_per_gas = await _max_fee_per_gas(self.execution_client, {}, {})
-
+            max_priority_fee = await self.execution_client.eth.max_priority_fee
+            max_fee_per_gas = await _max_fee_per_gas(
+                self.execution_client, {}, {'maxPriorityFeePerGas': max_priority_fee}
+            )
         if max_fee_per_gas >= self.max_fee_per_gas:
             logging.warning(
                 'Current gas price (%s gwei) is too high. '

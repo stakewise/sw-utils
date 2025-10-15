@@ -12,7 +12,6 @@ from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
-from sw_utils.http_session_manager import ExtendedHTTPSessionManager
 from sw_utils.typings import ChainHead, ConsensusFork
 
 logger = logging.getLogger(__name__)
@@ -75,7 +74,6 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         self.log_uri_max_len = log_uri_max_len or 100
         self.user_agent = user_agent
         super().__init__('')  # hack origin base_url param
-        self._request_session_manager = ExtendedHTTPSessionManager()
 
     async def get_validators_by_ids(
         self, validator_ids: Sequence[str], state_id: str = 'head'
@@ -131,6 +129,17 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_consolidations'
         response = await self._async_make_get_request(endpoint_uri)
         return response['data']
+
+    async def disconnect(self) -> None:
+        """
+        Close aiohttp sessions for provider.
+        Got `Unclosed client session` otherwise.
+        https://github.com/ethereum/web3.py/issues/3524
+        """
+        cache = self._request_session_manager.session_cache
+        for _, session in cache.items():
+            await session.close()
+        cache.clear()
 
     async def _post_validators(
         self,
