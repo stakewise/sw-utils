@@ -49,7 +49,7 @@ class BaseNetworkConfig:
     PECTRA_EPOCH: int
     PECTRA_BLOCK: BlockNumber
     PECTRA_VAULT_VERSION: int
-    OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
+    OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
     MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
 
     @property
@@ -125,7 +125,7 @@ NETWORKS = {
         PECTRA_EPOCH=364032,
         PECTRA_BLOCK=BlockNumber(0),
         PECTRA_VAULT_VERSION=5,
-        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+        OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
@@ -176,7 +176,7 @@ NETWORKS = {
         PECTRA_EPOCH=2048,
         PECTRA_BLOCK=BlockNumber(60412),
         PECTRA_VAULT_VERSION=5,
-        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+        OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
@@ -231,7 +231,7 @@ NETWORKS = {
         PECTRA_EPOCH=1337856,
         PECTRA_BLOCK=BlockNumber(0),
         PECTRA_VAULT_VERSION=3,
-        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+        OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
@@ -284,7 +284,7 @@ NETWORKS = {
         PECTRA_EPOCH=948224,
         PECTRA_BLOCK=BlockNumber(14642217),
         PECTRA_VAULT_VERSION=3,
-        OSTOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+        OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x5518052f2d898f062ee59964004A560F24E2eE7d'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
