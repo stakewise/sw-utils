@@ -87,6 +87,10 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         for i, provider in enumerate(self._providers):
             try:
                 response = await provider.make_request(method, params)
+                # Can receive "out of gas" error for some nodes.
+                # https://github.com/NethermindEth/nethermind/issues/9801
+                if ExtendedAsyncHTTPProvider._is_out_of_gas_error(response):
+                    continue
                 return response
             except Exception as error:
                 if not can_be_retried_aiohttp_error(error):
@@ -112,6 +116,19 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
+
+    @staticmethod
+    def _is_out_of_gas_error(response: RPCResponse) -> bool:
+        error = response.get('error')
+        if not error or not isinstance(error, dict):
+            return False
+        code = error.get('code')
+        if code != -32000:
+            return False
+        message = error.get('message')
+        if message != 'Gas estimation failed due to out of gas':
+            return False
+        return True
 
 
 # pylint: disable-next=too-many-arguments,too-many-positional-arguments
