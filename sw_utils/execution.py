@@ -85,18 +85,22 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         if self._locker_provider:
             return await self._locker_provider.make_request(method, params)
         for i, provider in enumerate(self._providers):
+            is_last_iteration = i == len(self._providers) - 1
             try:
                 response = await provider.make_request(method, params)
                 # Can receive "out of gas" error for some nodes.
                 # https://github.com/NethermindEth/nethermind/issues/9801
-                if ExtendedAsyncHTTPProvider._is_out_of_gas_error(response):
+                if (
+                    ExtendedAsyncHTTPProvider._is_out_of_gas_error(response)
+                    and not is_last_iteration
+                ):
                     continue
                 return response
             except Exception as error:
                 if not can_be_retried_aiohttp_error(error):
                     raise error
 
-                if i == len(self._providers) - 1:
+                if is_last_iteration:
                     raise error
 
                 logger.warning('%s: %s', provider.endpoint_uri, repr(error))
