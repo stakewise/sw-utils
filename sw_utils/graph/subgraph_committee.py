@@ -22,7 +22,7 @@ class SubgraphCommittee:
 
         for endpoint in endpoints:
             graph_client = GraphClient(
-                endpoint=endpoint,
+                endpoints=[endpoint],
                 request_timeout=request_timeout,
                 retry_timeout=retry_timeout,
             )
@@ -56,7 +56,7 @@ class SubgraphCommittee:
                 params={'blockNumber': block_number},
             )
         except Exception as e:
-            logger.warning('Failed to fetch vote from %s: %s', graph_client.endpoint, e)
+            logger.warning('Failed to fetch vote from %s: %s', graph_client.endpoints[0], e)
             return None
 
 

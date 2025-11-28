@@ -1,31 +1,52 @@
+import logging
+from typing import cast
+
 from eth_typing import BlockNumber
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
 
-from sw_utils.graph.decorators import retry_gql_errors
+from sw_utils.graph.decorators import can_be_retried_graphql_error, retry_gql_errors
+
+logger = logging.getLogger(__name__)
 
 
 class GraphClient:
     def __init__(
         self,
-        endpoint: str,
+        endpoints: list[str],
         request_timeout: int = 10,
         retry_timeout: int = 60,
         page_size: int = 100,
     ) -> None:
-        self.endpoint = endpoint
+        self.endpoints = endpoints
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.page_size = page_size
-
-        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
-        self.gql_client = Client(transport=transport)
+        self.gql_clients = []
+        for endpoint in endpoints:
+            transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
+            self.gql_clients.append(Client(transport=transport))
 
     async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
         retry_decorator = retry_gql_errors(delay=self.retry_timeout)
-        result = await retry_decorator(self.gql_client.execute_async)(query, variable_values=params)
+        result = await retry_decorator(self.run_query_inner)(query, variable_values=params)
         return result
+
+    async def run_query_inner(self, query: DocumentNode, params: dict | None = None) -> dict:
+        for i, gql_client in enumerate(self.gql_clients):
+            try:
+                return await gql_client.execute_async(query, variable_values=params)
+            except Exception as error:
+                if not can_be_retried_graphql_error(error):
+                    raise error
+
+                if i == len(self.gql_clients) - 1:
+                    raise error
+                transport = cast(AIOHTTPTransport, gql_client.transport)
+                logger.warning('%s: %s', transport.url, repr(error))
+
+        return {}
 
     async def fetch_pages(
         self,
