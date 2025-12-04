@@ -84,14 +84,22 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     async def make_request_inner(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         for i, provider in enumerate(self._providers):
+            is_last_iteration = i == len(self._providers) - 1
             try:
                 response = await provider.make_request(method, params)
+                # Can receive "out of gas" error for some nodes.
+                # https://github.com/NethermindEth/nethermind/issues/9801
+                if (
+                    ExtendedAsyncHTTPProvider._is_out_of_gas_error(response)
+                    and not is_last_iteration
+                ):
+                    continue
                 return response
             except Exception as error:
                 if not can_be_retried_aiohttp_error(error):
                     raise error
 
-                if i == len(self._providers) - 1:
+                if is_last_iteration:
                     raise error
 
                 logger.warning('%s: %s', provider.endpoint_uri, repr(error))
@@ -100,6 +108,19 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
 
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
+
+    @staticmethod
+    def _is_out_of_gas_error(response: RPCResponse) -> bool:
+        error = response.get('error')
+        if not error or not isinstance(error, dict):
+            return False
+        code = error.get('code')
+        if code != -32000:
+            return False
+        message = error.get('message')
+        if message != 'Gas estimation failed due to out of gas':
+            return False
+        return True
 
     async def connect(self) -> None:
         """Hide pylint warning, method is used for persistent connection providers."""
