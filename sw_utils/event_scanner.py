@@ -112,7 +112,7 @@ class EventScanner:
     ) -> list[EventData]:
         event_cls = getattr(self.processor.contract.events, self.processor.contract_event)
         return await event_cls.get_logs(
-            argument_filters=self.argument_filters, fromBlock=from_block, toBlock=to_block
+            argument_filters=self.argument_filters, from_block=from_block, to_block=to_block
         )
 
     def _estimate_next_chunk_size(self) -> None:
