@@ -47,7 +47,7 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self.retry_timeout = retry_timeout
 
         if endpoint_urls:
-            self.endpoint_uri = URI(endpoint_urls[0])
+            self.endpoint_uri = URI(endpoint_urls[0])  # type: ignore
 
         for host_uri in endpoint_urls:
             if host_uri.startswith('http'):
