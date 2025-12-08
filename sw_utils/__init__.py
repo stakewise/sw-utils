@@ -22,7 +22,6 @@ from .ipfs import (
     PinataUploadClient,
 )
 from .networks import (
-    CHIADO,
     ETH_NETWORKS,
     GNO_NETWORKS,
     GNOSIS,

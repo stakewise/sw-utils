@@ -9,10 +9,9 @@ from sw_utils.typings import Bytes32, ConsensusFork
 MAINNET = 'mainnet'
 HOODI = 'hoodi'
 GNOSIS = 'gnosis'
-CHIADO = 'chiado'
 
 ETH_NETWORKS = [MAINNET, HOODI]
-GNO_NETWORKS = [GNOSIS, CHIADO]
+GNO_NETWORKS = [GNOSIS]
 
 EMPTY_ADDR_HEX = HexAddress(HexStr('0x' + '00' * 20))
 
@@ -233,59 +232,6 @@ NETWORKS = {
         PECTRA_VAULT_VERSION=3,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
-        ),
-        MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
-    ),
-    CHIADO: BaseNetworkConfig(
-        SLOTS_PER_EPOCH=16,
-        SECONDS_PER_SLOT=5,
-        KEEPER_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x5f31eD13eBF81B67a9f9498F3d1D2Da553058988'
-        ),
-        KEEPER_GENESIS_BLOCK=BlockNumber(10627588),
-        KEEPER_GENESIS_TIMESTAMP=Timestamp(1720027625),
-        MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xd0747320d5457256D0203dfe61209Afbb90d22D7'
-        ),
-        VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xb97036A26259B7147018913bD58a774cf91acf25'
-        ),
-        VALIDATORS_REGISTRY_GENESIS_BLOCK=BlockNumber(155434),
-        SHARED_MEV_ESCROW_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x453056f0bc4631abB15eEC656139f88067668E3E'
-        ),
-        SHARED_MEV_ESCROW_GENESIS_BLOCK=BlockNumber(10627570),
-        MULTICALL_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xcA11bde05977b3631167028862bE2a173976CA11'
-        ),
-        V2_POOL_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        V2_POOL_GENESIS_BLOCK=BlockNumber(0),
-        GENESIS_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0xF82f6E46d0d0a9536b9CA4bc480372EeaFcd9E6c'
-        ),
-        GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x19C653Da7c37c66208fbfbE8908A5051B57b4C70'
-        ),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeiadmxoyehtmngnemixsdq25vnghhpnzwfl6qlnollovy2ph3s7bce',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(17554561),
-        GENESIS_TIMESTAMP=Timestamp(1665396300),
-        GENESIS_VALIDATORS_ROOT=Bytes32(
-            Web3.to_bytes(
-                hexstr=HexStr('0x9d642dac73058fbf39c0ae41ab1e34e4d889043cb199851ded7095bc99eb4c1e')
-            )
-        ),
-        GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0000006f')),
-        CHAIN_ID=10200,
-        IS_POA=False,
-        FAR_FUTURE_EPOCH=18446744073709551615,
-        SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x0300006f')),
-        SHAPELLA_EPOCH=244224,
-        SHAPELLA_BLOCK=BlockNumber(4101611),
-        PECTRA_EPOCH=948224,
-        PECTRA_BLOCK=BlockNumber(14642217),
-        PECTRA_VAULT_VERSION=3,
-        OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
-            '0x5518052f2d898f062ee59964004A560F24E2eE7d'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
     ),
