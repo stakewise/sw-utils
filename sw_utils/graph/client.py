@@ -19,12 +19,11 @@ class GraphClient:
         self.retry_timeout = retry_timeout
         self.page_size = page_size
 
-        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
-        self.gql_client = Client(transport=transport)
-
     async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
         retry_decorator = retry_gql_errors(delay=self.retry_timeout)
-        result = await retry_decorator(self.gql_client.execute_async)(query, variable_values=params)
+        transport = AIOHTTPTransport(url=self.endpoint, timeout=self.request_timeout)
+        async with Client(transport=transport) as session:
+            result = await retry_decorator(session.execute)(query, variable_values=params)
         return result
 
     async def fetch_pages(
