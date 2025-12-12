@@ -22,9 +22,17 @@ class GraphClient:
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
         self.gql_client = Client(transport=transport)
 
+    async def setup(self) -> None:
+        await self.gql_client.connect_async(reconnecting=True)
+
+    async def disconnect(self) -> None:
+        await self.gql_client.close_async()
+
     async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
         retry_decorator = retry_gql_errors(delay=self.retry_timeout)
-        result = await retry_decorator(self.gql_client.execute_async)(query, variable_values=params)
+        result = await retry_decorator(self.gql_client.session.execute)(
+            query, variable_values=params
+        )
         return result
 
     async def fetch_pages(
