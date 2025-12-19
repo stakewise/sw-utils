@@ -28,6 +28,7 @@ class BaseNetworkConfig:
     KEEPER_GENESIS_BLOCK: BlockNumber
     KEEPER_GENESIS_TIMESTAMP: Timestamp
     MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS: ChecksumAddress
+    MERKLE_DISTRIBUTOR_GENESIS_BLOCK: BlockNumber
     VALIDATORS_REGISTRY_CONTRACT_ADDRESS: ChecksumAddress  # eth2 deposit contract
     VALIDATORS_REGISTRY_GENESIS_BLOCK: BlockNumber  # eth2 deposit contract genesis
     SHARED_MEV_ESCROW_CONTRACT_ADDRESS: ChecksumAddress
@@ -93,6 +94,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xa9dc250dF4EE9273D09CFa455da41FB1cAC78d34'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(21788631),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
@@ -138,6 +140,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xc61847D6Fc1F64162fF9F1d06205D9c4cDb2f239'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(99439),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
@@ -188,6 +191,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xFBceefdBB0ca25a4043b35EF49C2810425243710'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(38426382),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x0B98057eA310F4d31F2a452B414647007d1645d9'
         ),
