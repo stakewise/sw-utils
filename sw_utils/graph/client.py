@@ -54,14 +54,13 @@ class GraphClient:
         params = params.copy() if params else {}
 
         skip = 0
-        last_id = ''
+        cursor = ''
         all_items = []
         while True:
             if cursor_pagination:
-                params.update({'first': page_size, 'lastID': last_id})
+                params.update({'first': page_size, 'lastID': cursor})
             else:
                 params.update({'first': page_size, 'skip': skip})
-                skip += page_size
             res = await self.run_query(query, params)
             entity = list(res.keys())[0]
             items = res[entity]
@@ -71,7 +70,7 @@ class GraphClient:
                 break
 
             if cursor_pagination:
-                last_id = items[-1]['id']
+                cursor = items[-1]['id']
             else:
                 skip += page_size
 
