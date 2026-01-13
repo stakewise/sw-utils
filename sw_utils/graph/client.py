@@ -42,22 +42,27 @@ class GraphClient:
         query: DocumentNode,
         params: dict | None = None,
         page_size: int | None = None,
+        cursor_pagination: bool = False,
     ) -> list[dict]:
         """
         Fetches all pages of the query. Returns concatenated result.
+        Supports both offset-based and cursor-based pagination.
         """
         if page_size is None:
             page_size = self.page_size
 
         params = params.copy() if params else {}
 
-        skip = 0  # page offset
+        skip = 0
+        last_id = ''
         all_items = []
-
         while True:
-            params.update({'first': page_size, 'skip': skip})
+            if cursor_pagination:
+                params.update({'first': page_size, 'lastID': last_id})
+            else:
+                params.update({'first': page_size, 'skip': skip})
+                skip += page_size
             res = await self.run_query(query, params)
-
             entity = list(res.keys())[0]
             items = res[entity]
             all_items.extend(items)
@@ -65,7 +70,10 @@ class GraphClient:
             if len(items) < page_size:
                 break
 
-            skip += page_size
+            if cursor_pagination:
+                last_id = items[-1]['id']
+            else:
+                skip += page_size
 
         return all_items
 
