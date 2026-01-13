@@ -1,5 +1,6 @@
 from eth_typing import BlockNumber
 from gql import Client, gql
+from gql.client import AsyncClientSession
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
 
@@ -21,10 +22,19 @@ class GraphClient:
 
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
         self.gql_client = Client(transport=transport)
+        self.session: AsyncClientSession | None = None
+
+    async def setup(self) -> None:
+        self.session = await self.gql_client.connect_async(reconnecting=True)
+
+    async def disconnect(self) -> None:
+        await self.gql_client.close_async()
 
     async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
+        if not self.session:
+            raise RuntimeError("GraphClient session is not initialized. Call 'setup' first.")
         retry_decorator = retry_gql_errors(delay=self.retry_timeout)
-        result = await retry_decorator(self.gql_client.execute_async)(query, variable_values=params)
+        result = await retry_decorator(self.session.execute)(query, variable_values=params)
         return result
 
     async def fetch_pages(

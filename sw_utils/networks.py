@@ -28,6 +28,7 @@ class BaseNetworkConfig:
     KEEPER_GENESIS_BLOCK: BlockNumber
     KEEPER_GENESIS_TIMESTAMP: Timestamp
     MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS: ChecksumAddress
+    MERKLE_DISTRIBUTOR_GENESIS_BLOCK: BlockNumber
     VALIDATORS_REGISTRY_CONTRACT_ADDRESS: ChecksumAddress  # eth2 deposit contract
     VALIDATORS_REGISTRY_GENESIS_BLOCK: BlockNumber  # eth2 deposit contract genesis
     SHARED_MEV_ESCROW_CONTRACT_ADDRESS: ChecksumAddress
@@ -40,7 +41,6 @@ class BaseNetworkConfig:
     GENESIS_VALIDATORS_IPFS_HASH: str
     GENESIS_VALIDATORS_LAST_BLOCK: BlockNumber
     CHAIN_ID: int
-    IS_POA: bool
     FAR_FUTURE_EPOCH: int
     SHAPELLA_FORK_VERSION: bytes
     SHAPELLA_EPOCH: int
@@ -94,6 +94,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xa9dc250dF4EE9273D09CFa455da41FB1cAC78d34'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(21788631),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
@@ -116,7 +117,6 @@ NETWORKS = {
         GENESIS_VALIDATORS_IPFS_HASH='bafybeih7iqn3ke2cydzctd6bmg5j3xyjdhpg352lvzhxd2fld7h2erzpuu',
         GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(21245634),
         CHAIN_ID=1,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
@@ -140,6 +140,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xc61847D6Fc1F64162fF9F1d06205D9c4cDb2f239'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(99439),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x00000000219ab540356cBB839Cbe05303d7705Fa'
         ),
@@ -167,7 +168,6 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x10000910')),
         CHAIN_ID=560048,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x40000910')),
         SHAPELLA_EPOCH=0,
@@ -191,6 +191,7 @@ NETWORKS = {
         MERKLE_DISTRIBUTOR_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xFBceefdBB0ca25a4043b35EF49C2810425243710'
         ),
+        MERKLE_DISTRIBUTOR_GENESIS_BLOCK=BlockNumber(38426382),
         VALIDATORS_REGISTRY_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x0B98057eA310F4d31F2a452B414647007d1645d9'
         ),
@@ -222,7 +223,6 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x00000064')),
         CHAIN_ID=100,
-        IS_POA=False,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
