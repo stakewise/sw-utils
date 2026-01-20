@@ -46,9 +46,6 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         self._providers = []
         self.retry_timeout = retry_timeout
 
-        if endpoint_urls:
-            self.endpoint_uri = URI(endpoint_urls[0])
-
         for host_uri in endpoint_urls:
             if host_uri.startswith('http'):
                 provider = AsyncHTTPProvider(
@@ -62,7 +59,10 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 protocol = host_uri.split('://')[0]
                 raise ProtocolNotSupported(f'Protocol "{protocol}" is not supported.')
 
-        super().__init__()
+        # Minimal setup for parent class.
+        # Required for batch request to work in a case of single endpoint.
+        # Multiple endpoints support for batch requests is not implemented yet.
+        super().__init__(endpoint_uri=URI(endpoint_urls[0]))
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         if self.retry_timeout:
