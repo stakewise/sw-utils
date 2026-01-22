@@ -1,8 +1,9 @@
 import random
 import string
+from decimal import Decimal
 from secrets import randbits
 
-from eth_typing import ChecksumAddress
+from eth_typing import ChecksumAddress, HexStr
 from faker import Faker
 from faker.providers import BaseProvider
 from py_ecc.bls import G2ProofOfPossession
@@ -25,27 +26,29 @@ class Web3Provider(BaseProvider):
         account = w3.eth.account.create()
         return account.address
 
-    def eth_proof(self) -> str:
-        # 32 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=64))
+    def eth_proof(self) -> HexStr:
+        return Web3.to_hex(random.randbytes(32))
+    
+    def merkle_root(self) -> HexStr:
+        return self.eth_proof()
 
-    def validator_signature(self) -> str:
+    def validator_signature(self) -> HexStr:
         # BLS signature, 96 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=192))
+        return Web3.to_hex(random.randbytes(96))
 
-    def account_signature(self) -> str:
+    def account_signature(self) -> HexStr:
         # ECDSA signature, 65 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=130))
+        return Web3.to_hex(random.randbytes(65))
 
-    def validator_public_key(self) -> str:
+    def validator_public_key(self) -> HexStr:
         # 48 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=96))
+        return Web3.to_hex(random.randbytes(48))
 
-    def ecies_public_key(self) -> str:
+    def ecies_public_key(self) -> HexStr:
         # 64 bytes
-        return '0x' + ''.join(random.choices('abcdef' + string.digits, k=128))
+        return Web3.to_hex(random.randbytes(64))
 
-    def account_public_key(self) -> str:
+    def account_public_key(self) -> HexStr:
         # ECIES public key, 64 bytes
         return self.ecies_public_key()
 
@@ -87,6 +90,7 @@ def get_mocked_protocol_config(
     vault_fee_max_bps: int = 1500,  # 15%
     os_token_vaults_exit_limit_bps: int = 10_000,  # 100%
     os_token_vaults: list[str] | None = None,
+    os_token_redeem_multiplier: Decimal = Decimal('1.0023'),  # ~0.23% adjustment
 ) -> ProtocolConfig:
     return ProtocolConfig(
         oracles=oracles
@@ -116,4 +120,5 @@ def get_mocked_protocol_config(
         validators_threshold=validators_threshold,
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
         os_token_vaults=os_token_vaults or [],
+        os_token_redeem_multiplier=os_token_redeem_multiplier,
     )
