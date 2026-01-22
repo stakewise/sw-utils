@@ -28,7 +28,7 @@ class Web3Provider(BaseProvider):
 
     def eth_proof(self) -> HexStr:
         return Web3.to_hex(random.randbytes(32))
-    
+
     def merkle_root(self) -> HexStr:
         return self.eth_proof()
 
