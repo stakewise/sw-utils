@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from web3 import Web3
 from web3.types import Wei
 
@@ -41,6 +43,12 @@ def build_protocol_config(
     )
     force_withdrawals_period = config_data.get('force_withdrawals_period', 24 * 60 * 60)
 
+    # Default value is based on historical APR, 0.23% adjustment
+    default_os_token_redeem_multiplier = Decimal('1.0023')
+    os_token_redeem_multiplier = Decimal(
+        config_data.get('os_token_redeem_multiplier', default_os_token_redeem_multiplier)
+    )
+
     return ProtocolConfig(
         oracles=oracles,
         rewards_threshold=rewards_threshold or 0,
@@ -60,4 +68,5 @@ def build_protocol_config(
         force_withdrawals_period=force_withdrawals_period,
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
         os_token_vaults=os_token_vaults,
+        os_token_redeem_multiplier=os_token_redeem_multiplier,
     )
