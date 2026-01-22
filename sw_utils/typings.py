@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Literal, NewType, TypeAlias
 
 from eth_keys.datatypes import PublicKey
@@ -76,6 +77,9 @@ class ProtocolConfig:
 
     # List of vaults used to determine osToken reward rate
     os_token_vaults: list[ChecksumAddress]
+
+    # Multiplier to adjust redemption assets to account for potential osToken rate increase
+    os_token_redeem_multiplier: Decimal
 
     # Keeper settings
     validators_threshold: int = 0
