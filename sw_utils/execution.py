@@ -65,6 +65,9 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
         super().__init__(endpoint_uri=URI(endpoint_urls[0]))
 
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+        """
+        Request with retries and fallback endpoints.
+        """
         if self.retry_timeout:
 
             def custom_before_log(retry_state: 'RetryCallState') -> None:
@@ -78,11 +81,13 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 self.retry_timeout,
                 before=custom_before_log,
             )
-            return await retry_decorator(self.make_request_inner)(method, params)
+            return await retry_decorator(self.make_request_with_fallback_endpoints)(method, params)
 
-        return await self.make_request_inner(method, params)
+        return await self.make_request_with_fallback_endpoints(method, params)
 
-    async def make_request_inner(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+    async def make_request_with_fallback_endpoints(
+        self, method: RPCEndpoint, params: Any
+    ) -> RPCResponse:
         for i, provider in enumerate(self._providers):
             is_last_iteration = i == len(self._providers) - 1
             try:
@@ -105,6 +110,51 @@ class ExtendedAsyncHTTPProvider(AsyncHTTPProvider):
                 logger.warning('%s: %s', provider.endpoint_uri, repr(error))
 
         return {}
+
+    async def make_batch_request(
+        self, batch_requests: list[tuple[RPCEndpoint, Any]]
+    ) -> list[RPCResponse] | RPCResponse:
+        """
+        Batch request with retries and fallback endpoints.
+        """
+        if self.retry_timeout:
+
+            def custom_before_log(retry_state: 'RetryCallState') -> None:
+                if retry_state.attempt_number <= 1:
+                    return
+                msg = 'Retrying execution batch request, attempt %s'
+                args = (retry_state.attempt_number,)
+                logger.log(logging.INFO, msg, *args)
+
+            retry_decorator = retry_aiohttp_errors(
+                self.retry_timeout,
+                before=custom_before_log,
+            )
+            return await retry_decorator(self.make_batch_request_with_fallback_endpoints)(
+                batch_requests
+            )
+
+        return await self.make_batch_request_with_fallback_endpoints(batch_requests)
+
+    async def make_batch_request_with_fallback_endpoints(
+        self, batch_requests: list[tuple[RPCEndpoint, Any]]
+    ) -> list[RPCResponse] | RPCResponse:
+        for i, provider in enumerate(self._providers):
+            is_last_iteration = i == len(self._providers) - 1
+            try:
+                response = await provider.make_batch_request(batch_requests)
+                # No special error handling for batch, just fallback on exception
+                return response
+            except Exception as error:
+                if not can_be_retried_aiohttp_error(error):
+                    raise error
+
+                if is_last_iteration:
+                    raise error
+
+                logger.warning('%s: %s', provider.endpoint_uri, repr(error))
+
+        return []
 
     def set_retry_timeout(self, retry_timeout: int) -> None:
         self.retry_timeout = retry_timeout
