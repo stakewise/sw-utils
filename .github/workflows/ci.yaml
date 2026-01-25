@@ -8,20 +8,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.10.5
+          python-version: 3.12.12
 
-      # Install poetry
-      - name: Load cached Poetry installation
-        uses: actions/cache@v3
+      - name: Cache Packages
+        uses: actions/cache@v4
         with:
           path: ~/.local
-          key: poetry-0
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
+      # Install poetry
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -43,19 +43,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.10.10
+          python-version: 3.12.12
 
-      # Install poetry
-      - name: Load cached Poetry installation
-        uses: actions/cache@v3
+      - name: Cache Packages
+        uses: actions/cache@v4
         with:
           path: ~/.local
-          key: poetry-0
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      # Install poetry
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -77,19 +78,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.10.10
+          python-version: 3.12.12
 
-      # Install poetry
-      - name: Load cached Poetry installation
-        uses: actions/cache@v3
+      - name: Cache Packages
+        uses: actions/cache@v4
         with:
           path: ~/.local
-          key: poetry-0
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      # Install poetry
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -108,5 +110,3 @@ jobs:
       - uses: pypa/gh-action-pip-audit@v1.0.8
         with:
           inputs: audit_requirements.txt
-          ignore-vulns: |
-            GHSA-9548-qrrj-x5pj  # aiohttp 3.12.14 causes issues in sentry-sdk
