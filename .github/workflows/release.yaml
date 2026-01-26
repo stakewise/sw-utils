@@ -10,26 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Set up python
-        uses: actions/setup-python@v2
+        id: setup-python
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.10.5
-
-      # Install poetry
-      - name: Load cached Poetry installation
-        uses: actions/cache@v3
-        with:
-          path: ~/.local
-          key: poetry-0
+          python-version: 3.12.12
 
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: Gr1N/setup-poetry@v8
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
+          poetry-version: "1.8.3"
 
       - name: Check project version matches tag name
         run: |
