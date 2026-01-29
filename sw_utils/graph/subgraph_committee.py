@@ -17,7 +17,7 @@ class SubgraphCommittee:
     def __init__(
         self, endpoints: list[str], request_timeout: int, retry_timeout: int, page_size: int = 100
     ) -> None:
-        self.graph_clients = []
+        self.graph_clients: list[GraphClient] = []
         self.page_size = page_size
 
         for endpoint in endpoints:
@@ -27,6 +27,10 @@ class SubgraphCommittee:
                 retry_timeout=retry_timeout,
             )
             self.graph_clients.append(graph_client)
+
+    async def setup(self) -> None:
+        for graph_client in self.graph_clients:
+            await graph_client.setup()
 
     async def fetch_votes(
         self, query: DocumentNode, block_number: BlockNumber
