@@ -32,6 +32,10 @@ class SubgraphCommittee:
         for graph_client in self.graph_clients:
             await graph_client.setup()
 
+    async def disconnect(self) -> None:
+        for graph_client in self.graph_clients:
+            await graph_client.disconnect()
+
     async def fetch_votes(
         self, query: DocumentNode, block_number: BlockNumber
     ) -> 'SubgraphCommitteeVotes':
