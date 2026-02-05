@@ -21,7 +21,8 @@ class GraphClient:
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.page_size = page_size
-
+        # ssl parameter is added to disable AIOHTTPTransport warning
+        # will remove it for 4.x gql version
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
         self.gql_client = Client(transport=transport)
         self.session: AsyncClientSession | None = None
