@@ -8,6 +8,7 @@ from sw_utils.graph.decorators import retry_gql_errors
 
 
 class GraphClient:
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         endpoint: str,
