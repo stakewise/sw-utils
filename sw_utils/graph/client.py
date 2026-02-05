@@ -14,13 +14,14 @@ class GraphClient:
         request_timeout: int = 10,
         retry_timeout: int = 60,
         page_size: int = 100,
+        ssl: bool = True,
     ) -> None:
         self.endpoint = endpoint
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.page_size = page_size
 
-        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
+        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
         self.gql_client = Client(transport=transport)
         self.session: AsyncClientSession | None = None
 
