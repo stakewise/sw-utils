@@ -8,19 +8,22 @@ from sw_utils.graph.decorators import retry_gql_errors
 
 
 class GraphClient:
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         endpoint: str,
         request_timeout: int = 10,
         retry_timeout: int = 60,
         page_size: int = 100,
+        ssl: bool = True,
     ) -> None:
         self.endpoint = endpoint
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.page_size = page_size
-
-        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout)
+        # ssl parameter is added to disable AIOHTTPTransport warning
+        # will remove it for 4.x gql version
+        transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
         self.gql_client = Client(transport=transport)
         self.session: AsyncClientSession | None = None
 
