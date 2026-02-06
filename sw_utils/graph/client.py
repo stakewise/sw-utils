@@ -24,11 +24,11 @@ class GraphClient:
         # ssl parameter is added to disable AIOHTTPTransport warning
         # will remove it for 4.x gql version
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
-        self.gql_client = Client(transport=transport)
+        self.gql_client = Client(transport=transport, execute_timeout=self.request_timeout)
         self.session: AsyncClientSession | None = None
 
     async def setup(self) -> None:
-        self.session = await self.gql_client.connect_async(reconnecting=True)
+        self.session = await self.gql_client.connect_async(reconnecting=False)
 
     async def disconnect(self) -> None:
         await self.gql_client.close_async()
