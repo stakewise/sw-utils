@@ -28,7 +28,7 @@ class GraphClient:
         self.session: AsyncClientSession | None = None
 
     async def setup(self) -> None:
-        self.session = await self.gql_client.connect_async(reconnecting=False)
+        self.session = await self.gql_client.connect_async()
 
     async def disconnect(self) -> None:
         await self.gql_client.close_async()
