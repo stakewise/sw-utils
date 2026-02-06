@@ -1,14 +1,10 @@
 import asyncio
 import logging
 import signal
-from typing import Any, Iterator, TypeVar, overload
+from typing import Any
 from urllib.parse import urlparse, urlunparse
 
-from hexbytes import HexBytes
-
 logger = logging.getLogger(__name__)
-
-T = TypeVar('T')
 
 
 class InterruptHandler:
@@ -49,31 +45,6 @@ class InterruptHandler:
         while not self.exit and seconds > 0:
             await asyncio.sleep(min(seconds, 1))
             seconds -= 1
-
-
-@overload
-def chunkify(items: HexBytes, size: int) -> Iterator[HexBytes]:
-    ...
-
-
-@overload
-def chunkify(items: bytes, size: int) -> Iterator[bytes]:
-    ...
-
-
-@overload
-def chunkify(items: range, size: int) -> Iterator[range]:
-    ...
-
-
-@overload
-def chunkify(items: list[T], size: int) -> Iterator[list[T]]:
-    ...
-
-
-def chunkify(items, size):  # type: ignore[no-untyped-def]
-    for i in range(0, len(items), size):
-        yield items[i : i + size]
 
 
 def urljoin(base: str, *args: str) -> str:
