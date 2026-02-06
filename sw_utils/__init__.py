@@ -1,4 +1,4 @@
-from .common import InterruptHandler, chunkify
+from .common import InterruptHandler
 from .consensus import (
     PENDING_STATUSES,
     ExtendedAsyncBeacon,
