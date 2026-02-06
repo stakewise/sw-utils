@@ -1,10 +1,15 @@
+import logging
+
 from eth_typing import BlockNumber
 from gql import Client, gql
 from gql.client import AsyncClientSession
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
+from tenacity import RetryCallState
 
 from sw_utils.graph.decorators import retry_gql_errors
+
+logger = logging.getLogger(__name__)
 
 
 class GraphClient:
@@ -24,11 +29,11 @@ class GraphClient:
         # ssl parameter is added to disable AIOHTTPTransport warning
         # will remove it for 4.x gql version
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
-        self.gql_client = Client(transport=transport)
+        self.gql_client = Client(transport=transport, execute_timeout=self.request_timeout)
         self.session: AsyncClientSession | None = None
 
     async def setup(self) -> None:
-        self.session = await self.gql_client.connect_async(reconnecting=True)
+        self.session = await self.gql_client.connect_async(reconnecting=True, retry_execute=False)
 
     async def disconnect(self) -> None:
         await self.gql_client.close_async()
@@ -36,7 +41,22 @@ class GraphClient:
     async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
         if not self.session:
             raise RuntimeError("GraphClient session is not initialized. Call 'setup' first.")
-        retry_decorator = retry_gql_errors(delay=self.retry_timeout)
+
+        def log_before(retry_state: 'RetryCallState') -> None:
+            if retry_state.attempt_number <= 1:
+                return
+            msg = 'Retrying %s graph query, attempt %s'
+            query_name = 'Unknown'
+            if (
+                query.definitions
+                and hasattr(query.definitions[0], 'name')
+                and query.definitions[0].name
+            ):
+                query_name = query.definitions[0].name.value
+            args = (query_name, retry_state.attempt_number)
+            logger.log(logging.INFO, msg, *args)
+
+        retry_decorator = retry_gql_errors(delay=self.retry_timeout, before=log_before)
         result = await retry_decorator(self.session.execute)(query, variable_values=params)
         return result
 
