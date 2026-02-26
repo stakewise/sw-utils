@@ -1,4 +1,4 @@
-from .common import InterruptHandler
+from .common import InterruptHandler, async_batched
 from .consensus import (
     PENDING_STATUSES,
     ExtendedAsyncBeacon,

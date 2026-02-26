@@ -1,8 +1,10 @@
 import asyncio
 import logging
 import signal
-from typing import Any
+from typing import Any, AsyncGenerator, TypeVar
 from urllib.parse import urlparse, urlunparse
+
+T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
@@ -65,3 +67,17 @@ def urljoin(base: str, *args: str) -> str:
 
 def _join_paths(*args: str) -> str:
     return '/'.join(str(x).strip('/') for x in args)
+
+
+async def async_batched(
+    async_gen: AsyncGenerator[T, None], batch_size: int
+) -> AsyncGenerator[list[T], None]:
+    """Batch items from an async iterator. Replacement for itertools.batched."""
+    batch = []
+    async for item in async_gen:
+        batch.append(item)
+        if len(batch) == batch_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
