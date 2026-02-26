@@ -79,8 +79,13 @@ class ProtocolConfig:
     os_token_vaults: list[ChecksumAddress]
 
     # Multiplier to adjust redemption assets to account for potential osToken rate increase
-    os_token_redeem_multiplier: Decimal
+    # Normal value is bps * 10_000 (e.g. 10_023 bps = 1.0023x)
+    os_token_redeem_multiplier_bps: int
 
     # Keeper settings
     validators_threshold: int = 0
     rewards_threshold: int = 0
+
+    @property
+    def os_token_redeem_multiplier(self) -> Decimal:
+        return Decimal(self.os_token_redeem_multiplier_bps) / 10_000
