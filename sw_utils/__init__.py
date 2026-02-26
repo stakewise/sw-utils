@@ -9,7 +9,7 @@ from .consensus import (
     get_chain_latest_head,
     get_consensus_client,
 )
-from .decorators import retry_aiohttp_errors, retry_ipfs_exception, safe
+from .decorators import memoize, retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
 from .exceptions import IpfsException
 from .execution import GasManager, get_execution_client
