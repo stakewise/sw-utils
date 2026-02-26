@@ -25,6 +25,7 @@ def memoize(func: Callable) -> Callable:
     """
     cache: dict = {}
 
+    @wraps(func)
     async def memoized_async_func(*args, **kwargs):  # type: ignore
         key = (args, frozenset(sorted(kwargs.items())))
         if key in cache:
@@ -33,6 +34,7 @@ def memoize(func: Callable) -> Callable:
         cache[key] = result
         return result
 
+    @wraps(func)
     def memoized_sync_func(*args, **kwargs):  # type: ignore
         key = (args, frozenset(sorted(kwargs.items())))
         if key in cache:
