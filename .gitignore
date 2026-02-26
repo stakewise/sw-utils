@@ -11,3 +11,5 @@ local.env
 .DS_Store
 .coverage
 local
+CLAUDE.md
+.claude
