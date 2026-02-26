@@ -21,6 +21,7 @@ from .ipfs import (
     IpfsUploadClient,
     PinataUploadClient,
 )
+from .os_token_converter import OsTokenConverter
 from .networks import (
     ETH_NETWORKS,
     GNO_NETWORKS,
