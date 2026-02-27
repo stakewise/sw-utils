@@ -50,6 +50,7 @@ class BaseNetworkConfig:
     PECTRA_VAULT_VERSION: int
     OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
     MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
+    META_VAULT_ID: HexStr
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -128,6 +129,7 @@ NETWORKS = {
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
+        META_VAULT_ID=HexStr('0xcfece609e9557b5f0b085dadb8b7c99d43a9052d28ab3d68c9e3c1a9c3ab85c0'),
     ),
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -179,6 +181,7 @@ NETWORKS = {
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
+        META_VAULT_ID=HexStr('0xcfece609e9557b5f0b085dadb8b7c99d43a9052d28ab3d68c9e3c1a9c3ab85c0'),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -234,5 +237,6 @@ NETWORKS = {
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
+        META_VAULT_ID=HexStr('0xfb5cee5ecc2ff8d1a7a5ad55f89156551c040a926bec689720ab06063922454d'),
     ),
 }
