@@ -1,6 +1,5 @@
 import random
 import string
-from decimal import Decimal
 from secrets import randbits
 
 from eth_typing import ChecksumAddress, HexStr
@@ -90,7 +89,7 @@ def get_mocked_protocol_config(
     vault_fee_max_bps: int = 1500,  # 15%
     os_token_vaults_exit_limit_bps: int = 10_000,  # 100%
     os_token_vaults: list[str] | None = None,
-    os_token_redeem_multiplier: Decimal = Decimal('1.0023'),  # ~0.23% adjustment
+    os_token_redeem_multiplier_bps: int = 10_023,  # ~0.23% adjustment (1.0023x)
 ) -> ProtocolConfig:
     return ProtocolConfig(
         oracles=oracles
@@ -120,5 +119,5 @@ def get_mocked_protocol_config(
         validators_threshold=validators_threshold,
         os_token_vaults_exit_limit_bps=os_token_vaults_exit_limit_bps,
         os_token_vaults=os_token_vaults or [],
-        os_token_redeem_multiplier=os_token_redeem_multiplier,
+        os_token_redeem_multiplier_bps=os_token_redeem_multiplier_bps,
     )
