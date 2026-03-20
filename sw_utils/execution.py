@@ -282,7 +282,7 @@ class GasManager:
                 self.execution_client, {}, {'maxPriorityFeePerGas': max_priority_fee}
             )
         if max_fee_per_gas >= self.max_fee_per_gas:
-            logging.warning(
+            logger.warning(
                 'Current gas price (%s gwei) is too high. '
                 'Will try to submit transaction on the next block if the gas '
                 'price is acceptable.',
@@ -320,6 +320,9 @@ class GasManager:
         percentile = self.priority_fee_percentile
         history = await self.execution_client.eth.fee_history(num_blocks, 'pending', [percentile])
         validator_rewards = [r[0] for r in history['reward']]
+        if not validator_rewards:
+            logger.warning('Empty fee history rewards, falling back to max_priority_fee')
+            return Wei(await self.execution_client.eth.max_priority_fee)
         mean_reward = int(sum(validator_rewards) / len(validator_rewards))
 
         # prettify `mean_reward`
