@@ -11,10 +11,10 @@ python = "^3.12"
 sw-milagro-bls-binding = "==1.9.0"
 py-ecc = "^8.0.0"
 ipfshttpclient = "^0.8.0a2"
-web3 = "==7.13.0"
+web3 = "==7.14.1"
 tenacity = "==8.2.3"
 pyjwt = "==2.12.1"
-ssz = "==0.5.0"
+ssz = "==0.5.2"
 gql = {extras = ["aiohttp"], version = "==3.5.3"}
 
 [tool.poetry.group.dev.dependencies]
