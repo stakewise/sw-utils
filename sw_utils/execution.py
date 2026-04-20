@@ -198,10 +198,13 @@ def get_execution_client(
     use_cache: bool = False,
     jwt_secret: str | None = None,
     user_agent: str | None = None,
+    headers: dict[str, str] | None = None,
 ) -> AsyncWeb3:
-    headers = {
+    default_headers = {
         'Content-Type': 'application/json',
     }
+    headers = headers or {}
+    headers = default_headers | headers
     if user_agent:
         headers['User-Agent'] = user_agent
 
