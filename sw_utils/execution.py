@@ -197,6 +197,7 @@ def get_execution_client(
     retry_timeout: int = 0,
     use_cache: bool = False,
     jwt_secret: str | None = None,
+    user_agent: str | None = None,
     headers: dict[str, str] | None = None,
 ) -> AsyncWeb3:
     default_headers = {
@@ -204,6 +205,8 @@ def get_execution_client(
     }
     headers = headers or {}
     headers = default_headers | headers
+    if user_agent:
+        headers['User-Agent'] = user_agent
 
     if jwt_secret:
         token = _create_jwt_auth_token(jwt_secret)
