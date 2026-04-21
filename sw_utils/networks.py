@@ -52,6 +52,7 @@ class BaseNetworkConfig:
     MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
     COMMUNITY_VAULT_CONTRACT_ADDRESS: ChecksumAddress
     NODES_MANAGER_CONTRACT_ADDRESS: ChecksumAddress
+    NODES_MANAGER_GENESIS_BLOCK: BlockNumber
     OS_TOKEN_REDEEMER_CONTRACT_ADDRESS: ChecksumAddress
     VALIDATORS_CHECKER_CONTRACT_ADDRESS: ChecksumAddress
 
@@ -138,6 +139,7 @@ NETWORKS = {
         NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x5674848102D29d0652f03AcDc548C342ecA13592'
         ),
+        NODES_MANAGER_GENESIS_BLOCK=BlockNumber(24923159),
         OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xc43A7b16A7a167c0318390Cba16787C11e9e1FD0'
         ),
@@ -201,6 +203,7 @@ NETWORKS = {
         NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x7FaE5772fEe74e71077D3B47e629DD7a9Adb7149'
         ),
+        NODES_MANAGER_GENESIS_BLOCK=BlockNumber(2657589),
         OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x3A422b2433f28CD123a8DE665887f7a040BF0258'
         ),
@@ -264,6 +267,7 @@ NETWORKS = {
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
         COMMUNITY_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
         NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        NODES_MANAGER_GENESIS_BLOCK=BlockNumber(0),
         OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xB790391ee99b9193Ebb80022bf127d24Bac586c4'
         ),
