@@ -50,6 +50,10 @@ class BaseNetworkConfig:
     PECTRA_VAULT_VERSION: int
     OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
     MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
+    COMMUNITY_VAULT_CONTRACT_ADDRESS: ChecksumAddress
+    NODES_MANAGER_CONTRACT_ADDRESS: ChecksumAddress
+    OS_TOKEN_REDEEMER_CONTRACT_ADDRESS: ChecksumAddress
+    VALIDATORS_CHECKER_CONTRACT_ADDRESS: ChecksumAddress
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -128,6 +132,18 @@ NETWORKS = {
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
+        COMMUNITY_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x154628AC72533aad39aBdcaE2055Dced0b4Eef4D'
+        ),
+        NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x5674848102D29d0652f03AcDc548C342ecA13592'
+        ),
+        OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xc43A7b16A7a167c0318390Cba16787C11e9e1FD0'
+        ),
+        VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x508e82B5119CCfB923C387d62D2Ae7B56Df79906'
+        ),
     ),
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -179,6 +195,18 @@ NETWORKS = {
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(0, 'gwei'),
+        COMMUNITY_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x41831250328eFFCD3C1F5044540f0a9DA232E268'
+        ),
+        NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x7FaE5772fEe74e71077D3B47e629DD7a9Adb7149'
+        ),
+        OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x3A422b2433f28CD123a8DE665887f7a040BF0258'
+        ),
+        VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xF1b78B96212DCcbf8F34A83535e58864311Fb9eB'
+        ),
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -234,6 +262,14 @@ NETWORKS = {
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
         MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS=Web3.to_wei(1, 'gwei'),
+        COMMUNITY_VAULT_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        NODES_MANAGER_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
+        OS_TOKEN_REDEEMER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0xB790391ee99b9193Ebb80022bf127d24Bac586c4'
+        ),
+        VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
+            '0x80353898B72417AC5701a9809A9eF63F691BdE86'
+        ),
     ),
 }
 

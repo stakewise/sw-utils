@@ -8,31 +8,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Set up python
         id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: 3.12.12
 
-      - name: Cache Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
       # Install poetry
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1
         with:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Cache Packages
+        id: cache-packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       # Install dependencies
       - name: Install dependencies
+        if: steps.cache-packages.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
 
       # Run precommit
@@ -44,31 +46,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Set up python
         id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: 3.12.12
 
-      - name: Cache Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
       # Install poetry
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1
         with:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Cache Packages
+        id: cache-packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       # Install dependencies
       - name: Install dependencies
+        if: steps.cache-packages.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
 
       # Run tests
@@ -80,36 +84,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Set up python
         id: setup-python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: 3.12.12
 
-      - name: Cache Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.local
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
       # Install poetry
       - name: Install Poetry
-        uses: snok/install-poetry@v1
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1
         with:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
 
+      - name: Cache Packages
+        id: cache-packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       - name: Install dependencies
+        if: steps.cache-packages.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
 
       - name: Export requirements
         run: poetry export -f requirements.txt --without-hashes > audit_requirements.txt
 
       # Run audit
-      - uses: pypa/gh-action-pip-audit@v1.0.8
+      - uses: pypa/gh-action-pip-audit@3ac8fed01c7b32ab70210f182e557d4cb8c45fec # v1.0.7
         with:
           inputs: audit_requirements.txt
