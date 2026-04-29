@@ -33,6 +33,11 @@ from .networks import (
 from .os_token_converter import OsTokenConverter
 from .password import generate_password
 from .protocol_config import build_protocol_config
+from .release import (
+    is_meta_vault_upgraded_to_release,
+    is_vault_upgraded_to_pectra,
+    is_vault_upgraded_to_release,
+)
 from .signing import (
     DepositData,
     DepositMessage,
