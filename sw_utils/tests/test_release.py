@@ -3,18 +3,12 @@ from unittest import mock
 import pytest
 from web3 import Web3
 
-from sw_utils.tests import faker
+from sw_utils.networks import MAINNET, NETWORKS, ContractRelease, ContractReleaseVersion
 from sw_utils.release import (
     is_meta_vault_upgraded_to_release,
     is_vault_upgraded_to_release,
 )
-from sw_utils.networks import (
-    MAINNET,
-    NETWORKS,
-    ContractRelease,
-    ContractReleaseVersion,
-)
-
+from sw_utils.tests import faker
 
 NETWORK = MAINNET
 
