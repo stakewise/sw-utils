@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import IntEnum
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3 import Web3
@@ -14,6 +15,23 @@ ETH_NETWORKS = [MAINNET, HOODI]
 GNO_NETWORKS = [GNOSIS]
 
 EMPTY_ADDR_HEX = HexAddress(HexStr('0x' + '00' * 20))
+
+
+class ContractReleaseVersion(IntEnum):
+    V4 = 4  # Pectra release
+    V5 = 5  # Added redemptions, added sub-vaults registry for meta vaults
+
+
+# Add alias for readability
+PECTRA_CONTRACTS_RELEASE_VERSION = ContractReleaseVersion.V4
+
+
+@dataclass
+class ContractRelease:
+    version: ContractReleaseVersion
+    vault_version: int
+    genesis_vault_version: int
+    meta_vault_version: int
 
 
 @dataclass
@@ -55,6 +73,7 @@ class BaseNetworkConfig:
     NODES_MANAGER_GENESIS_BLOCK: BlockNumber
     OS_TOKEN_REDEEMER_CONTRACT_ADDRESS: ChecksumAddress
     VALIDATORS_CHECKER_CONTRACT_ADDRESS: ChecksumAddress
+    CONTRACTS_RELEASES: list[ContractRelease]
 
     @property
     def SECONDS_PER_BLOCK(self) -> int:
@@ -78,6 +97,20 @@ class BaseNetworkConfig:
     @property
     def PECTRA_SLOT(self) -> int:
         return self.PECTRA_EPOCH * self.SLOTS_PER_EPOCH
+
+    @property
+    def CONTRACTS_RELEASE_VERSION_TO_RELEASE(self) -> dict[ContractReleaseVersion, ContractRelease]:
+        return {release.version: release for release in self.CONTRACTS_RELEASES}
+
+    @property
+    def CONTRACTS_RELEASE_V4(self) -> ContractRelease:
+        """Pectra release"""
+        return self.CONTRACTS_RELEASE_VERSION_TO_RELEASE[ContractReleaseVersion.V4]
+
+    @property
+    def CONTRACTS_RELEASE_V5(self) -> ContractRelease:
+        """Added redemptions, added sub-vaults registry for meta vaults"""
+        return self.CONTRACTS_RELEASE_VERSION_TO_RELEASE[ContractReleaseVersion.V5]
 
 
 NETWORKS = {
@@ -146,6 +179,20 @@ NETWORKS = {
         VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x508e82B5119CCfB923C387d62D2Ae7B56Df79906'
         ),
+        CONTRACTS_RELEASES=[
+            ContractRelease(
+                version=ContractReleaseVersion.V4,
+                vault_version=5,
+                genesis_vault_version=5,
+                meta_vault_version=5,
+            ),
+            ContractRelease(
+                version=ContractReleaseVersion.V5,
+                vault_version=5,
+                genesis_vault_version=5,
+                meta_vault_version=6,
+            ),
+        ],
     ),
     HOODI: BaseNetworkConfig(
         SLOTS_PER_EPOCH=32,
@@ -210,6 +257,20 @@ NETWORKS = {
         VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0xF1b78B96212DCcbf8F34A83535e58864311Fb9eB'
         ),
+        CONTRACTS_RELEASES=[
+            ContractRelease(
+                version=ContractReleaseVersion.V4,
+                vault_version=5,
+                genesis_vault_version=5,
+                meta_vault_version=5,
+            ),
+            ContractRelease(
+                version=ContractReleaseVersion.V5,
+                vault_version=5,
+                genesis_vault_version=5,
+                meta_vault_version=6,
+            ),
+        ],
     ),
     GNOSIS: BaseNetworkConfig(
         SLOTS_PER_EPOCH=16,
@@ -274,6 +335,20 @@ NETWORKS = {
         VALIDATORS_CHECKER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x80353898B72417AC5701a9809A9eF63F691BdE86'
         ),
+        CONTRACTS_RELEASES=[
+            ContractRelease(
+                version=ContractReleaseVersion.V4,
+                vault_version=3,
+                genesis_vault_version=4,
+                meta_vault_version=3,
+            ),
+            ContractRelease(
+                version=ContractReleaseVersion.V5,
+                vault_version=3,
+                genesis_vault_version=4,
+                meta_vault_version=4,
+            ),
+        ],
     ),
 }
 
