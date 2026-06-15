@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.13.1"
+version = "v0.13.2"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-sw-milagro-bls-binding = "==1.9.0"
+sw-milagro-bls-binding = { git = "https://github.com/stakewise/milagro_bls_binding.git", tag = "v1.9.1" }
 py-ecc = "^8.0.0"
 ipfshttpclient = "^0.8.0a2"
 web3 = "==7.14.1"
