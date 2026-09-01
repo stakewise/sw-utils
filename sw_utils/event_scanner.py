@@ -61,7 +61,7 @@ class EventScanner:
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
-        if current_from_block >= to_block:
+        if current_from_block > to_block:
             return
 
         while current_from_block <= to_block:
