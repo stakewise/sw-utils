@@ -123,6 +123,41 @@ class TestEventScannerFuzzing:
             assert db.last_processed_block == to_block
 
 
+class TestEventScannerSingleBlock:
+    async def _fetch_all(self, from_block, to_block) -> list[EventData]:
+        event = MockedAsyncEvent()
+        return [event._get_mocked_event_data(b) for b in range(from_block, to_block + 1)]
+
+    async def test_scans_single_block_when_from_equals_to(self):
+        """Regression: get_from_block() == to_block (checkpoint == to_block - 1) is an
+        inclusive single-block range and must be scanned, not skipped."""
+        to_block = BlockNumber(100)
+        with mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=to_block):
+            scanner = EventScanner(processor=SimpleEventProcessor())
+            scanner._contract_call = self._fetch_all
+            try:
+                await scanner.process_new_events(to_block=to_block)
+                assert db.event_blocks == [to_block]
+                assert db.last_processed_block == to_block
+            finally:
+                db.clear()
+
+    async def test_skips_when_from_past_to(self):
+        """An empty range (get_from_block() > to_block) scans nothing."""
+        to_block = BlockNumber(100)
+        with mock.patch.object(
+            SimpleEventProcessor, 'get_from_block', return_value=BlockNumber(to_block + 1)
+        ):
+            scanner = EventScanner(processor=SimpleEventProcessor())
+            scanner._contract_call = self._fetch_all
+            try:
+                await scanner.process_new_events(to_block=to_block)
+                assert db.event_blocks == []
+                assert db.last_processed_block is None
+            finally:
+                db.clear()
+
+
 class MockedAsyncEvent:
     async def fetch_events(self, from_block, to_block) -> list[EventData]:
         """
