@@ -315,9 +315,10 @@ async def get_chain_justified_head(
             raise e
 
         execution_payload = slot['data']['message']['body']['execution_payload']
+        found_slot = last_slot_id - i
         return ChainHead(
-            epoch=epoch,
-            slot=last_slot_id - i,
+            epoch=found_slot // slots_per_epoch,
+            slot=found_slot,
             block_number=BlockNumber(int(execution_payload['block_number'])),
             execution_ts=Timestamp(int(execution_payload['timestamp'])),
         )
@@ -355,17 +356,17 @@ async def get_chain_epoch_head(
     slot_id: int = epoch * slots_per_epoch
     for i in range(slots_per_epoch):
         try:
-            slot = await consensus_client.get_block(str(slot_id - i))
+            slot = await consensus_client.get_block(str(slot_id + i))
         except ClientResponseError as e:
             if hasattr(e, 'status') and e.status == 404:
-                # slot was not proposed, try the previous one
+                # slot was not proposed, try the next one
                 continue
             raise e
         try:
             execution_payload = slot['data']['message']['body']['execution_payload']
             return ChainHead(
                 epoch=epoch,
-                slot=slot_id - i,
+                slot=slot_id + i,
                 block_number=BlockNumber(int(execution_payload['block_number'])),
                 execution_ts=Timestamp(int(execution_payload['timestamp'])),
             )
@@ -378,7 +379,7 @@ async def get_chain_epoch_head(
 
             return ChainHead(
                 epoch=epoch,
-                slot=slot_id - i,
+                slot=slot_id + i,
                 block_number=BlockNumber(int(block['number'])),
                 execution_ts=Timestamp(int(block['timestamp'])),
             )

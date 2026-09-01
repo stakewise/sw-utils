@@ -20,6 +20,9 @@ class ConsensusFork:
 
 @dataclass
 class ChainHead:
+    """For every ``ChainHead`` returned by this package's head-fetching functions,
+    ``epoch == slot // slots_per_epoch`` holds."""
+
     epoch: int
     slot: int
     block_number: BlockNumber
