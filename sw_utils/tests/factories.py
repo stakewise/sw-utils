@@ -21,6 +21,10 @@ class Web3Provider(BaseProvider):
         private_key = G2ProofOfPossession.KeyGen(seed)
         return private_key
 
+    def private_key_hex(self) -> HexStr:
+        # 32-byte private key as 0x-prefixed hex string
+        return Web3.to_hex(random.randbytes(32))
+
     def eth_address(self) -> ChecksumAddress:
         account = w3.eth.account.create()
         return account.address
