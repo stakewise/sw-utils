@@ -468,7 +468,7 @@ class IpfsFetchClient:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
-                return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
+                return await self._ipfs_fetch_bytes(endpoint, ipfs_hash)
             except _ContentUnverifiable as e:
                 unverifiable = True
                 logger.warning(repr(e))
@@ -552,13 +552,15 @@ class IpfsFetchClient:
 
         return bytes(data)
 
-    def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        # A local IPFS node is content-addressed, so `cat` cannot return bytes that don't
-        # match the CID; no extra verification needed.
-        with ipfshttpclient.connect(
-            endpoint,
-        ) as client:
-            return client.cat(ipfs_hash, timeout=self.timeout)
+    async def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        # The RPC node is verified via a CAR export; `cat` is only used on the
+        # verify_hash=False escape hatch.
+        with ipfshttpclient.connect(endpoint) as client:
+            if not self.verify_hash:
+                return client.cat(ipfs_hash, timeout=self.timeout)
+            car = client.dag.export(ipfs_hash, timeout=self.timeout)
+
+        return await self._decode_car(ipfs_hash, car)
 
     async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:

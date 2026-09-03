@@ -111,6 +111,19 @@ class TestVerifyRawCid:
             IpfsFetchClient(ipfs_endpoints=[])._verify_raw_cid(ipfs_hash, data)
 
 
+class _FakeIpfsRpcClient:
+    def __init__(self, *, cat: bytes = b'', dag_export: bytes = b'') -> None:
+        self.cat = mock.Mock(return_value=cat)
+        self.dag = mock.Mock()
+        self.dag.export = mock.Mock(return_value=dag_export)
+
+    def __enter__(self) -> '_FakeIpfsRpcClient':
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        return None
+
+
 class TestIpfsFetchClient:
     async def test_fetch_bytes_decodes_verified_car(self) -> None:
         client = IpfsFetchClient(ipfs_endpoints=['https://one'])
@@ -196,6 +209,30 @@ class TestIpfsFetchClient:
             data = await client.fetch_bytes(SMALL_CID)
         assert data == SMALL_CONTENT
         error.assert_not_called()
+
+    async def test_ipfs_rpc_node_returns_verified_car(self) -> None:
+        client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'])
+        rpc_client = _FakeIpfsRpcClient(dag_export=SMALL_CAR)
+        with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
+            data = await client.fetch_bytes(SMALL_CID)
+        assert data == SMALL_CONTENT
+        rpc_client.dag.export.assert_called_once()
+
+    async def test_ipfs_rpc_node_tampered_car_raises(self) -> None:
+        client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'], retry_timeout=0)
+        rpc_client = _FakeIpfsRpcClient(dag_export=_tampered(SMALL_CAR))
+        with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(SMALL_CID)
+
+    async def test_ipfs_rpc_node_skips_car_verification_when_disabled(self) -> None:
+        client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'], verify_hash=False)
+        rpc_client = _FakeIpfsRpcClient(cat=SMALL_CONTENT)
+        with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
+            data = await client.fetch_bytes(SMALL_CID)
+        assert data == SMALL_CONTENT
+        rpc_client.cat.assert_called_once()
+        rpc_client.dag.export.assert_not_called()
 
     async def test_falls_through_to_s3_when_ipfs_endpoints_fail(self) -> None:
         data = b'{"a": 1}'
