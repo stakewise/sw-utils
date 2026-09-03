@@ -1,13 +1,17 @@
 import asyncio
+import hashlib
+import json
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, AsyncIterator, cast
 
 import aiohttp
 import ipfshttpclient
-from aiohttp import ClientSession, ClientTimeout, ContentTypeError
+from aiohttp import ClientSession, ClientTimeout
+from ipfs_car_decoder import ChunkedMemoryByteStream, stream_bytes
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
+from multiformats import CID, multihash
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
@@ -420,19 +424,28 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return None
 
 
+class _ContentUnverifiable(Exception):
+    # Not an IpfsException: signals "this endpoint can't be checked" (gateway ignored
+    # `?format=car`), which callers must treat differently from a detected mismatch.
+    pass
+
+
 class IpfsFetchClient:
+    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         ipfs_endpoints: list[str],
         s3_endpoints: list[str] | None = None,
         timeout: int = 60,
         retry_timeout: int = 120,
+        verify_hash: bool = True,
     ):
         self.ipfs_endpoints = ipfs_endpoints
         self.s3_endpoints = s3_endpoints or []
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
+        self.verify_hash = verify_hash
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
@@ -448,30 +461,100 @@ class IpfsFetchClient:
 
     async def _fetch_bytes_all_endpoints(self, ipfs_hash: str) -> bytes:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
+        unverifiable = False
+        mismatch = False
+
         for endpoint in self.ipfs_endpoints:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
-
                 return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
+            except _ContentUnverifiable as e:
+                unverifiable = True
+                logger.warning(repr(e))
+            except IpfsException as e:
+                mismatch = True
+                logger.warning(repr(e))
             except Exception as e:
                 logger.warning(repr(e))
 
         for endpoint in self.s3_endpoints:
             try:
                 return await self._s3_fetch_bytes(endpoint, ipfs_hash)
+            except IpfsException as e:
+                mismatch = True
+                logger.warning(repr(e))
+            except Exception as e:
+                logger.warning(repr(e))
+
+        if self.verify_hash and unverifiable and not mismatch:
+            # A gateway that ignores `?format=car` can't be cryptographically checked, but
+            # that's not the same as a detected mismatch (tampering/corruption): only fall
+            # back to unverified content when nothing actually failed verification.
+            logger.error(
+                'IPFS verification unavailable for %s: no endpoint served a CAR response, '
+                'returning UNVERIFIED content',
+                ipfs_hash,
+            )
+            return await self._fetch_bytes_unverified(ipfs_hash)
+
+        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
+
+    async def _fetch_bytes_unverified(self, ipfs_hash: str) -> bytes:
+        for endpoint in self.ipfs_endpoints:
+            if not endpoint.startswith('http'):
+                continue
+            try:
+                return await self._http_gateway_fetch_plain(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        if not self.verify_hash:
+            return await self._http_gateway_fetch_plain(endpoint, ipfs_hash)
+
+        url = f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
+        headers = {'Accept': 'application/vnd.ipld.car'}
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
+            async with session.get(f'{url}?format=car', headers=headers) as response:
+                response.raise_for_status()
+                content_type = response.headers.get('Content-Type', '')
+                car = await response.read()
+
+        if 'application/vnd.ipld.car' not in content_type.lower():
+            raise _ContentUnverifiable(
+                f'Endpoint {endpoint} did not serve a CAR for {ipfs_hash} '
+                f'(Content-Type: {content_type})'
+            )
+
+        return await self._decode_car(ipfs_hash, car)
+
+    async def _http_gateway_fetch_plain(self, endpoint: str, ipfs_hash: str) -> bytes:
+        url = f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
+        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
+            async with session.get(url) as response:
                 response.raise_for_status()
                 return await response.read()
 
+    async def _decode_car(self, ipfs_hash: str, car: bytes) -> bytes:
+        stream = ChunkedMemoryByteStream()
+        await stream.append_bytes(car)
+        await stream.mark_complete()
+
+        try:
+            data = bytearray()
+            async for chunk in stream_bytes(ipfs_hash, stream):
+                data += chunk
+        except Exception as e:
+            raise IpfsException(f'CAR verification failed for {ipfs_hash}: {e!r}') from e
+
+        return bytes(data)
+
     def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        # A local IPFS node is content-addressed, so `cat` cannot return bytes that don't
+        # match the CID; no extra verification needed.
         with ipfshttpclient.connect(
             endpoint,
         ) as client:
@@ -482,7 +565,27 @@ class IpfsFetchClient:
             # No "ipfs" part in url path, compare with ipfs gateway
             async with session.get(urljoin(endpoint, ipfs_hash)) as response:
                 response.raise_for_status()
-                return await response.read()
+                data = await response.read()
+
+        if self.verify_hash:
+            self._verify_raw_cid(ipfs_hash, data)
+
+        return data
+
+    def _verify_raw_cid(self, ipfs_hash: str, data: bytes) -> None:
+        parsed_cid = CID.decode(ipfs_hash)
+
+        # S3 is not an IPFS gateway and only serves raw-codec CIDv1 payloads, so support
+        # only that combination and fail closed on anything else.
+        if parsed_cid.codec.name != 'raw' or parsed_cid.hashfun.name != 'sha2-256':
+            raise IpfsException(
+                f'Unsupported CID {ipfs_hash} for S3 verification: '
+                f'codec={parsed_cid.codec.name}, hashfun={parsed_cid.hashfun.name}'
+            )
+
+        digest = multihash.unwrap(parsed_cid.digest)
+        if hashlib.sha256(data).digest() != digest:
+            raise IpfsException(f'S3 content hash mismatch for {ipfs_hash}')
 
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
@@ -495,49 +598,8 @@ class IpfsFetchClient:
             logger.info('Retrying fetch_json, attempt %s', retry_state.attempt_number)
 
         retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
-        return await retry_decorator(self._fetch_json_all_endpoints)(ipfs_hash)
-
-    async def _fetch_json_all_endpoints(self, ipfs_hash: str) -> Any:
-        ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        for endpoint in self.ipfs_endpoints:
-            try:
-                if endpoint.startswith('http'):
-                    return await self._http_gateway_fetch_json(endpoint, ipfs_hash)
-
-                return self._ipfs_fetch_json(endpoint, ipfs_hash)
-            except ContentTypeError:
-                raise
-            except Exception as e:
-                logger.warning(repr(e))
-
-        for endpoint in self.s3_endpoints:
-            try:
-                return await self._s3_fetch_json(endpoint, ipfs_hash)
-            except ContentTypeError:
-                raise
-            except Exception as e:
-                logger.warning(repr(e))
-
-        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
-
-    async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
-                response.raise_for_status()
-                return await response.json()
-
-    def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        with ipfshttpclient.connect(
-            endpoint,
-        ) as client:
-            return client.get_json(ipfs_hash, timeout=self.timeout)
-
-    async def _s3_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
-                response.raise_for_status()
-                return await response.json()
+        data = await retry_decorator(self._fetch_bytes_all_endpoints)(ipfs_hash)
+        return json.loads(data)
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
