@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -563,6 +562,10 @@ class IpfsFetchClient:
         return await self._decode_car(ipfs_hash, car)
 
     async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        if self.verify_hash:
+            # Fail closed on an unsupported CID before spending a network request on it.
+            self._parse_raw_cid(ipfs_hash)
+
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
             # No "ipfs" part in url path, compare with ipfs gateway
             async with session.get(urljoin(endpoint, ipfs_hash)) as response:
@@ -574,19 +577,21 @@ class IpfsFetchClient:
 
         return data
 
-    def _verify_raw_cid(self, ipfs_hash: str, data: bytes) -> None:
+    def _parse_raw_cid(self, ipfs_hash: str) -> CID:
         parsed_cid = CID.decode(ipfs_hash)
 
-        # S3 is not an IPFS gateway and only serves raw-codec CIDv1 payloads, so support
-        # only that combination and fail closed on anything else.
-        if parsed_cid.codec.name != 'raw' or parsed_cid.hashfun.name != 'sha2-256':
+        # S3 is not an IPFS gateway and only serves raw-codec CIDv1 payloads.
+        if parsed_cid.codec.name != 'raw':
             raise IpfsException(
-                f'Unsupported CID {ipfs_hash} for S3 verification: '
-                f'codec={parsed_cid.codec.name}, hashfun={parsed_cid.hashfun.name}'
+                f'Unsupported CID {ipfs_hash} for S3 verification: codec={parsed_cid.codec.name}'
             )
 
-        digest = multihash.unwrap(parsed_cid.digest)
-        if hashlib.sha256(data).digest() != digest:
+        return parsed_cid
+
+    def _verify_raw_cid(self, ipfs_hash: str, data: bytes) -> None:
+        parsed_cid = self._parse_raw_cid(ipfs_hash)
+
+        if multihash.digest(data, parsed_cid.hashfun) != parsed_cid.digest:
             raise IpfsException(f'S3 content hash mismatch for {ipfs_hash}')
 
     async def fetch_json(self, ipfs_hash: str) -> Any:

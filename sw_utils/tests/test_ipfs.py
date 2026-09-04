@@ -245,6 +245,16 @@ class TestIpfsFetchClient:
             result = await client.fetch_bytes(ipfs_hash)
         assert result == data
 
+    async def test_s3_unsupported_cid_raises_before_http_request(self) -> None:
+        data = b'{"a": 1}'
+        digest = multihash.wrap(_sha256(data), 'sha2-256')
+        ipfs_hash = str(CID('base32', 1, 'dag-pb', digest))
+        client = IpfsFetchClient(ipfs_endpoints=[], s3_endpoints=['https://s3'], retry_timeout=0)
+        with mock.patch.object(ClientSession, 'get') as get:
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(ipfs_hash)
+        get.assert_not_called()
+
 
 def _sha256(data: bytes) -> bytes:
     return hashlib.sha256(data).digest()
