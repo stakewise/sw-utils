@@ -173,17 +173,15 @@ class TestIpfsFetchClient:
             data = await client.fetch_json(CONFIG_CID)
         assert data['supported_relays'] is not None
 
-    async def test_fetch_bytes_falls_back_unverified_when_no_endpoint_serves_car(self) -> None:
+    async def test_fetch_bytes_raises_when_no_endpoint_serves_car(self) -> None:
         non_car = _FakeGetResponse(SMALL_CONTENT, content_type='application/json')
-        client = IpfsFetchClient(ipfs_endpoints=['https://one', 'https://two'])
-        with mock.patch.object(
-            ClientSession, 'get', side_effect=[non_car, non_car, _FakeGetResponse(SMALL_CONTENT)]
-        ), mock.patch('sw_utils.ipfs.logger.error') as error:
-            data = await client.fetch_bytes(SMALL_CID)
-        assert data == SMALL_CONTENT
-        error.assert_called_once()
+        client = IpfsFetchClient(ipfs_endpoints=['https://one', 'https://two'], retry_timeout=0)
+        with mock.patch.object(ClientSession, 'get', side_effect=[non_car, non_car]) as get:
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(SMALL_CID)
+        assert get.call_count == 2
 
-    async def test_fetch_bytes_raises_on_mismatch_even_with_unverifiable_endpoint(self) -> None:
+    async def test_fetch_bytes_raises_when_endpoints_are_tampered_or_non_car(self) -> None:
         client = IpfsFetchClient(ipfs_endpoints=['https://one', 'https://two'], retry_timeout=0)
         with mock.patch.object(
             ClientSession,
@@ -196,7 +194,7 @@ class TestIpfsFetchClient:
             with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
                 await client.fetch_bytes(SMALL_CID)
 
-    async def test_fetch_bytes_verified_car_wins_over_unverifiable_endpoint(self) -> None:
+    async def test_fetch_bytes_falls_through_non_car_endpoint_to_verified_car(self) -> None:
         client = IpfsFetchClient(ipfs_endpoints=['https://one', 'https://two'])
         with mock.patch.object(
             ClientSession,
@@ -205,10 +203,18 @@ class TestIpfsFetchClient:
                 _FakeGetResponse(SMALL_CONTENT, content_type='application/json'),
                 _FakeGetResponse(SMALL_CAR),
             ],
-        ), mock.patch('sw_utils.ipfs.logger.error') as error:
+        ):
             data = await client.fetch_bytes(SMALL_CID)
         assert data == SMALL_CONTENT
-        error.assert_not_called()
+
+    async def test_fetch_bytes_rejects_poisoned_gateway_when_it_is_the_only_endpoint(
+        self,
+    ) -> None:
+        poisoned = _FakeGetResponse(b'{"oracles": []}', content_type='application/json')
+        client = IpfsFetchClient(ipfs_endpoints=['https://one'], retry_timeout=0)
+        with mock.patch.object(ClientSession, 'get', side_effect=[poisoned]):
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(SMALL_CID)
 
     async def test_ipfs_rpc_node_returns_verified_car(self) -> None:
         client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'])

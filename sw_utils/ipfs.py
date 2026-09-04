@@ -423,12 +423,6 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return None
 
 
-class _ContentUnverifiable(Exception):
-    # Not an IpfsException: signals "this endpoint can't be checked" (gateway ignored
-    # `?format=car`), which callers must treat differently from a detected mismatch.
-    pass
-
-
 class IpfsFetchClient:
     # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(
@@ -460,51 +454,17 @@ class IpfsFetchClient:
 
     async def _fetch_bytes_all_endpoints(self, ipfs_hash: str) -> bytes:
         ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        unverifiable = False
-        mismatch = False
-
         for endpoint in self.ipfs_endpoints:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
                 return await self._ipfs_fetch_bytes(endpoint, ipfs_hash)
-            except _ContentUnverifiable as e:
-                unverifiable = True
-                logger.warning(repr(e))
-            except IpfsException as e:
-                mismatch = True
-                logger.warning(repr(e))
             except Exception as e:
                 logger.warning(repr(e))
 
         for endpoint in self.s3_endpoints:
             try:
                 return await self._s3_fetch_bytes(endpoint, ipfs_hash)
-            except IpfsException as e:
-                mismatch = True
-                logger.warning(repr(e))
-            except Exception as e:
-                logger.warning(repr(e))
-
-        if self.verify_hash and unverifiable and not mismatch:
-            # A gateway that ignores `?format=car` can't be cryptographically checked, but
-            # that's not the same as a detected mismatch (tampering/corruption): only fall
-            # back to unverified content when nothing actually failed verification.
-            logger.error(
-                'IPFS verification unavailable for %s: no endpoint served a CAR response, '
-                'returning UNVERIFIED content',
-                ipfs_hash,
-            )
-            return await self._fetch_bytes_unverified(ipfs_hash)
-
-        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
-
-    async def _fetch_bytes_unverified(self, ipfs_hash: str) -> bytes:
-        for endpoint in self.ipfs_endpoints:
-            if not endpoint.startswith('http'):
-                continue
-            try:
-                return await self._http_gateway_fetch_plain(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
@@ -520,13 +480,13 @@ class IpfsFetchClient:
             async with session.get(f'{url}?format=car', headers=headers) as response:
                 response.raise_for_status()
                 content_type = response.headers.get('Content-Type', '')
+                if 'application/vnd.ipld.car' not in content_type.lower():
+                    raise IpfsException(
+                        f'Endpoint {endpoint} did not serve a CAR for {ipfs_hash} '
+                        f'(Content-Type: {content_type}); '
+                        'the gateway must support trustless CAR responses'
+                    )
                 car = await response.read()
-
-        if 'application/vnd.ipld.car' not in content_type.lower():
-            raise _ContentUnverifiable(
-                f'Endpoint {endpoint} did not serve a CAR for {ipfs_hash} '
-                f'(Content-Type: {content_type})'
-            )
 
         return await self._decode_car(ipfs_hash, car)
 
