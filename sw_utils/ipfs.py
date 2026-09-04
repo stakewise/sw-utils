@@ -596,17 +596,7 @@ class IpfsFetchClient:
 
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
-        if not ipfs_hash:
-            raise ValueError('Empty IPFS hash provided')
-
-        def custom_before_log(retry_state: 'RetryCallState') -> None:
-            if retry_state.attempt_number <= 1:
-                return
-            logger.info('Retrying fetch_json, attempt %s', retry_state.attempt_number)
-
-        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
-        data = await retry_decorator(self._fetch_bytes_all_endpoints)(ipfs_hash)
-        return json.loads(data)
+        return json.loads(await self.fetch_bytes(ipfs_hash))
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
