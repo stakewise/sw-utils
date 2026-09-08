@@ -1,11 +1,9 @@
-import hashlib
 import json
 from pathlib import Path
 from unittest import mock
 
 import pytest
 from aiohttp import ClientSession
-from multiformats import CID, multihash
 
 from sw_utils.exceptions import IpfsException
 from sw_utils.ipfs import IpfsFetchClient
@@ -87,28 +85,6 @@ class TestDecodeCar:
         client = IpfsFetchClient(ipfs_endpoints=[])
         with pytest.raises(IpfsException, match='CAR verification failed'):
             await client._decode_car(CONFIG_CID, _truncated(CONFIG_CAR, 500))
-
-
-class TestVerifyRawCid:
-    def test_matching_raw_v1_passes(self) -> None:
-        data = b'{"a": 1}'
-        digest = multihash.wrap(_sha256(data), 'sha2-256')
-        ipfs_hash = str(CID('base32', 1, 'raw', digest))
-        IpfsFetchClient(ipfs_endpoints=[])._verify_raw_cid(ipfs_hash, data)
-
-    def test_tampered_raw_v1_raises(self) -> None:
-        data = b'{"a": 1}'
-        digest = multihash.wrap(_sha256(data), 'sha2-256')
-        ipfs_hash = str(CID('base32', 1, 'raw', digest))
-        with pytest.raises(IpfsException, match='content hash mismatch'):
-            IpfsFetchClient(ipfs_endpoints=[])._verify_raw_cid(ipfs_hash, data[:-1] + b'0')
-
-    def test_dag_pb_cid_raises_unsupported(self) -> None:
-        data = b'{"a": 1}'
-        digest = multihash.wrap(_sha256(data), 'sha2-256')
-        ipfs_hash = str(CID('base32', 1, 'dag-pb', digest))
-        with pytest.raises(IpfsException, match='Unsupported CID'):
-            IpfsFetchClient(ipfs_endpoints=[])._verify_raw_cid(ipfs_hash, data)
 
 
 class _FakeIpfsRpcClient:
@@ -239,28 +215,3 @@ class TestIpfsFetchClient:
         assert data == SMALL_CONTENT
         rpc_client.cat.assert_called_once()
         rpc_client.dag.export.assert_not_called()
-
-    async def test_falls_through_to_s3_when_ipfs_endpoints_fail(self) -> None:
-        data = b'{"a": 1}'
-        digest = multihash.wrap(_sha256(data), 'sha2-256')
-        ipfs_hash = str(CID('base32', 1, 'raw', digest))
-        client = IpfsFetchClient(ipfs_endpoints=['https://one'], s3_endpoints=['https://s3'])
-        with mock.patch.object(
-            ClientSession, 'get', side_effect=[RuntimeError('boom'), _FakeGetResponse(data)]
-        ):
-            result = await client.fetch_bytes(ipfs_hash)
-        assert result == data
-
-    async def test_s3_unsupported_cid_raises_before_http_request(self) -> None:
-        data = b'{"a": 1}'
-        digest = multihash.wrap(_sha256(data), 'sha2-256')
-        ipfs_hash = str(CID('base32', 1, 'dag-pb', digest))
-        client = IpfsFetchClient(ipfs_endpoints=[], s3_endpoints=['https://s3'], retry_timeout=0)
-        with mock.patch.object(ClientSession, 'get') as get:
-            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
-                await client.fetch_bytes(ipfs_hash)
-        get.assert_not_called()
-
-
-def _sha256(data: bytes) -> bytes:
-    return hashlib.sha256(data).digest()

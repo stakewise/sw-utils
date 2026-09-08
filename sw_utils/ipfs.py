@@ -10,7 +10,6 @@ from aiohttp import ClientSession, ClientTimeout
 from ipfs_car_decoder import ChunkedMemoryByteStream, stream_bytes
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
-from multiformats import CID, multihash
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
@@ -428,13 +427,11 @@ class IpfsFetchClient:
     def __init__(
         self,
         ipfs_endpoints: list[str],
-        s3_endpoints: list[str] | None = None,
         timeout: int = 60,
         retry_timeout: int = 120,
         verify_hash: bool = True,
     ):
         self.ipfs_endpoints = ipfs_endpoints
-        self.s3_endpoints = s3_endpoints or []
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
@@ -459,12 +456,6 @@ class IpfsFetchClient:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
                 return await self._ipfs_fetch_bytes(endpoint, ipfs_hash)
-            except Exception as e:
-                logger.warning(repr(e))
-
-        for endpoint in self.s3_endpoints:
-            try:
-                return await self._s3_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
@@ -520,39 +511,6 @@ class IpfsFetchClient:
             car = client.dag.export(ipfs_hash, timeout=self.timeout)
 
         return await self._decode_car(ipfs_hash, car)
-
-    async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        if self.verify_hash:
-            # Fail closed on an unsupported CID before spending a network request on it.
-            self._parse_raw_cid(ipfs_hash)
-
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
-                response.raise_for_status()
-                data = await response.read()
-
-        if self.verify_hash:
-            self._verify_raw_cid(ipfs_hash, data)
-
-        return data
-
-    def _parse_raw_cid(self, ipfs_hash: str) -> CID:
-        parsed_cid = CID.decode(ipfs_hash)
-
-        # S3 is not an IPFS gateway and only serves raw-codec CIDv1 payloads.
-        if parsed_cid.codec.name != 'raw':
-            raise IpfsException(
-                f'Unsupported CID {ipfs_hash} for S3 verification: codec={parsed_cid.codec.name}'
-            )
-
-        return parsed_cid
-
-    def _verify_raw_cid(self, ipfs_hash: str, data: bytes) -> None:
-        parsed_cid = self._parse_raw_cid(ipfs_hash)
-
-        if multihash.digest(data, parsed_cid.hashfun) != parsed_cid.digest:
-            raise IpfsException(f'S3 content hash mismatch for {ipfs_hash}')
 
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
