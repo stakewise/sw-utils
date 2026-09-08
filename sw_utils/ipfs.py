@@ -476,6 +476,9 @@ class IpfsFetchClient:
         return await self._decode_car(ipfs_hash, car)
 
     async def _decode_car(self, ipfs_hash: str, car: bytes) -> bytes:
+        # Walks the DAG starting from the requested CID and re-hashes every block on the way,
+        # so the returned bytes are exactly the content committed by `ipfs_hash`.
+        # Any missing, tampered or truncated block aborts the walk.
         stream = ChunkedMemoryByteStream()
         await stream.append_bytes(car)
         await stream.mark_complete()
