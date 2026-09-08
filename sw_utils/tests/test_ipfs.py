@@ -88,8 +88,7 @@ class TestDecodeCar:
 
 
 class _FakeIpfsRpcClient:
-    def __init__(self, *, cat: bytes = b'', dag_export: bytes = b'') -> None:
-        self.cat = mock.Mock(return_value=cat)
+    def __init__(self, *, dag_export: bytes = b'') -> None:
         self.dag = mock.Mock()
         self.dag.export = mock.Mock(return_value=dag_export)
 
@@ -128,20 +127,6 @@ class TestIpfsFetchClient:
         ):
             with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
                 await client.fetch_bytes(SMALL_CID)
-
-    async def test_fetch_bytes_skips_car_verification_when_disabled(self) -> None:
-        client = IpfsFetchClient(ipfs_endpoints=['https://one'], verify_hash=False)
-        requested_urls = []
-
-        def fake_get(url: str, **_kwargs: object) -> _FakeGetResponse:
-            requested_urls.append(url)
-            return _FakeGetResponse(SMALL_CONTENT)
-
-        with mock.patch.object(ClientSession, 'get', side_effect=fake_get):
-            data = await client.fetch_bytes(SMALL_CID)
-
-        assert data == SMALL_CONTENT
-        assert requested_urls == [f'https://one/ipfs/{SMALL_CID}']
 
     async def test_fetch_json_parses_verified_car(self) -> None:
         client = IpfsFetchClient(ipfs_endpoints=['https://one'])
@@ -206,12 +191,3 @@ class TestIpfsFetchClient:
         with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
             with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
                 await client.fetch_bytes(SMALL_CID)
-
-    async def test_ipfs_rpc_node_skips_car_verification_when_disabled(self) -> None:
-        client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'], verify_hash=False)
-        rpc_client = _FakeIpfsRpcClient(cat=SMALL_CONTENT)
-        with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
-            data = await client.fetch_bytes(SMALL_CID)
-        assert data == SMALL_CONTENT
-        rpc_client.cat.assert_called_once()
-        rpc_client.dag.export.assert_not_called()

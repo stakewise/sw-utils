@@ -423,19 +423,16 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
 
 class IpfsFetchClient:
-    # pylint: disable-next=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         ipfs_endpoints: list[str],
         timeout: int = 60,
         retry_timeout: int = 120,
-        verify_hash: bool = True,
     ):
         self.ipfs_endpoints = ipfs_endpoints
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
-        self.verify_hash = verify_hash
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
@@ -462,9 +459,6 @@ class IpfsFetchClient:
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        if not self.verify_hash:
-            return await self._http_gateway_fetch_plain(endpoint, ipfs_hash)
-
         url = f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
         headers = {'Accept': 'application/vnd.ipld.car'}
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
@@ -481,13 +475,6 @@ class IpfsFetchClient:
 
         return await self._decode_car(ipfs_hash, car)
 
-    async def _http_gateway_fetch_plain(self, endpoint: str, ipfs_hash: str) -> bytes:
-        url = f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(url) as response:
-                response.raise_for_status()
-                return await response.read()
-
     async def _decode_car(self, ipfs_hash: str, car: bytes) -> bytes:
         stream = ChunkedMemoryByteStream()
         await stream.append_bytes(car)
@@ -503,11 +490,8 @@ class IpfsFetchClient:
         return bytes(data)
 
     async def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        # The RPC node is verified via a CAR export; `cat` is only used on the
-        # verify_hash=False escape hatch.
+        # The RPC node is not trusted either: export a CAR and verify it like a gateway response.
         with ipfshttpclient.connect(endpoint) as client:
-            if not self.verify_hash:
-                return client.cat(ipfs_hash, timeout=self.timeout)
             car = client.dag.export(ipfs_hash, timeout=self.timeout)
 
         return await self._decode_car(ipfs_hash, car)
