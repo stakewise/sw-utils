@@ -424,12 +424,10 @@ class IpfsFetchClient:
     def __init__(
         self,
         ipfs_endpoints: list[str],
-        s3_endpoints: list[str] | None = None,
         timeout: int = 60,
         retry_timeout: int = 120,
     ):
         self.ipfs_endpoints = ipfs_endpoints
-        self.s3_endpoints = s3_endpoints or []
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
@@ -457,12 +455,6 @@ class IpfsFetchClient:
             except Exception as e:
                 logger.warning(repr(e))
 
-        for endpoint in self.s3_endpoints:
-            try:
-                return await self._s3_fetch_bytes(endpoint, ipfs_hash)
-            except Exception as e:
-                logger.warning(repr(e))
-
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
@@ -476,13 +468,6 @@ class IpfsFetchClient:
             endpoint,
         ) as client:
             return client.cat(ipfs_hash, timeout=self.timeout)
-
-    async def _s3_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
-                response.raise_for_status()
-                return await response.read()
 
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
@@ -510,14 +495,6 @@ class IpfsFetchClient:
             except Exception as e:
                 logger.warning(repr(e))
 
-        for endpoint in self.s3_endpoints:
-            try:
-                return await self._s3_fetch_json(endpoint, ipfs_hash)
-            except ContentTypeError:
-                raise
-            except Exception as e:
-                logger.warning(repr(e))
-
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
@@ -531,13 +508,6 @@ class IpfsFetchClient:
             endpoint,
         ) as client:
             return client.get_json(ipfs_hash, timeout=self.timeout)
-
-    async def _s3_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            # No "ipfs" part in url path, compare with ipfs gateway
-            async with session.get(urljoin(endpoint, ipfs_hash)) as response:
-                response.raise_for_status()
-                return await response.json()
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
