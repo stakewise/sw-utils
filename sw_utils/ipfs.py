@@ -1,17 +1,19 @@
 import asyncio
+import json
 import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, AsyncIterator, cast
 
 import aiohttp
 import ipfshttpclient
-from aiohttp import ClientSession, ClientTimeout, ContentTypeError
+from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
+from sw_utils.vendor.ipfs_car import decode_car
 
 if TYPE_CHECKING:
     from tenacity import RetryCallState
@@ -20,6 +22,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 IPFS_DEFAULT_TIMEOUT = 120
+IPFS_DEFAULT_MAX_CONTENT_SIZE = 1024 * 1024 * 1024  # 1 GiB
+
+_GATEWAY_READ_CHUNK_SIZE = 64 * 1024
 
 
 class BaseUploadClient(ABC):
@@ -426,11 +431,13 @@ class IpfsFetchClient:
         ipfs_endpoints: list[str],
         timeout: int = 60,
         retry_timeout: int = 120,
+        max_content_size: int = IPFS_DEFAULT_MAX_CONTENT_SIZE,
     ):
         self.ipfs_endpoints = ipfs_endpoints
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
+        self.max_content_size = max_content_size
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
@@ -450,64 +457,66 @@ class IpfsFetchClient:
             try:
                 if endpoint.startswith('http'):
                     return await self._http_gateway_fetch_bytes(endpoint, ipfs_hash)
-
-                return self._ipfs_fetch_bytes(endpoint, ipfs_hash)
+                return await self._ipfs_fetch_bytes(endpoint, ipfs_hash)
             except Exception as e:
                 logger.warning(repr(e))
 
         raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
 
     async def _http_gateway_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        url = f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}"
+        headers = {'Accept': 'application/vnd.ipld.car'}
         async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
+            async with session.get(f'{url}?format=car', headers=headers) as response:
                 response.raise_for_status()
-                return await response.read()
+                content_type = response.headers.get('Content-Type', '')
+                if 'application/vnd.ipld.car' not in content_type.lower():
+                    raise IpfsException(
+                        f'Endpoint {endpoint} did not serve a CAR for {ipfs_hash} '
+                        f'(Content-Type: {content_type}); '
+                        'the gateway must support trustless CAR responses'
+                    )
+                if (
+                    response.content_length is not None
+                    and response.content_length > self.max_content_size
+                ):
+                    raise IpfsException(
+                        f'Endpoint {endpoint} declared a CAR of {response.content_length} bytes '
+                        f'for {ipfs_hash}, exceeding the limit of {self.max_content_size} bytes'
+                    )
 
-    def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
-        with ipfshttpclient.connect(
-            endpoint,
-        ) as client:
-            return client.cat(ipfs_hash, timeout=self.timeout)
+                # Content-Length may be absent or wrong, so the body is capped while streaming too.
+                car = bytearray()
+                async for chunk in response.content.iter_chunked(_GATEWAY_READ_CHUNK_SIZE):
+                    car += chunk
+                    if len(car) > self.max_content_size:
+                        raise IpfsException(
+                            f'Endpoint {endpoint} sent a CAR exceeding the limit of '
+                            f'{self.max_content_size} bytes for {ipfs_hash}'
+                        )
+
+        return await self._decode_car(ipfs_hash, bytes(car))
+
+    async def _decode_car(self, ipfs_hash: str, car: bytes) -> bytes:
+        # Walks the DAG starting from the requested CID and re-hashes every block on the way,
+        # so the returned bytes are exactly the content committed by `ipfs_hash`.
+        # Any missing, tampered or truncated block aborts the walk.
+        # Output size is capped by `max_content_size`.
+        try:
+            return decode_car(ipfs_hash, car, max_content_size=self.max_content_size)
+        except Exception as e:
+            raise IpfsException(f'CAR verification failed for {ipfs_hash}: {e!r}') from e
+
+    async def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
+        # The RPC node is not trusted either: export a CAR and verify it like a gateway response.
+        with ipfshttpclient.connect(endpoint) as client:
+            car = client.dag.export(ipfs_hash, timeout=self.timeout)
+
+        return await self._decode_car(ipfs_hash, car)
 
     async def fetch_json(self, ipfs_hash: str) -> Any:
         """Tries to fetch IPFS hash from different sources."""
-        if not ipfs_hash:
-            raise ValueError('Empty IPFS hash provided')
-
-        def custom_before_log(retry_state: 'RetryCallState') -> None:
-            if retry_state.attempt_number <= 1:
-                return
-            logger.info('Retrying fetch_json, attempt %s', retry_state.attempt_number)
-
-        retry_decorator = retry_ipfs_exception(delay=self.retry_timeout, before=custom_before_log)
-        return await retry_decorator(self._fetch_json_all_endpoints)(ipfs_hash)
-
-    async def _fetch_json_all_endpoints(self, ipfs_hash: str) -> Any:
-        ipfs_hash = _strip_ipfs_prefix(ipfs_hash)
-        for endpoint in self.ipfs_endpoints:
-            try:
-                if endpoint.startswith('http'):
-                    return await self._http_gateway_fetch_json(endpoint, ipfs_hash)
-
-                return self._ipfs_fetch_json(endpoint, ipfs_hash)
-            except ContentTypeError:
-                raise
-            except Exception as e:
-                logger.warning(repr(e))
-
-        raise IpfsException(f'Failed to fetch IPFS data at {ipfs_hash}')
-
-    async def _http_gateway_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        async with ClientSession(timeout=ClientTimeout(self.timeout)) as session:
-            async with session.get(f"{endpoint.rstrip('/')}/ipfs/{ipfs_hash}") as response:
-                response.raise_for_status()
-                return await response.json()
-
-    def _ipfs_fetch_json(self, endpoint: str, ipfs_hash: str) -> Any:
-        with ipfshttpclient.connect(
-            endpoint,
-        ) as client:
-            return client.get_json(ipfs_hash, timeout=self.timeout)
+        return json.loads(await self.fetch_bytes(ipfs_hash))
 
 
 def _strip_ipfs_prefix(ipfs_hash: str) -> str:
