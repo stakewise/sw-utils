@@ -11,7 +11,6 @@ python = "^3.12"
 sw-milagro-bls-binding = { git = "https://github.com/stakewise/milagro_bls_binding.git", tag = "v1.9.1" }
 py-ecc = "^8.0.0"
 ipfshttpclient = "^0.8.0a2"
-ipfs-car-decoder = "==0.1.1"
 multiformats = "==0.3.1.post4"
 web3 = "==7.14.1"
 tenacity = "==8.2.3"

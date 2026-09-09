@@ -1,0 +1,332 @@
+import json
+from pathlib import Path
+
+import pytest
+from multiformats import CID, multihash
+
+from sw_utils.ipfs_car import CarDecodeError, decode_car
+
+FIXTURES_DIR = Path(__file__).parent / 'fixtures'
+
+SMALL_CID = 'QmawUdo17Fvo7xa6ARCUSMV1eoVwPtVuzx8L8Crj2xozWm'
+SMALL_CAR = (FIXTURES_DIR / f'{SMALL_CID}.car').read_bytes()
+SMALL_CONTENT = b'[{"a":"b"}]'
+
+CONFIG_CID = 'QmeCywDfupWC7jz5EDHsU5yEb2unAhn8iSGWBUEdrMjdMc'
+CONFIG_CAR = (FIXTURES_DIR / f'{CONFIG_CID}.car').read_bytes()
+
+
+# --- minimal, independent encoders used only to build synthetic CAR fixtures for these tests ---
+
+
+def _encode_varint(value: int) -> bytes:
+    result = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if value:
+            result.append(byte | 0x80)
+        else:
+            result.append(byte)
+            break
+    return bytes(result)
+
+
+def _encode_protobuf_tag(field_number: int, wire_type: int) -> bytes:
+    return _encode_varint((field_number << 3) | wire_type)
+
+
+def _encode_protobuf_bytes_field(field_number: int, value: bytes) -> bytes:
+    return _encode_protobuf_tag(field_number, 2) + _encode_varint(len(value)) + value
+
+
+def _encode_protobuf_varint_field(field_number: int, value: int) -> bytes:
+    return _encode_protobuf_tag(field_number, 0) + _encode_varint(value)
+
+
+def _encode_unixfs_data(
+    fs_type: int, data: bytes, block_sizes: list[int], file_size: int | None, packed: bool = False
+) -> bytes:
+    out = bytearray()
+    out += _encode_protobuf_varint_field(1, fs_type)
+    if data:
+        out += _encode_protobuf_bytes_field(2, data)
+    if file_size is not None:
+        out += _encode_protobuf_varint_field(3, file_size)
+    if packed:
+        packed_values = b''.join(_encode_varint(size) for size in block_sizes)
+        if packed_values:
+            out += _encode_protobuf_bytes_field(4, packed_values)
+    else:
+        for size in block_sizes:
+            out += _encode_protobuf_varint_field(4, size)
+    return bytes(out)
+
+
+def _encode_dag_pb_node(data: bytes, links: list[tuple[CID, int]]) -> bytes:
+    # Kubo writes Links (field 2) before Data (field 1); matched here even though our own
+    # decoder does not care about field order.
+    out = bytearray()
+    for cid, t_size in links:
+        link_bytes = bytearray()
+        link_bytes += _encode_protobuf_bytes_field(1, bytes(cid))
+        if t_size:
+            link_bytes += _encode_protobuf_varint_field(3, t_size)
+        out += _encode_protobuf_bytes_field(2, bytes(link_bytes))
+    if data:
+        out += _encode_protobuf_bytes_field(1, data)
+    return bytes(out)
+
+
+def _raw_block(data: bytes) -> tuple[CID, bytes]:
+    digest = multihash.digest(data, 'sha2-256')
+    return CID('base32', 1, 'raw', digest), data
+
+
+def _unixfs_file_node(
+    data: bytes,
+    children: list[tuple[CID, int]],
+    filesize: int,
+    packed_block_sizes: bool = False,
+    block_sizes: list[int] | None = None,
+) -> tuple[CID, bytes]:
+    if block_sizes is None:
+        block_sizes = [size for _, size in children]
+    unixfs_data = _encode_unixfs_data(2, data, block_sizes, filesize, packed=packed_block_sizes)
+    node_bytes = _encode_dag_pb_node(unixfs_data, children)
+    digest = multihash.digest(node_bytes, 'sha2-256')
+    return CID('base32', 1, 'dag-pb', digest), node_bytes
+
+
+def _unixfs_directory_node(children: list[tuple[CID, int]]) -> tuple[CID, bytes]:
+    unixfs_data = _encode_unixfs_data(1, b'', [], None)
+    node_bytes = _encode_dag_pb_node(unixfs_data, children)
+    digest = multihash.digest(node_bytes, 'sha2-256')
+    return CID('base32', 1, 'dag-pb', digest), node_bytes
+
+
+def _car(blocks: list[tuple[CID, bytes]]) -> bytes:
+    # decode_car ignores the header entirely (roots are untrusted), so a minimal placeholder
+    # byte stands in for a real dag-cbor CARv1 header here.
+    header = b'\x00'
+    out = bytearray()
+    out += _encode_varint(len(header))
+    out += header
+    for cid, block in blocks:
+        section = bytes(cid) + block
+        out += _encode_varint(len(section))
+        out += section
+    return bytes(out)
+
+
+def _flip_byte(data: bytes, offset: int) -> bytes:
+    tampered = bytearray(data)
+    tampered[offset] ^= 0xFF
+    return bytes(tampered)
+
+
+class TestRealFixtures:
+    def test_pins_builder_to_real_kubo_block_section(self) -> None:
+        # The real 111-byte fixture has a 1-byte header-length varint + 56-byte header,
+        # followed by the block section (section-length varint + CIDv0 + PBNode bytes).
+        real_block_section = SMALL_CAR[57:]
+
+        root_cid, node_bytes = _unixfs_file_node(SMALL_CONTENT, [], filesize=len(SMALL_CONTENT))
+        root_cid_v0 = root_cid.set(base='base58btc', version=0)
+        assert str(root_cid_v0) == SMALL_CID
+
+        built_section = (
+            _encode_varint(len(bytes(root_cid_v0)) + len(node_bytes))
+            + bytes(root_cid_v0)
+            + node_bytes
+        )
+        assert built_section == real_block_section
+
+    def test_decodes_single_block_fixture(self) -> None:
+        assert decode_car(SMALL_CID, SMALL_CAR) == SMALL_CONTENT
+
+    def test_decodes_config_fixture(self) -> None:
+        data = decode_car(CONFIG_CID, CONFIG_CAR)
+        assert json.loads(data)['supported_relays'] is not None
+
+    def test_decodes_config_fixture_requested_as_cidv1(self) -> None:
+        cid_v1 = str(CID.decode(CONFIG_CID).set(version=1))
+        data = decode_car(cid_v1, CONFIG_CAR)
+        assert json.loads(data)['supported_relays'] is not None
+
+    def test_tampered_last_byte_raises(self) -> None:
+        with pytest.raises(CarDecodeError):
+            decode_car(SMALL_CID, _flip_byte(SMALL_CAR, len(SMALL_CAR) - 1))
+
+    def test_tampered_mid_payload_byte_raises(self) -> None:
+        with pytest.raises(CarDecodeError):
+            decode_car(CONFIG_CID, _flip_byte(CONFIG_CAR, len(CONFIG_CAR) // 2))
+
+    def test_truncated_car_raises(self) -> None:
+        with pytest.raises(CarDecodeError):
+            decode_car(CONFIG_CID, CONFIG_CAR[:-500])
+
+
+class TestSyntheticMultiBlock:
+    def test_multi_block_file_decodes_to_concatenation(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=12)
+        car = _car(leaves + [(root_cid, root_bytes)])
+
+        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+
+    def test_leaf_byte_flip_raises(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=12)
+        tampered_leaves = [leaves[0], (leaves[1][0], _flip_byte(leaves[1][1], 0)), leaves[2]]
+        car = _car(tampered_leaves + [(root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match='hash mismatch'):
+            decode_car(str(root_cid), car)
+
+    def test_missing_leaf_raises(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=12)
+        car = _car(leaves[:2] + [(root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match='not found in CAR'):
+            decode_car(str(root_cid), car)
+
+    def test_shuffled_block_order_still_decodes_in_link_order(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=12)
+        shuffled = [leaves[2], leaves[0], leaves[1]]
+        car = _car(shuffled + [(root_cid, root_bytes)])
+
+        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+
+    def test_wrong_filesize_raises(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=999)
+        car = _car(leaves + [(root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match='filesize'):
+            decode_car(str(root_cid), car)
+
+    def test_wrong_blocksizes_entry_raises(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(
+            b'', children, filesize=8, block_sizes=[4, 999]
+        )
+        car = _car(leaves + [(root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match='blocksizes'):
+            decode_car(str(root_cid), car)
+
+    def test_packed_block_sizes_accepted(self) -> None:
+        leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
+        children = [(cid, len(data)) for cid, data in leaves]
+        root_cid, root_bytes = _unixfs_file_node(
+            b'', children, filesize=12, packed_block_sizes=True
+        )
+        car = _car(leaves + [(root_cid, root_bytes)])
+
+        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+
+    def test_nested_file_node_decodes(self) -> None:
+        inner_leaves = [_raw_block(chunk) for chunk in (b'xxxx', b'yyyy')]
+        inner_children = [(cid, len(data)) for cid, data in inner_leaves]
+        inner_cid, inner_bytes = _unixfs_file_node(b'', inner_children, filesize=8)
+
+        outer_leaf = _raw_block(b'zzzz')
+        outer_children = [(inner_cid, 8), (outer_leaf[0], 4)]
+        root_cid, root_bytes = _unixfs_file_node(b'', outer_children, filesize=12)
+
+        car = _car(inner_leaves + [(inner_cid, inner_bytes), outer_leaf, (root_cid, root_bytes)])
+
+        assert decode_car(str(root_cid), car) == b'xxxxyyyyzzzz'
+
+    def test_directory_root_raises_not_a_file(self) -> None:
+        leaf_cid, leaf_bytes = _raw_block(b'aaaa')
+        directory_cid, directory_bytes = _unixfs_directory_node([(leaf_cid, 4)])
+        car = _car([(leaf_cid, leaf_bytes), (directory_cid, directory_bytes)])
+
+        with pytest.raises(CarDecodeError, match='not a file'):
+            decode_car(str(directory_cid), car)
+
+    def test_requested_cid_absent_from_car_raises(self) -> None:
+        leaf_cid, leaf_bytes = _raw_block(b'aaaa')
+        other_cid, _ = _raw_block(b'bbbb')
+        car = _car([(leaf_cid, leaf_bytes)])
+
+        with pytest.raises(CarDecodeError, match='not found in CAR'):
+            decode_car(str(other_cid), car)
+
+    def test_depth_bomb_raises(self) -> None:
+        leaf_cid, leaf_bytes = _raw_block(b'z')
+        blocks = [(leaf_cid, leaf_bytes)]
+        current_cid, current_size = leaf_cid, 1
+        for _ in range(100):
+            node_cid, node_bytes = _unixfs_file_node(b'', [(current_cid, current_size)], current_size)
+            blocks.append((node_cid, node_bytes))
+            current_cid, current_size = node_cid, current_size
+
+        car = _car(blocks)
+        with pytest.raises(CarDecodeError, match='depth'):
+            decode_car(str(current_cid), car)
+
+    def test_moderate_nesting_still_decodes(self) -> None:
+        leaf_cid, leaf_bytes = _raw_block(b'z')
+        blocks = [(leaf_cid, leaf_bytes)]
+        current_cid, current_size = leaf_cid, 1
+        for _ in range(10):
+            node_cid, node_bytes = _unixfs_file_node(b'', [(current_cid, current_size)], current_size)
+            blocks.append((node_cid, node_bytes))
+            current_cid, current_size = node_cid, current_size
+
+        car = _car(blocks)
+        assert decode_car(str(current_cid), car) == b'z'
+
+
+class TestMalformedInput:
+    def test_empty_bytes_raises(self) -> None:
+        with pytest.raises(CarDecodeError):
+            decode_car(SMALL_CID, b'')
+
+    def test_garbage_bytes_raises(self) -> None:
+        with pytest.raises(CarDecodeError):
+            decode_car(SMALL_CID, b'\xff\xff\xff\xff\xff')
+
+    def test_group_wire_type_in_root_raises(self) -> None:
+        # Field tag with wire type 3 (start group), which our protobuf decoder must reject.
+        group_field_tag = _encode_protobuf_tag(1, 3)
+        node_bytes = group_field_tag + b'\x00'
+        digest = multihash.digest(node_bytes, 'sha2-256')
+        root_cid = CID('base32', 1, 'dag-pb', digest)
+        car = _car([(root_cid, node_bytes)])
+
+        with pytest.raises(CarDecodeError, match='wire type'):
+            decode_car(str(root_cid), car)
+
+    def test_pbnode_without_data_field_raises(self) -> None:
+        # No Links either, so the PBNode itself serializes to zero bytes.
+        node_bytes = _encode_dag_pb_node(b'', [])
+        digest = multihash.digest(node_bytes, 'sha2-256')
+        root_cid = CID('base32', 1, 'dag-pb', digest)
+        car = _car([(root_cid, node_bytes)])
+
+        with pytest.raises(CarDecodeError, match='missing Type'):
+            decode_car(str(root_cid), car)
+
+    def test_unixfs_data_without_type_field_raises(self) -> None:
+        # UnixFS Data submessage with only the `Data` field (2), omitting the mandatory
+        # `Type` field (1).
+        unixfs_data = _encode_protobuf_bytes_field(2, b'abc')
+        node_bytes = _encode_dag_pb_node(unixfs_data, [])
+        digest = multihash.digest(node_bytes, 'sha2-256')
+        root_cid = CID('base32', 1, 'dag-pb', digest)
+        car = _car([(root_cid, node_bytes)])
+
+        with pytest.raises(CarDecodeError, match='missing Type'):
+            decode_car(str(root_cid), car)

@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, cast
 import aiohttp
 import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
-from ipfs_car_decoder import ChunkedMemoryByteStream, stream_bytes
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
+from sw_utils.ipfs_car import decode_car
 
 if TYPE_CHECKING:
     from tenacity import RetryCallState
@@ -479,18 +479,10 @@ class IpfsFetchClient:
         # Walks the DAG starting from the requested CID and re-hashes every block on the way,
         # so the returned bytes are exactly the content committed by `ipfs_hash`.
         # Any missing, tampered or truncated block aborts the walk.
-        stream = ChunkedMemoryByteStream()
-        await stream.append_bytes(car)
-        await stream.mark_complete()
-
         try:
-            data = bytearray()
-            async for chunk in stream_bytes(ipfs_hash, stream):
-                data += chunk
+            return decode_car(ipfs_hash, car)
         except Exception as e:
             raise IpfsException(f'CAR verification failed for {ipfs_hash}: {e!r}') from e
-
-        return bytes(data)
 
     async def _ipfs_fetch_bytes(self, endpoint: str, ipfs_hash: str) -> bytes:
         # The RPC node is not trusted either: export a CAR and verify it like a gateway response.
