@@ -15,6 +15,8 @@ SMALL_CONTENT = b'[{"a":"b"}]'
 CONFIG_CID = 'QmeCywDfupWC7jz5EDHsU5yEb2unAhn8iSGWBUEdrMjdMc'
 CONFIG_CAR = (FIXTURES_DIR / f'{CONFIG_CID}.car').read_bytes()
 
+MAX_CONTENT_SIZE = 10 * 1024 * 1024
+
 
 # --- minimal, independent encoders used only to build synthetic CAR fixtures for these tests ---
 
@@ -143,28 +145,36 @@ class TestRealFixtures:
         assert built_section == real_block_section
 
     def test_decodes_single_block_fixture(self) -> None:
-        assert decode_car(SMALL_CID, SMALL_CAR) == SMALL_CONTENT
+        assert decode_car(SMALL_CID, SMALL_CAR, max_content_size=MAX_CONTENT_SIZE) == SMALL_CONTENT
 
     def test_decodes_config_fixture(self) -> None:
-        data = decode_car(CONFIG_CID, CONFIG_CAR)
+        data = decode_car(CONFIG_CID, CONFIG_CAR, max_content_size=MAX_CONTENT_SIZE)
         assert json.loads(data)['supported_relays'] is not None
 
     def test_decodes_config_fixture_requested_as_cidv1(self) -> None:
         cid_v1 = str(CID.decode(CONFIG_CID).set(version=1))
-        data = decode_car(cid_v1, CONFIG_CAR)
+        data = decode_car(cid_v1, CONFIG_CAR, max_content_size=MAX_CONTENT_SIZE)
         assert json.loads(data)['supported_relays'] is not None
 
     def test_tampered_last_byte_raises(self) -> None:
         with pytest.raises(CarDecodeError):
-            decode_car(SMALL_CID, _flip_byte(SMALL_CAR, len(SMALL_CAR) - 1))
+            decode_car(
+                SMALL_CID,
+                _flip_byte(SMALL_CAR, len(SMALL_CAR) - 1),
+                max_content_size=MAX_CONTENT_SIZE,
+            )
 
     def test_tampered_mid_payload_byte_raises(self) -> None:
         with pytest.raises(CarDecodeError):
-            decode_car(CONFIG_CID, _flip_byte(CONFIG_CAR, len(CONFIG_CAR) // 2))
+            decode_car(
+                CONFIG_CID,
+                _flip_byte(CONFIG_CAR, len(CONFIG_CAR) // 2),
+                max_content_size=MAX_CONTENT_SIZE,
+            )
 
     def test_truncated_car_raises(self) -> None:
         with pytest.raises(CarDecodeError):
-            decode_car(CONFIG_CID, CONFIG_CAR[:-500])
+            decode_car(CONFIG_CID, CONFIG_CAR[:-500], max_content_size=MAX_CONTENT_SIZE)
 
 
 class TestSyntheticMultiBlock:
@@ -174,7 +184,7 @@ class TestSyntheticMultiBlock:
         root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=12)
         car = _car(leaves + [(root_cid, root_bytes)])
 
-        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+        assert decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE) == b'aaaabbbbcccc'
 
     def test_leaf_byte_flip_raises(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
@@ -184,7 +194,7 @@ class TestSyntheticMultiBlock:
         car = _car(tampered_leaves + [(root_cid, root_bytes)])
 
         with pytest.raises(CarDecodeError, match='hash mismatch'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_missing_leaf_raises(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
@@ -193,7 +203,7 @@ class TestSyntheticMultiBlock:
         car = _car(leaves[:2] + [(root_cid, root_bytes)])
 
         with pytest.raises(CarDecodeError, match='not found in CAR'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_shuffled_block_order_still_decodes_in_link_order(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
@@ -202,7 +212,7 @@ class TestSyntheticMultiBlock:
         shuffled = [leaves[2], leaves[0], leaves[1]]
         car = _car(shuffled + [(root_cid, root_bytes)])
 
-        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+        assert decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE) == b'aaaabbbbcccc'
 
     def test_wrong_filesize_raises(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb')]
@@ -211,18 +221,16 @@ class TestSyntheticMultiBlock:
         car = _car(leaves + [(root_cid, root_bytes)])
 
         with pytest.raises(CarDecodeError, match='filesize'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_wrong_blocksizes_entry_raises(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb')]
         children = [(cid, len(data)) for cid, data in leaves]
-        root_cid, root_bytes = _unixfs_file_node(
-            b'', children, filesize=8, block_sizes=[4, 999]
-        )
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=8, block_sizes=[4, 999])
         car = _car(leaves + [(root_cid, root_bytes)])
 
         with pytest.raises(CarDecodeError, match='blocksizes'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_packed_block_sizes_accepted(self) -> None:
         leaves = [_raw_block(chunk) for chunk in (b'aaaa', b'bbbb', b'cccc')]
@@ -232,7 +240,7 @@ class TestSyntheticMultiBlock:
         )
         car = _car(leaves + [(root_cid, root_bytes)])
 
-        assert decode_car(str(root_cid), car) == b'aaaabbbbcccc'
+        assert decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE) == b'aaaabbbbcccc'
 
     def test_nested_file_node_decodes(self) -> None:
         inner_leaves = [_raw_block(chunk) for chunk in (b'xxxx', b'yyyy')]
@@ -245,7 +253,7 @@ class TestSyntheticMultiBlock:
 
         car = _car(inner_leaves + [(inner_cid, inner_bytes), outer_leaf, (root_cid, root_bytes)])
 
-        assert decode_car(str(root_cid), car) == b'xxxxyyyyzzzz'
+        assert decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE) == b'xxxxyyyyzzzz'
 
     def test_directory_root_raises_not_a_file(self) -> None:
         leaf_cid, leaf_bytes = _raw_block(b'aaaa')
@@ -253,7 +261,7 @@ class TestSyntheticMultiBlock:
         car = _car([(leaf_cid, leaf_bytes), (directory_cid, directory_bytes)])
 
         with pytest.raises(CarDecodeError, match='not a file'):
-            decode_car(str(directory_cid), car)
+            decode_car(str(directory_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_requested_cid_absent_from_car_raises(self) -> None:
         leaf_cid, leaf_bytes = _raw_block(b'aaaa')
@@ -261,42 +269,46 @@ class TestSyntheticMultiBlock:
         car = _car([(leaf_cid, leaf_bytes)])
 
         with pytest.raises(CarDecodeError, match='not found in CAR'):
-            decode_car(str(other_cid), car)
+            decode_car(str(other_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_depth_bomb_raises(self) -> None:
         leaf_cid, leaf_bytes = _raw_block(b'z')
         blocks = [(leaf_cid, leaf_bytes)]
         current_cid, current_size = leaf_cid, 1
         for _ in range(100):
-            node_cid, node_bytes = _unixfs_file_node(b'', [(current_cid, current_size)], current_size)
+            node_cid, node_bytes = _unixfs_file_node(
+                b'', [(current_cid, current_size)], current_size
+            )
             blocks.append((node_cid, node_bytes))
             current_cid, current_size = node_cid, current_size
 
         car = _car(blocks)
         with pytest.raises(CarDecodeError, match='depth'):
-            decode_car(str(current_cid), car)
+            decode_car(str(current_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_moderate_nesting_still_decodes(self) -> None:
         leaf_cid, leaf_bytes = _raw_block(b'z')
         blocks = [(leaf_cid, leaf_bytes)]
         current_cid, current_size = leaf_cid, 1
         for _ in range(10):
-            node_cid, node_bytes = _unixfs_file_node(b'', [(current_cid, current_size)], current_size)
+            node_cid, node_bytes = _unixfs_file_node(
+                b'', [(current_cid, current_size)], current_size
+            )
             blocks.append((node_cid, node_bytes))
             current_cid, current_size = node_cid, current_size
 
         car = _car(blocks)
-        assert decode_car(str(current_cid), car) == b'z'
+        assert decode_car(str(current_cid), car, max_content_size=MAX_CONTENT_SIZE) == b'z'
 
 
 class TestMalformedInput:
     def test_empty_bytes_raises(self) -> None:
         with pytest.raises(CarDecodeError):
-            decode_car(SMALL_CID, b'')
+            decode_car(SMALL_CID, b'', max_content_size=MAX_CONTENT_SIZE)
 
     def test_garbage_bytes_raises(self) -> None:
         with pytest.raises(CarDecodeError):
-            decode_car(SMALL_CID, b'\xff\xff\xff\xff\xff')
+            decode_car(SMALL_CID, b'\xff\xff\xff\xff\xff', max_content_size=MAX_CONTENT_SIZE)
 
     def test_group_wire_type_in_root_raises(self) -> None:
         # Field tag with wire type 3 (start group), which our protobuf decoder must reject.
@@ -307,7 +319,7 @@ class TestMalformedInput:
         car = _car([(root_cid, node_bytes)])
 
         with pytest.raises(CarDecodeError, match='wire type'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_pbnode_without_data_field_raises(self) -> None:
         # No Links either, so the PBNode itself serializes to zero bytes.
@@ -317,7 +329,7 @@ class TestMalformedInput:
         car = _car([(root_cid, node_bytes)])
 
         with pytest.raises(CarDecodeError, match='missing Type'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
 
     def test_unixfs_data_without_type_field_raises(self) -> None:
         # UnixFS Data submessage with only the `Data` field (2), omitting the mandatory
@@ -329,4 +341,51 @@ class TestMalformedInput:
         car = _car([(root_cid, node_bytes)])
 
         with pytest.raises(CarDecodeError, match='missing Type'):
-            decode_car(str(root_cid), car)
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
+
+
+class TestContentSizeLimit:
+    def test_repeated_link_amplification_decodes_within_limit(self) -> None:
+        # One ~1 KiB leaf linked 1000 times: the CAR stores it once, the decoded content is ~1 MiB.
+        leaf_data = b'x' * 1024
+        leaf_cid, leaf_bytes = _raw_block(leaf_data)
+        num_links = 1000
+        children = [(leaf_cid, len(leaf_data))] * num_links
+        total_size = len(leaf_data) * num_links
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=total_size)
+        car = _car([(leaf_cid, leaf_bytes), (root_cid, root_bytes)])
+
+        decoded = decode_car(str(root_cid), car, max_content_size=total_size)
+        assert len(decoded) == total_size
+
+    def test_repeated_link_amplification_raises_when_over_limit(self) -> None:
+        leaf_data = b'x' * 1024
+        leaf_cid, leaf_bytes = _raw_block(leaf_data)
+        num_links = 1000
+        children = [(leaf_cid, len(leaf_data))] * num_links
+        total_size = len(leaf_data) * num_links
+        root_cid, root_bytes = _unixfs_file_node(b'', children, filesize=total_size)
+        car = _car([(leaf_cid, leaf_bytes), (root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match='exceeds limit'):
+            decode_car(str(root_cid), car, max_content_size=total_size - 1)
+
+    def test_declared_filesize_above_limit_rejected_before_walking(self) -> None:
+        huge_declared_filesize = MAX_CONTENT_SIZE * 10
+        root_cid, root_bytes = _unixfs_file_node(b'small data', [], filesize=huge_declared_filesize)
+        car = _car([(root_cid, root_bytes)])
+
+        with pytest.raises(CarDecodeError, match=f'exceeds limit of {MAX_CONTENT_SIZE} bytes'):
+            decode_car(str(root_cid), car, max_content_size=MAX_CONTENT_SIZE)
+
+    def test_raw_root_above_limit_raises(self) -> None:
+        with pytest.raises(CarDecodeError, match='exceeds limit'):
+            decode_car(SMALL_CID, SMALL_CAR, max_content_size=len(SMALL_CONTENT) - 1)
+
+    def test_real_fixture_decodes_with_generous_limit(self) -> None:
+        data = decode_car(CONFIG_CID, CONFIG_CAR, max_content_size=MAX_CONTENT_SIZE)
+        assert len(data) > 100
+
+    def test_real_fixture_raises_with_limit_smaller_than_content(self) -> None:
+        with pytest.raises(CarDecodeError, match='exceeds limit'):
+            decode_car(CONFIG_CID, CONFIG_CAR, max_content_size=100)

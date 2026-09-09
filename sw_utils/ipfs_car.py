@@ -6,7 +6,8 @@ Implemented in-house instead of `ipfs-car-decoder`/`unix-fs-exporter`: those dep
 code does not load on newer protobuf. dag-pb and UnixFS need only a handful of protobuf fields,
 so they are parsed here directly from the wire format with no protobuf dependency.
 Only file content is supported (UnixFS `File`/`Raw` nodes and raw leaves); directories,
-symlinks and HAMT shards are rejected.
+symlinks and HAMT shards are rejected. Output size is capped by `max_content_size`: UnixFS
+allows linking one block many times, so a small CAR can expand to an arbitrarily large output.
 """
 
 from dataclasses import dataclass, field
@@ -53,13 +54,33 @@ class _DagPbFrame:
     children_content: list[bytes] = field(default_factory=list)
 
 
-def decode_car(cid: str, car: bytes) -> bytes:
+@dataclass
+class _ContentSizeGuard:
+    # Counts bytes as they are actually produced: declared sizes are attacker-controlled.
+    max_content_size: int
+    total: int = 0
+
+    def add(self, size: int) -> None:
+        self.total += size
+        if self.total > self.max_content_size:
+            raise CarDecodeError(f'decoded content exceeds limit of {self.max_content_size} bytes')
+
+
+def decode_car(cid: str, car: bytes, *, max_content_size: int) -> bytes:
     root_cid = CID.decode(cid)
     block_index = _index_car_blocks(car)
     root = _open_dag_pb_node(root_cid, block_index, depth=0)
     if isinstance(root, bytes):
+        if len(root) > max_content_size:
+            raise CarDecodeError(f'decoded content exceeds limit of {max_content_size} bytes')
         return root
-    return _walk_dag_pb_tree(root, block_index)
+
+    if root.declared_file_size is not None and root.declared_file_size > max_content_size:
+        raise CarDecodeError(
+            f'declared filesize {root.declared_file_size} exceeds limit of {max_content_size} bytes'
+        )
+
+    return _walk_dag_pb_tree(root, block_index, max_content_size)
 
 
 def _read_varint(buf: bytes, pos: int) -> tuple[int, int]:
@@ -254,7 +275,12 @@ def _finalize_frame(frame: _DagPbFrame) -> bytes:
     return content
 
 
-def _walk_dag_pb_tree(root: _DagPbFrame, block_index: dict[bytes, bytes]) -> bytes:
+def _walk_dag_pb_tree(
+    root: _DagPbFrame, block_index: dict[bytes, bytes], max_content_size: int
+) -> bytes:
+    size_guard = _ContentSizeGuard(max_content_size)
+    size_guard.add(len(root.head))
+
     stack = [root]
     while True:
         frame = stack[-1]
@@ -262,9 +288,11 @@ def _walk_dag_pb_tree(root: _DagPbFrame, block_index: dict[bytes, bytes]) -> byt
             child_cid = frame.child_cids[frame.child_index]
             child = _open_dag_pb_node(child_cid, block_index, depth=frame.depth + 1)
             if isinstance(child, bytes):
+                size_guard.add(len(child))
                 frame.children_content.append(child)
                 frame.child_index += 1
             else:
+                size_guard.add(len(child.head))
                 stack.append(child)
             continue
 
@@ -273,5 +301,6 @@ def _walk_dag_pb_tree(root: _DagPbFrame, block_index: dict[bytes, bytes]) -> byt
         if not stack:
             return content
         parent = stack[-1]
+        # `content` is already counted via its head and leaves.
         parent.children_content.append(content)
         parent.child_index += 1

@@ -22,6 +22,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 IPFS_DEFAULT_TIMEOUT = 120
+IPFS_DEFAULT_MAX_CONTENT_SIZE = 1024 * 1024 * 1024  # 1 GiB
+
+_GATEWAY_READ_CHUNK_SIZE = 64 * 1024
 
 
 class BaseUploadClient(ABC):
@@ -428,11 +431,13 @@ class IpfsFetchClient:
         ipfs_endpoints: list[str],
         timeout: int = 60,
         retry_timeout: int = 120,
+        max_content_size: int = IPFS_DEFAULT_MAX_CONTENT_SIZE,
     ):
         self.ipfs_endpoints = ipfs_endpoints
 
         self.timeout = timeout
         self.retry_timeout = retry_timeout
+        self.max_content_size = max_content_size
 
     async def fetch_bytes(self, ipfs_hash: str) -> bytes:
         if not ipfs_hash:
@@ -471,16 +476,34 @@ class IpfsFetchClient:
                         f'(Content-Type: {content_type}); '
                         'the gateway must support trustless CAR responses'
                     )
-                car = await response.read()
+                if (
+                    response.content_length is not None
+                    and response.content_length > self.max_content_size
+                ):
+                    raise IpfsException(
+                        f'Endpoint {endpoint} declared a CAR of {response.content_length} bytes '
+                        f'for {ipfs_hash}, exceeding the limit of {self.max_content_size} bytes'
+                    )
 
-        return await self._decode_car(ipfs_hash, car)
+                # Content-Length may be absent or wrong, so the body is capped while streaming too.
+                car = bytearray()
+                async for chunk in response.content.iter_chunked(_GATEWAY_READ_CHUNK_SIZE):
+                    car += chunk
+                    if len(car) > self.max_content_size:
+                        raise IpfsException(
+                            f'Endpoint {endpoint} sent a CAR exceeding the limit of '
+                            f'{self.max_content_size} bytes for {ipfs_hash}'
+                        )
+
+        return await self._decode_car(ipfs_hash, bytes(car))
 
     async def _decode_car(self, ipfs_hash: str, car: bytes) -> bytes:
         # Walks the DAG starting from the requested CID and re-hashes every block on the way,
         # so the returned bytes are exactly the content committed by `ipfs_hash`.
         # Any missing, tampered or truncated block aborts the walk.
+        # Output size is capped by `max_content_size`.
         try:
-            return decode_car(ipfs_hash, car)
+            return decode_car(ipfs_hash, car, max_content_size=self.max_content_size)
         except Exception as e:
             raise IpfsException(f'CAR verification failed for {ipfs_hash}: {e!r}') from e
 

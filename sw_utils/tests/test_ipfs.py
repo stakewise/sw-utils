@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import AsyncIterator
 from unittest import mock
 
 import pytest
@@ -36,13 +37,29 @@ def _truncated(car: bytes, drop: int) -> bytes:
     return car[:-drop]
 
 
+class _FakeContent:
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+
+    async def iter_chunked(self, chunk_size: int) -> AsyncIterator[bytes]:
+        for offset in range(0, len(self._body), chunk_size):
+            yield self._body[offset : offset + chunk_size]
+
+
 class _FakeGetResponse:
     def __init__(
-        self, body: bytes, status: int = 200, content_type: str = 'application/vnd.ipld.car'
+        self,
+        body: bytes,
+        status: int = 200,
+        content_type: str = 'application/vnd.ipld.car',
+        content_length: int | None = -1,
     ) -> None:
         self._body = body
         self.status = status
         self.headers = {'Content-Type': content_type}
+        # -1 derives Content-Length from the body; None simulates a missing header.
+        self.content_length = len(body) if content_length == -1 else content_length
+        self.content = _FakeContent(body)
 
     async def __aenter__(self) -> '_FakeGetResponse':
         return self
@@ -75,8 +92,7 @@ class TestDecodeCar:
             await client._decode_car(SMALL_CID, _tampered(SMALL_CAR))
 
     async def test_mid_payload_byte_flip_raises(self) -> None:
-        # Regression guard for ipfs_car_decoder.IndexedBlockstore(validate=True): a flip
-        # inside an actual block's payload (not the CBOR header) must still be caught.
+        # A flip inside a block payload (not the CAR header) must still be caught.
         client = IpfsFetchClient(ipfs_endpoints=[])
         with pytest.raises(IpfsException, match='CAR verification failed'):
             await client._decode_car(CONFIG_CID, _tampered_mid(CONFIG_CAR))
@@ -189,5 +205,25 @@ class TestIpfsFetchClient:
         client = IpfsFetchClient(ipfs_endpoints=['/dns/node/tcp/5001'], retry_timeout=0)
         rpc_client = _FakeIpfsRpcClient(dag_export=_tampered(SMALL_CAR))
         with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(SMALL_CID)
+
+    async def test_fetch_bytes_skips_endpoint_when_content_length_exceeds_limit(self) -> None:
+        client = IpfsFetchClient(
+            ipfs_endpoints=['https://one'], retry_timeout=0, max_content_size=len(SMALL_CAR) - 1
+        )
+        with mock.patch.object(ClientSession, 'get', side_effect=[_FakeGetResponse(SMALL_CAR)]):
+            with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
+                await client.fetch_bytes(SMALL_CID)
+
+    async def test_fetch_bytes_skips_endpoint_when_body_exceeds_limit_without_content_length(
+        self,
+    ) -> None:
+        # Content-Length may be absent or wrong, so the body itself is capped while streaming.
+        oversized = _FakeGetResponse(SMALL_CAR, content_length=None)
+        client = IpfsFetchClient(
+            ipfs_endpoints=['https://one'], retry_timeout=0, max_content_size=len(SMALL_CAR) - 1
+        )
+        with mock.patch.object(ClientSession, 'get', side_effect=[oversized]):
             with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
                 await client.fetch_bytes(SMALL_CID)
