@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from multiformats import CID, multihash
 
-from sw_utils.ipfs_car import CarDecodeError, decode_car
+from sw_utils.vendor.ipfs_car import CarDecodeError, decode_car
 
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 

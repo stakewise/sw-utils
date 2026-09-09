@@ -13,7 +13,7 @@ from ipfshttpclient.exceptions import ErrorResponse
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
-from sw_utils.ipfs_car import decode_car
+from sw_utils.vendor.ipfs_car import decode_car
 
 if TYPE_CHECKING:
     from tenacity import RetryCallState
