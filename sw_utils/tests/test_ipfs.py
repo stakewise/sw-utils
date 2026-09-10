@@ -19,6 +19,7 @@ from sw_utils.ipfs import (
     IpfsUploadClient,
     PinataUploadClient,
     _dump_json,
+    _verify_uploaded_cid,
 )
 from sw_utils.vendor.ipfs_unixfs import compute_cid
 
@@ -433,7 +434,23 @@ class TestIpfsUploadClient:
             ipfs_hash = await client.upload_bytes(b'abc')
 
         assert ipfs_hash == ABC_CID
+        _, add_kwargs = rpc_client.add_bytes.call_args
+        # Kubo pins on `add` by default; verify it was explicitly disabled there.
+        assert add_kwargs['opts']['pin'] == 'false'
         rpc_client.pin.add.assert_called_once_with(ABC_CID)
+
+    async def test_upload_json_pins_and_returns_verified_hash(self) -> None:
+        client = IpfsUploadClient(endpoint='/dns/node/tcp/5001')
+        data = [{'a': 'b'}]
+        json_cid = str(compute_cid(_dump_json(data)))
+        rpc_client = _FakeIpfsUploadRpcClient(add_bytes_return=json_cid)
+        with mock.patch('sw_utils.ipfs.ipfshttpclient.connect', return_value=rpc_client):
+            ipfs_hash = await client.upload_json(data)
+
+        assert ipfs_hash == json_cid
+        add_args, _ = rpc_client.add_bytes.call_args
+        assert add_args[0] == _dump_json(data)
+        rpc_client.pin.add.assert_called_once_with(json_cid)
 
     async def test_upload_bytes_raises_on_cid_mismatch_and_does_not_pin(self) -> None:
         client = IpfsUploadClient(endpoint='/dns/node/tcp/5001')
@@ -460,6 +477,21 @@ class TestIpfsUploadClient:
             with pytest.raises(IpfsException, match='content hashes to'):
                 await client.upload_bytes(b'abc')
         rpc_client.pin.add.assert_not_called()
+
+
+class TestVerifyUploadedCid:
+    def test_accepts_ipfs_uri_prefix_and_returns_bare_canonical_cid(self) -> None:
+        assert _verify_uploaded_cid(b'abc', f'ipfs://{ABC_CID}') == ABC_CID
+
+    def test_accepts_ipfs_path_prefix_and_returns_bare_canonical_cid(self) -> None:
+        assert _verify_uploaded_cid(b'abc', f'/ipfs/{ABC_CID}') == ABC_CID
+
+    def test_canonicalises_a_different_base_to_base32(self) -> None:
+        base36_cid = str(CID.decode(ABC_CID).set(base='base36'))
+        assert _verify_uploaded_cid(b'abc', base36_cid) == ABC_CID
+
+    def test_canonicalises_uppercase_base32(self) -> None:
+        assert _verify_uploaded_cid(b'abc', ABC_CID.upper()) == ABC_CID
 
 
 def _client_response_error_with_leaking_header() -> ClientResponseError:
@@ -510,6 +542,29 @@ class TestIpfsMultiUploadClient:
             _FakePostResponse({'Hash': ABC_CID}),
             _FakePostResponse({'Hash': ABC_CID}),
             _FakePostResponse({'Hash': WRONG_CID}),
+        ]
+        with mock.patch.object(ClientSession, 'post', side_effect=responses):
+            ipfs_hash = await client.upload_bytes(b'abc')
+
+        assert ipfs_hash == ABC_CID
+
+    async def test_upload_bytes_reaches_quorum_of_one_when_two_clients_fail_verification(
+        self,
+    ) -> None:
+        # Both failing clients raise before their response is trusted, so the shrinking
+        # response set (1 of 3) is still provably correct and safe to accept.
+        client = IpfsMultiUploadClient(
+            upload_clients=[
+                FilebaseUploadClient(api_token='token-1'),
+                FilebaseUploadClient(api_token='token-2'),
+                FilebaseUploadClient(api_token='token-3'),
+            ],
+            retry_timeout=0,
+        )
+        responses = [
+            _FakePostResponse({'Hash': WRONG_CID}),
+            _FakePostResponse({'Hash': 'not-a-cid!!'}),
+            _FakePostResponse({'Hash': ABC_CID}),
         ]
         with mock.patch.object(ClientSession, 'post', side_effect=responses):
             ipfs_hash = await client.upload_bytes(b'abc')

@@ -7,7 +7,9 @@ import pytest
 from multiformats import CID, multihash
 
 from sw_utils.vendor.ipfs_unixfs import CarDecodeError, _build_dag, _build_leaf
-from sw_utils.vendor.ipfs_unixfs import _encode_dag_pb_node as _kubo_encode_dag_pb_node
+from sw_utils.vendor.ipfs_unixfs import (
+    _encode_dag_pb_node as _encode_dag_pb_node_under_test,
+)
 from sw_utils.vendor.ipfs_unixfs import _split_chunks, compute_cid, decode_car
 
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
@@ -445,9 +447,9 @@ class TestComputeCid:
 class TestEncodeDagPbNode:
     def test_two_leaves_root_node_matches_kubo_wire_bytes(self) -> None:
         data = _random_bytes(262145)
-        leaves = [_build_leaf(chunk) for chunk in _split_chunks(data)]
+        leaves = [_build_leaf(chunk) for chunk in _split_chunks(memoryview(data))]
 
-        encoded = _kubo_encode_dag_pb_node(leaves)
+        encoded = _encode_dag_pb_node_under_test(leaves)
 
         assert encoded.hex() == _TWO_LEAVES_ROOT_NODE_HEX
 

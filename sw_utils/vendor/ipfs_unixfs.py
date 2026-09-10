@@ -297,37 +297,43 @@ def _walk_dag_pb_tree(
 
 
 def compute_cid(data: bytes) -> CID:
-    root, _ = _build_dag(data)
+    root, _ = _build_dag(data, collect_blocks=False)
     return root.cid
 
 
-def _build_dag(data: bytes) -> tuple[_Node, list[tuple[CID, bytes]]]:
-    chunks = _split_chunks(data)
+def _build_dag(
+    data: bytes, *, collect_blocks: bool = True
+) -> tuple[_Node, list[tuple[CID, bytes]]]:
+    # Chunks are zero-copy views; blocks are materialised only when the caller asks for them.
+    chunks = _split_chunks(memoryview(data))
     level = [_build_leaf(chunk) for chunk in chunks]
-    blocks = [(node.cid, chunk) for node, chunk in zip(level, chunks)]
+    blocks: list[tuple[CID, bytes]] = (
+        [(node.cid, bytes(chunk)) for node, chunk in zip(level, chunks)] if collect_blocks else []
+    )
 
     while len(level) > 1:
         parents: list[_Node] = []
         for group in _group(level, _MAX_LINKS_PER_NODE):
             parent, encoded = _build_parent(group)
             parents.append(parent)
-            blocks.append((parent.cid, encoded))
+            if collect_blocks:
+                blocks.append((parent.cid, encoded))
         level = parents
 
     return level[0], blocks
 
 
-def _split_chunks(data: bytes) -> list[bytes]:
-    if not data:
-        return [b'']
-    return [data[offset : offset + _CHUNK_SIZE] for offset in range(0, len(data), _CHUNK_SIZE)]
+def _split_chunks(view: memoryview) -> list[memoryview]:
+    if not view:
+        return [memoryview(b'')]
+    return [view[offset : offset + _CHUNK_SIZE] for offset in range(0, len(view), _CHUNK_SIZE)]
 
 
 def _group(nodes: list[_Node], size: int) -> list[list[_Node]]:
     return [nodes[offset : offset + size] for offset in range(0, len(nodes), size)]
 
 
-def _build_leaf(chunk: bytes) -> _Node:
+def _build_leaf(chunk: bytes | memoryview) -> _Node:
     digest = multihash.digest(chunk, _SHA2_256)
     return _Node(
         cid=CID('base32', 1, _RAW_CODEC, digest), tsize=len(chunk), content_size=len(chunk)

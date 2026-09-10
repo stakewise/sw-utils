@@ -80,9 +80,11 @@ class IpfsUploadClient(BaseUploadClient):
             password=self.password,
             timeout=self.timeout,
         ) as client:
-            ipfs_id = client.add_bytes(data, opts={'cid-version': 1})
+            # Kubo pins on `add` by default; disable it here so a CID that fails verification
+            # below is never pinned, then pin explicitly once the CID is confirmed correct.
+            ipfs_id = client.add_bytes(data, opts={'cid-version': 1, 'pin': 'false'})
             verified_hash = _verify_uploaded_cid(data, ipfs_id)
-            client.pin.add(ipfs_id)
+            client.pin.add(verified_hash)
 
         return verified_hash
 
@@ -450,6 +452,8 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
         num_responses = sum(ipfs_hashes.values())
+        # `num_responses` already excludes clients that failed CID verification, so a smaller
+        # response set is fine here: every surviving hash is provably correct, not just trusted.
         quorum = self.get_quorum(num_responses)
 
         if count < quorum:
@@ -575,7 +579,8 @@ def _dump_json(data: Any) -> bytes:
 
 
 def _verify_uploaded_cid(data: bytes, ipfs_hash: str) -> str:
-    """Returns `ipfs_hash` if it commits to `data`, raises IpfsException otherwise."""
+    """Checks that `ipfs_hash` commits to `data` and returns it in canonical form (lowercase
+    base32 CIDv1), so that the multi-upload quorum counts one spelling. Raises IpfsException."""
     stripped_hash = _strip_ipfs_prefix(ipfs_hash)
     try:
         returned_cid = CID.decode(stripped_hash)
@@ -588,4 +593,4 @@ def _verify_uploaded_cid(data: bytes, ipfs_hash: str) -> str:
             f'Provider returned CID {ipfs_hash} but content hashes to {expected_cid}'
         )
 
-    return stripped_hash
+    return str(expected_cid)
