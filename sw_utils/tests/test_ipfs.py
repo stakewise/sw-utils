@@ -20,7 +20,7 @@ from sw_utils.ipfs import (
     PinataUploadClient,
     _dump_json,
 )
-from sw_utils.vendor.ipfs_cid import compute_cid
+from sw_utils.vendor.ipfs_unixfs import compute_cid
 
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 
