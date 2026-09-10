@@ -144,7 +144,9 @@ class PinataUploadClient(BaseUploadClient):
         ) as session:
             form_data = aiohttp.FormData()
             form_data.add_field('pinataOptions', '{"cidVersion": 1}')
-            form_data.add_field('file', data, content_type='Content-Type: application/octet-stream')
+            form_data.add_field(
+                'file', data, filename='file', content_type='application/octet-stream'
+            )
             async with session.post(
                 url=self.bytes_endpoint,
                 data=form_data,
@@ -169,6 +171,57 @@ class PinataUploadClient(BaseUploadClient):
             headers=headers, timeout=aiohttp.ClientTimeout(self.timeout)
         ) as session:
             async with session.delete(url=urljoin(self.unpin_endpoint, ipfs_hash)) as response:
+                response.raise_for_status()
+        return None
+
+
+class FilebaseUploadClient(BaseUploadClient):
+    """
+    https://filebase.com/docs/ipfs/rpc-api
+    """
+
+    base_url = 'https://rpc.filebase.io/api/v0/'
+
+    def __init__(self, api_token: str, timeout: int = IPFS_DEFAULT_TIMEOUT):
+        self.headers = {'Authorization': f'Bearer {api_token}'}
+        self.timeout = timeout
+
+    async def upload_bytes(self, data: bytes) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+
+        form_data = aiohttp.FormData()
+        form_data.add_field('file', data, filename='file', content_type='application/octet-stream')
+
+        async with ClientSession(
+            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
+            async with session.post(
+                url=urljoin(self.base_url, 'add'),
+                params={'cid-version': '1'},
+                data=form_data,
+            ) as response:
+                response.raise_for_status()
+                ipfs_id = (await response.json())['Hash']
+
+        return _strip_ipfs_prefix(ipfs_id)
+
+    async def upload_json(self, data: dict | list) -> str:
+        if not data:
+            raise ValueError('Empty data provided')
+        return await self.upload_bytes(_dump_json(data))
+
+    async def remove(self, ipfs_hash: str) -> None:
+        if not ipfs_hash:
+            raise ValueError('Empty IPFS hash provided')
+
+        async with ClientSession(
+            headers=self.headers, timeout=aiohttp.ClientTimeout(self.timeout)
+        ) as session:
+            async with session.post(
+                url=urljoin(self.base_url, 'pin/rm'),
+                params={'arg': ipfs_hash},
+            ) as response:
                 response.raise_for_status()
         return None
 
@@ -359,7 +412,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
             )
             for value in result:
                 if isinstance(value, BaseException):
-                    logger.error(repr(value))
+                    logger.error('%s: %s', type(value).__name__, value)
                     continue
 
         return ipfs_hash
@@ -391,7 +444,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(repr(value))
+                logger.error('%s: %s', type(value).__name__, value)
                 continue
 
             ipfs_hash = _strip_ipfs_prefix(value)
@@ -420,7 +473,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         )
         for value in result:
             if isinstance(value, BaseException):
-                logger.error(repr(value))
+                logger.error('%s: %s', type(value).__name__, value)
                 continue
         return None
 
