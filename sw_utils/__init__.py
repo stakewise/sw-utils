@@ -16,6 +16,7 @@ from .execution import GasManager, get_execution_client
 from .gnosis import MGNO_RATE, convert_to_gno, convert_to_mgno
 from .ipfs import (
     BaseUploadClient,
+    FilebaseUploadClient,
     IpfsFetchClient,
     IpfsMultiUploadClient,
     IpfsUploadClient,

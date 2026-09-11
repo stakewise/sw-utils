@@ -1,13 +1,23 @@
 import json
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 from unittest import mock
 
+import aiohttp
 import pytest
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession, RequestInfo
+from multidict import CIMultiDict, CIMultiDictProxy
+from yarl import URL
 
 from sw_utils.exceptions import IpfsException
-from sw_utils.ipfs import IpfsFetchClient
+from sw_utils.ipfs import (
+    BaseUploadClient,
+    FilebaseUploadClient,
+    IpfsFetchClient,
+    IpfsMultiUploadClient,
+    PinataUploadClient,
+    _dump_json,
+)
 
 FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 
@@ -227,3 +237,154 @@ class TestIpfsFetchClient:
         with mock.patch.object(ClientSession, 'get', side_effect=[oversized]):
             with pytest.raises(IpfsException, match='Failed to fetch IPFS data'):
                 await client.fetch_bytes(SMALL_CID)
+
+
+class _FakePostResponse:
+    def __init__(self, payload: dict | None = None, status: int = 200) -> None:
+        self._payload = payload or {}
+        self.status = status
+
+    async def __aenter__(self) -> '_FakePostResponse':
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        return None
+
+    def raise_for_status(self) -> None:
+        if self.status >= 400:
+            raise aiohttp.ClientResponseError(
+                request_info=mock.Mock(), history=(), status=self.status
+            )
+
+    async def json(self) -> dict:
+        return self._payload
+
+
+def _find_posted_field(form_data: aiohttp.FormData, name: str) -> tuple[Any, Any, Any]:
+    for type_options, headers, value in form_data._fields:
+        if type_options.get('name') == name:
+            return type_options, headers, value
+    raise AssertionError(f'field {name} not found')
+
+
+def _read_posted_field(form_data: aiohttp.FormData, name: str) -> Any:
+    return _find_posted_field(form_data, name)[2]
+
+
+class TestFilebaseUploadClient:
+    async def test_upload_bytes_posts_file_and_returns_hash(self) -> None:
+        client = FilebaseUploadClient(api_token='my-token')
+        response = _FakePostResponse({'Name': 'small.json', 'Hash': 'bafkreitest', 'Size': '3'})
+        with mock.patch.object(ClientSession, 'post', autospec=True, return_value=response) as post:
+            ipfs_hash = await client.upload_bytes(b'abc')
+
+        assert ipfs_hash == 'bafkreitest'
+        session, _, kwargs = post.call_args.args[0], post.call_args.args[1:], post.call_args.kwargs
+        assert kwargs['url'] == 'https://rpc.filebase.io/api/v0/add'
+        assert kwargs['params'] == {'cid-version': '1'}
+        type_options, headers, value = _find_posted_field(kwargs['data'], 'file')
+        assert value == b'abc'
+        assert type_options['filename'] == 'file'
+        assert headers['Content-Type'] == 'application/octet-stream'
+        assert session.headers == {'Authorization': 'Bearer my-token'}
+
+    async def test_upload_json_serialises_with_dump_json(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        response = _FakePostResponse({'Hash': 'bafkreijson'})
+        data = [{'a': 'b'}]
+        with mock.patch.object(ClientSession, 'post', return_value=response) as post:
+            ipfs_hash = await client.upload_json(data)
+
+        assert ipfs_hash == 'bafkreijson'
+        _, kwargs = post.call_args
+        assert _read_posted_field(kwargs['data'], 'file') == _dump_json(data)
+
+    async def test_remove_posts_to_pin_rm_with_arg(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        response = _FakePostResponse({'Pins': ['bafkreitest']})
+        with mock.patch.object(ClientSession, 'post', return_value=response) as post:
+            await client.remove('bafkreitest')
+
+        _, kwargs = post.call_args
+        assert kwargs['url'] == 'https://rpc.filebase.io/api/v0/pin/rm'
+        assert kwargs['params'] == {'arg': 'bafkreitest'}
+
+    async def test_upload_bytes_raises_on_empty_data(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        with pytest.raises(ValueError, match='Empty data provided'):
+            await client.upload_bytes(b'')
+
+    async def test_upload_json_raises_on_empty_data(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        with pytest.raises(ValueError, match='Empty data provided'):
+            await client.upload_json([])
+
+    async def test_remove_raises_on_empty_hash(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        with pytest.raises(ValueError, match='Empty IPFS hash provided'):
+            await client.remove('')
+
+    async def test_upload_bytes_raises_client_response_error_on_error_status(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        response = _FakePostResponse(status=401)
+        with mock.patch.object(ClientSession, 'post', return_value=response):
+            with pytest.raises(aiohttp.ClientResponseError):
+                await client.upload_bytes(b'abc')
+
+    async def test_remove_raises_client_response_error_on_error_status(self) -> None:
+        client = FilebaseUploadClient(api_token='token')
+        response = _FakePostResponse(status=500)
+        with mock.patch.object(ClientSession, 'post', return_value=response):
+            with pytest.raises(aiohttp.ClientResponseError):
+                await client.remove('bafkreitest')
+
+
+class TestPinataUploadClient:
+    async def test_upload_bytes_posts_file_and_returns_hash(self) -> None:
+        client = PinataUploadClient(api_key='my-key', secret_key='my-secret')
+        response = _FakePostResponse({'IpfsHash': 'bafkreitest'})
+        with mock.patch.object(ClientSession, 'post', return_value=response) as post:
+            ipfs_hash = await client.upload_bytes(b'abc')
+
+        assert ipfs_hash == 'bafkreitest'
+        _, kwargs = post.call_args
+        assert kwargs['url'] == 'https://api.pinata.cloud/pinning/pinFileToIPFS'
+        type_options, headers, value = _find_posted_field(kwargs['data'], 'file')
+        assert value == b'abc'
+        assert type_options['filename'] == 'file'
+        assert headers['Content-Type'] == 'application/octet-stream'
+        assert _read_posted_field(kwargs['data'], 'pinataOptions') == '{"cidVersion": 1}'
+
+
+def _client_response_error_with_leaking_header() -> ClientResponseError:
+    # repr() of ClientResponseError includes request_info.headers, so a naive
+    # `logger.error(repr(exc))` would leak an Authorization header into logs.
+    headers = CIMultiDictProxy(CIMultiDict({'Authorization': 'Bearer SECRET-TOKEN'}))
+    request_info = RequestInfo(URL('https://example.com'), 'POST', headers)
+    return ClientResponseError(request_info, (), status=401, message='Unauthorized')
+
+
+class _FailingUploadClient(BaseUploadClient):
+    async def upload_bytes(self, data: bytes) -> str:
+        raise _client_response_error_with_leaking_header()
+
+    async def upload_json(self, data: dict | list) -> str:
+        raise _client_response_error_with_leaking_header()
+
+    async def remove(self, ipfs_hash: str) -> None:
+        raise _client_response_error_with_leaking_header()
+
+
+class TestIpfsMultiUploadClient:
+    async def test_upload_bytes_does_not_log_leaked_credentials_on_failure(self) -> None:
+        client = IpfsMultiUploadClient(
+            upload_clients=[_FailingUploadClient(), _FailingUploadClient()], retry_timeout=0
+        )
+        with mock.patch('sw_utils.ipfs.logger.error') as error:
+            with pytest.raises(IpfsException, match='Upload to all clients has failed'):
+                await client.upload_bytes(b'data')
+
+        assert error.call_count == 2
+        for call in error.call_args_list:
+            formatted_message = call.args[0] % call.args[1:]
+            assert 'SECRET-TOKEN' not in formatted_message
