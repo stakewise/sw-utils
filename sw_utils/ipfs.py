@@ -425,14 +425,7 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = await self._upload(coros)
 
         if self.pin_clients:
-            result = await asyncio.gather(
-                *(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients),
-                return_exceptions=True,
-            )
-            for value in result:
-                if isinstance(value, BaseException):
-                    logger.error('%s: %s', type(value).__name__, value)
-                    continue
+            await asyncio.gather(*(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients))
 
         return ipfs_hash
 

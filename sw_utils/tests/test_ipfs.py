@@ -12,7 +12,6 @@ from yarl import URL
 
 from sw_utils.exceptions import IpfsException
 from sw_utils.ipfs import (
-    BasePinClient,
     BaseUploadClient,
     FilebaseUploadClient,
     IpfsFetchClient,
@@ -514,14 +513,6 @@ class _FailingUploadClient(BaseUploadClient):
         raise _client_response_error_with_leaking_header()
 
 
-class _FailingPinClient(BasePinClient):
-    async def pin(self, ipfs_hash: str) -> str:
-        raise _client_response_error_with_leaking_header()
-
-    async def remove(self, ipfs_hash: str) -> None:
-        raise _client_response_error_with_leaking_header()
-
-
 class TestIpfsMultiUploadClient:
     async def test_upload_bytes_does_not_log_leaked_credentials_on_failure(self) -> None:
         client = IpfsMultiUploadClient(
@@ -597,19 +588,3 @@ class TestIpfsMultiUploadClient:
         with mock.patch.object(ClientSession, 'post', side_effect=responses):
             with pytest.raises(IpfsException, match='Upload to all clients has failed'):
                 await client.upload_bytes(b'abc')
-
-    async def test_upload_json_logs_failing_pin_client_without_failing_upload(self) -> None:
-        client = IpfsMultiUploadClient(
-            upload_clients=[FilebaseUploadClient(api_token='token-1')],
-            pin_clients=[_FailingPinClient()],
-            retry_timeout=0,
-        )
-        data = {'a': 'b'}
-        json_cid = str(compute_cid(_dump_json(data)))
-        response = _FakePostResponse({'Hash': json_cid})
-        with mock.patch.object(ClientSession, 'post', return_value=response):
-            with mock.patch('sw_utils.ipfs.logger.error') as error:
-                ipfs_hash = await client.upload_json(data)
-
-        assert ipfs_hash == json_cid
-        error.assert_called_once()
