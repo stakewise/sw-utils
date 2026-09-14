@@ -567,7 +567,7 @@ def _dump_json(data: Any) -> bytes:
 
 def _verify_uploaded_cid(data: bytes, ipfs_hash: str) -> str:
     """Checks that `ipfs_hash` commits to `data` and returns it in canonical form (lowercase
-    base32 CIDv1), so that the multi-upload quorum counts one spelling. Raises IpfsException."""
+    base32 CIDv1), so that every client returns one spelling. Raises IpfsException."""
     stripped_hash = _strip_ipfs_prefix(ipfs_hash)
     try:
         returned_cid = CID.decode(stripped_hash)
