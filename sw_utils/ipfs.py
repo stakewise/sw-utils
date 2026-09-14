@@ -430,8 +430,6 @@ class IpfsMultiUploadClient(BaseUploadClient):
         return ipfs_hash
 
     async def _upload(self, coros: list) -> str:
-        # Every client verifies its returned CID against the uploaded content before returning
-        # it, so all successful responses are identical; return the first one.
         result = await asyncio.gather(*coros, return_exceptions=True)
 
         for value in result:
