@@ -9,11 +9,12 @@ import ipfshttpclient
 from aiohttp import ClientSession, ClientTimeout
 from ipfshttpclient.encoding import Json
 from ipfshttpclient.exceptions import ErrorResponse
+from multiformats import CID
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import retry_ipfs_exception
 from sw_utils.exceptions import IpfsException
-from sw_utils.vendor.ipfs_car import decode_car
+from sw_utils.vendor.ipfs_unixfs import compute_cid, decode_car
 
 if TYPE_CHECKING:
     from tenacity import RetryCallState
@@ -79,25 +80,18 @@ class IpfsUploadClient(BaseUploadClient):
             password=self.password,
             timeout=self.timeout,
         ) as client:
-            ipfs_id = client.add_bytes(data, opts={'cid-version': 1})
-            client.pin.add(ipfs_id)
+            # Kubo pins on `add` by default; disable it here so a CID that fails verification
+            # below is never pinned, then pin explicitly once the CID is confirmed correct.
+            ipfs_id = client.add_bytes(data, opts={'cid-version': 1, 'pin': 'false'})
+            verified_hash = _verify_uploaded_cid(data, ipfs_id)
+            client.pin.add(verified_hash)
 
-        return _strip_ipfs_prefix(ipfs_id)
+        return verified_hash
 
     async def upload_json(self, data: dict | list) -> str:
         if not data:
             raise ValueError('Empty data provided')
-
-        with ipfshttpclient.connect(
-            self.endpoint,
-            username=self.username,
-            password=self.password,
-            timeout=self.timeout,
-        ) as client:
-            ipfs_id = client.add_json(data, opts={'cid-version': 1})
-            client.pin.add(ipfs_id)
-
-        return _strip_ipfs_prefix(ipfs_id)
+        return await self.upload_bytes(_dump_json(data))
 
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
@@ -154,7 +148,7 @@ class PinataUploadClient(BaseUploadClient):
                 response.raise_for_status()
                 ipfs_id = (await response.json())['IpfsHash']
 
-        return _strip_ipfs_prefix(ipfs_id)
+        return _verify_uploaded_cid(data, ipfs_id)
 
     async def upload_json(self, data: dict | list) -> str:
         if not data:
@@ -204,7 +198,7 @@ class FilebaseUploadClient(BaseUploadClient):
                 response.raise_for_status()
                 ipfs_id = (await response.json())['Hash']
 
-        return _strip_ipfs_prefix(ipfs_id)
+        return _verify_uploaded_cid(data, ipfs_id)
 
     async def upload_json(self, data: dict | list) -> str:
         if not data:
@@ -444,6 +438,8 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
+                # A client whose response fails CID verification also raises and lands here,
+                # excluding it from the quorum below.
                 logger.error('%s: %s', type(value).__name__, value)
                 continue
 
@@ -456,6 +452,8 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
         count = ipfs_hashes[ipfs_hash]
         num_responses = sum(ipfs_hashes.values())
+        # `num_responses` already excludes clients that failed CID verification, so a smaller
+        # response set is fine here: every surviving hash is provably correct, not just trusted.
         quorum = self.get_quorum(num_responses)
 
         if count < quorum:
@@ -578,3 +576,21 @@ def _strip_ipfs_prefix(ipfs_hash: str) -> str:
 
 def _dump_json(data: Any) -> bytes:
     return Json().encode(data)
+
+
+def _verify_uploaded_cid(data: bytes, ipfs_hash: str) -> str:
+    """Checks that `ipfs_hash` commits to `data` and returns it in canonical form (lowercase
+    base32 CIDv1), so that the multi-upload quorum counts one spelling. Raises IpfsException."""
+    stripped_hash = _strip_ipfs_prefix(ipfs_hash)
+    try:
+        returned_cid = CID.decode(stripped_hash)
+    except Exception as e:
+        raise IpfsException(f'Provider returned an undecodable CID {ipfs_hash}: {e!r}') from e
+
+    expected_cid = compute_cid(data)
+    if returned_cid != expected_cid:
+        raise IpfsException(
+            f'Provider returned CID {ipfs_hash} but content hashes to {expected_cid}'
+        )
+
+    return str(expected_cid)
