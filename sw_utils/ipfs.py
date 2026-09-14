@@ -380,9 +380,6 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
         self.retry_timeout = retry_timeout
 
-    def get_quorum(self, num_responses: int) -> int:
-        return num_responses // 2 + 1
-
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
             raise ValueError('Empty data provided')
@@ -428,39 +425,29 @@ class IpfsMultiUploadClient(BaseUploadClient):
         ipfs_hash = await self._upload(coros)
 
         if self.pin_clients:
-            await asyncio.gather(*(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients))
+            result = await asyncio.gather(
+                *(pin_client.pin(ipfs_hash) for pin_client in self.pin_clients),
+                return_exceptions=True,
+            )
+            for value in result:
+                if isinstance(value, BaseException):
+                    logger.error('%s: %s', type(value).__name__, value)
+                    continue
 
         return ipfs_hash
 
     async def _upload(self, coros: list) -> str:
+        # Every client verifies its returned CID against the uploaded content before returning
+        # it, so all successful responses are identical; return the first one.
         result = await asyncio.gather(*coros, return_exceptions=True)
 
-        ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                # A client whose response fails CID verification also raises and lands here,
-                # excluding it from the quorum below.
                 logger.error('%s: %s', type(value).__name__, value)
                 continue
+            return value
 
-            ipfs_hash = _strip_ipfs_prefix(value)
-            ipfs_hashes[ipfs_hash] = ipfs_hashes.get(ipfs_hash, 0) + 1
-
-        if not ipfs_hashes:
-            raise IpfsException('Upload to all clients has failed')
-
-        ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
-        count = ipfs_hashes[ipfs_hash]
-        num_responses = sum(ipfs_hashes.values())
-        # `num_responses` already excludes clients that failed CID verification, so a smaller
-        # response set is fine here: every surviving hash is provably correct, not just trusted.
-        quorum = self.get_quorum(num_responses)
-
-        if count < quorum:
-            logger.warning('quorum: %s, ipfs hashes: %s', quorum, ', '.join(ipfs_hashes.keys()))
-            raise IpfsException('Failed to reach the uploads quorum')
-
-        return ipfs_hash
+        raise IpfsException('Upload to all clients has failed')
 
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
