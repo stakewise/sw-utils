@@ -527,9 +527,9 @@ class TestIpfsMultiUploadClient:
             formatted_message = call.args[0] % call.args[1:]
             assert 'SECRET-TOKEN' not in formatted_message
 
-    async def test_upload_bytes_excludes_client_with_wrong_cid_but_reaches_quorum(self) -> None:
-        # 3 clients so a lone wrong CID (client verification failure) does not spoil quorum
-        # for the 2 clients that returned the real CID.
+    async def test_upload_bytes_ignores_client_with_wrong_cid(self) -> None:
+        # The client that returns a wrong CID fails its own verification and is excluded;
+        # the first client that returns a verified hash wins.
         client = IpfsMultiUploadClient(
             upload_clients=[
                 FilebaseUploadClient(api_token='token-1'),
@@ -548,11 +548,11 @@ class TestIpfsMultiUploadClient:
 
         assert ipfs_hash == ABC_CID
 
-    async def test_upload_bytes_reaches_quorum_of_one_when_two_clients_fail_verification(
+    async def test_upload_bytes_returns_hash_when_only_one_client_verifies(
         self,
     ) -> None:
-        # Both failing clients raise before their response is trusted, so the shrinking
-        # response set (1 of 3) is still provably correct and safe to accept.
+        # Both failing clients raise before their response is trusted, leaving only the one
+        # client whose CID verification succeeded.
         client = IpfsMultiUploadClient(
             upload_clients=[
                 FilebaseUploadClient(api_token='token-1'),
@@ -570,3 +570,21 @@ class TestIpfsMultiUploadClient:
             ipfs_hash = await client.upload_bytes(b'abc')
 
         assert ipfs_hash == ABC_CID
+
+    async def test_upload_bytes_raises_when_all_clients_fail(self) -> None:
+        client = IpfsMultiUploadClient(
+            upload_clients=[
+                FilebaseUploadClient(api_token='token-1'),
+                FilebaseUploadClient(api_token='token-2'),
+                FilebaseUploadClient(api_token='token-3'),
+            ],
+            retry_timeout=0,
+        )
+        responses = [
+            _FakePostResponse({'Hash': WRONG_CID}),
+            _FakePostResponse({'Hash': 'not-a-cid!!'}),
+            _FakePostResponse({'Hash': WRONG_CID}),
+        ]
+        with mock.patch.object(ClientSession, 'post', side_effect=responses):
+            with pytest.raises(IpfsException, match='Upload to all clients has failed'):
+                await client.upload_bytes(b'abc')

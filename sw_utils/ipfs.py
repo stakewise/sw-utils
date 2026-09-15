@@ -380,9 +380,6 @@ class IpfsMultiUploadClient(BaseUploadClient):
 
         self.retry_timeout = retry_timeout
 
-    def get_quorum(self, num_responses: int) -> int:
-        return num_responses // 2 + 1
-
     async def upload_bytes(self, data: bytes) -> str:
         if not data:
             raise ValueError('Empty data provided')
@@ -435,32 +432,13 @@ class IpfsMultiUploadClient(BaseUploadClient):
     async def _upload(self, coros: list) -> str:
         result = await asyncio.gather(*coros, return_exceptions=True)
 
-        ipfs_hashes: dict[str, int] = {}
         for value in result:
             if isinstance(value, BaseException):
-                # A client whose response fails CID verification also raises and lands here,
-                # excluding it from the quorum below.
                 logger.error('%s: %s', type(value).__name__, value)
                 continue
+            return value
 
-            ipfs_hash = _strip_ipfs_prefix(value)
-            ipfs_hashes[ipfs_hash] = ipfs_hashes.get(ipfs_hash, 0) + 1
-
-        if not ipfs_hashes:
-            raise IpfsException('Upload to all clients has failed')
-
-        ipfs_hash = max(ipfs_hashes, key=ipfs_hashes.get)  # type: ignore
-        count = ipfs_hashes[ipfs_hash]
-        num_responses = sum(ipfs_hashes.values())
-        # `num_responses` already excludes clients that failed CID verification, so a smaller
-        # response set is fine here: every surviving hash is provably correct, not just trusted.
-        quorum = self.get_quorum(num_responses)
-
-        if count < quorum:
-            logger.warning('quorum: %s, ipfs hashes: %s', quorum, ', '.join(ipfs_hashes.keys()))
-            raise IpfsException('Failed to reach the uploads quorum')
-
-        return ipfs_hash
+        raise IpfsException('Upload to all clients has failed')
 
     async def remove(self, ipfs_hash: str) -> None:
         if not ipfs_hash:
@@ -580,7 +558,7 @@ def _dump_json(data: Any) -> bytes:
 
 def _verify_uploaded_cid(data: bytes, ipfs_hash: str) -> str:
     """Checks that `ipfs_hash` commits to `data` and returns it in canonical form (lowercase
-    base32 CIDv1), so that the multi-upload quorum counts one spelling. Raises IpfsException."""
+    base32 CIDv1), so that every client returns one spelling. Raises IpfsException."""
     stripped_hash = _strip_ipfs_prefix(ipfs_hash)
     try:
         returned_cid = CID.decode(stripped_hash)

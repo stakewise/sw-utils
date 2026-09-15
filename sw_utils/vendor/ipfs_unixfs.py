@@ -17,7 +17,7 @@ allows linking one block many times, so a small CAR can expand to an arbitrarily
 `size-262144` chunker, balanced DAG with at most 174 links per node, sha2-256, CIDv1).
 A provider using a different layout (chunk size, trickle DAG, hash function) would produce
 a different CID and be rejected by design: Pinata, Filebase and a plain Kubo node all agree
-on these defaults, and the multi-upload quorum in `sw_utils/ipfs.py` already relies on that.
+on these defaults, and `_verify_uploaded_cid` in `sw_utils/ipfs.py` already relies on that.
 """
 
 from dataclasses import dataclass, field
