@@ -35,6 +35,20 @@ class ContractRelease:
 
 
 @dataclass
+class CheckpointsConfig:
+    """
+    Pinned points past which services do not need execution client event logs.
+    """
+
+    # Network-wide dump of deposit contract validators up to `GENESIS_VALIDATORS_LAST_BLOCK`.
+    GENESIS_VALIDATORS_IPFS_HASH: str
+    GENESIS_VALIDATORS_LAST_BLOCK: BlockNumber
+    # Newest known `ConfigUpdated` event, and a block with no newer event up to it.
+    CONFIG_UPDATE_LAST_EVENT_BLOCK: BlockNumber
+    CONFIG_UPDATE_CHECKPOINT_BLOCK: BlockNumber
+
+
+@dataclass
 # pylint: disable-next=too-many-instance-attributes
 class BaseNetworkConfig:
     SLOTS_PER_EPOCH: int
@@ -56,8 +70,7 @@ class BaseNetworkConfig:
     V2_POOL_GENESIS_BLOCK: BlockNumber
     GENESIS_VAULT_CONTRACT_ADDRESS: ChecksumAddress
     GNO_TOKEN_CONTRACT_ADDRESS: ChecksumAddress
-    GENESIS_VALIDATORS_IPFS_HASH: str
-    GENESIS_VALIDATORS_LAST_BLOCK: BlockNumber
+    CHECKPOINTS: CheckpointsConfig
     CHAIN_ID: int
     FAR_FUTURE_EPOCH: int
     SHAPELLA_FORK_VERSION: bytes
@@ -151,8 +164,14 @@ NETWORKS = {
             '0xAC0F906E433d58FA868F936E8A43230473652885'
         ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeigp2oamkahzc6g2juy3wsuknlyj2m4f27vma276d4bg5z7d64rvue',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(25933938),
+        CHECKPOINTS=CheckpointsConfig(
+            GENESIS_VALIDATORS_IPFS_HASH=(
+                'bafybeigp2oamkahzc6g2juy3wsuknlyj2m4f27vma276d4bg5z7d64rvue'
+            ),
+            GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(25933938),
+            CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(25093055),
+            CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(25934000),
+        ),
         CHAIN_ID=1,
         FAR_FUTURE_EPOCH=18446744073709551615,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
@@ -221,8 +240,14 @@ NETWORKS = {
             '0xba447498DC4c169f2b4f427B2c4D532320457E89'
         ),
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(EMPTY_ADDR_HEX),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeiewzbkv7m53muugperb3w4j7uxvw6d5mmry7l73igcxutmaqmq3q4',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(3583807),
+        CHECKPOINTS=CheckpointsConfig(
+            GENESIS_VALIDATORS_IPFS_HASH=(
+                'bafybeiewzbkv7m53muugperb3w4j7uxvw6d5mmry7l73igcxutmaqmq3q4'
+            ),
+            GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(3583807),
+            CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(1279009),
+            CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(3584000),
+        ),
         GENESIS_TIMESTAMP=Timestamp(1742213400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
@@ -302,8 +327,14 @@ NETWORKS = {
         GNO_TOKEN_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x9C58BAcC331c9aa871AFD802DB6379a98e80CEdb'
         ),
-        GENESIS_VALIDATORS_IPFS_HASH='bafybeid432mdt244stggmmloubn2aoe2563abtyskdmipmd6p4lzh54jl4',
-        GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(48127042),
+        CHECKPOINTS=CheckpointsConfig(
+            GENESIS_VALIDATORS_IPFS_HASH=(
+                'bafybeid432mdt244stggmmloubn2aoe2563abtyskdmipmd6p4lzh54jl4'
+            ),
+            GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(48127042),
+            CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(42392284),
+            CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(48148000),
+        ),
         GENESIS_TIMESTAMP=Timestamp(1638993340),
         GENESIS_VALIDATORS_ROOT=Bytes32(
             Web3.to_bytes(
