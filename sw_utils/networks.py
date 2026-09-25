@@ -46,6 +46,9 @@ class CheckpointsConfig:
     # Newest known `ConfigUpdated` event, and a block with no newer event up to it.
     CONFIG_UPDATE_LAST_EVENT_BLOCK: BlockNumber
     CONFIG_UPDATE_CHECKPOINT_BLOCK: BlockNumber
+    # IPFS hash from the `ConfigUpdated` event at `CONFIG_UPDATE_LAST_EVENT_BLOCK`.
+    # Lets services skip reading that event, which may be pruned from the node.
+    CONFIG_UPDATE_LAST_EVENT_IPFS_HASH: str
 
 
 @dataclass
@@ -171,6 +174,7 @@ NETWORKS = {
             GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(25933938),
             CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(25093055),
             CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(25934000),
+            CONFIG_UPDATE_LAST_EVENT_IPFS_HASH='QmeCywDfupWC7jz5EDHsU5yEb2unAhn8iSGWBUEdrMjdMc',
         ),
         CHAIN_ID=1,
         FAR_FUTURE_EPOCH=18446744073709551615,
@@ -247,6 +251,7 @@ NETWORKS = {
             GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(3583807),
             CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(1279009),
             CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(3584000),
+            CONFIG_UPDATE_LAST_EVENT_IPFS_HASH='QmVqQyJ1TckGVshvYP7iMXhG46w5i2JyciwDqPkEnXijDH',
         ),
         GENESIS_TIMESTAMP=Timestamp(1742213400),
         GENESIS_VALIDATORS_ROOT=Bytes32(
@@ -334,6 +339,7 @@ NETWORKS = {
             GENESIS_VALIDATORS_LAST_BLOCK=BlockNumber(48127042),
             CONFIG_UPDATE_LAST_EVENT_BLOCK=BlockNumber(42392284),
             CONFIG_UPDATE_CHECKPOINT_BLOCK=BlockNumber(48148000),
+            CONFIG_UPDATE_LAST_EVENT_IPFS_HASH='QmWCdkpTifsge6t2NTwyb89PCXDXFNkfee9T5ZctEfrDDw',
         ),
         GENESIS_TIMESTAMP=Timestamp(1638993340),
         GENESIS_VALIDATORS_ROOT=Bytes32(
