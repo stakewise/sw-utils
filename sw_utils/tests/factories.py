@@ -1,11 +1,11 @@
 import random
 import string
-from secrets import randbits
 
+from eth_keys.constants import SECPK1_N as secp256k1_curve_order
 from eth_typing import ChecksumAddress, HexStr
 from faker import Faker
 from faker.providers import BaseProvider
-from py_ecc.bls import G2ProofOfPossession
+from py_ecc.optimized_bls12_381 import curve_order as bls_curve_order
 from web3 import Web3
 from web3.types import Wei
 
@@ -16,14 +16,19 @@ faker = Faker()
 
 
 class Web3Provider(BaseProvider):
-    def private_key(self) -> int:
-        seed = randbits(256).to_bytes(32, 'big')
-        private_key = G2ProofOfPossession.KeyGen(seed)
-        return private_key
+    def bls_private_key(self) -> bytes:
+        # BLS private key must be in range [1, bls_curve_order).
+        # Returns bytes to keep leading zeros, which are lost when converting int to hex
+        return random.randint(1, bls_curve_order - 1).to_bytes(32, 'big')
 
-    def private_key_hex(self) -> HexStr:
+    def bls_private_key_hex(self) -> HexStr:
         # 32-byte private key as 0x-prefixed hex string
-        return Web3.to_hex(random.randbytes(32))
+        return Web3.to_hex(self.bls_private_key())
+
+    def account_private_key(self) -> bytes:
+        # secp256k1 private key must be in range [1, secp256k1_curve_order).
+        # Returns bytes to keep leading zeros, which are lost when converting int to hex
+        return random.randint(1, secp256k1_curve_order - 1).to_bytes(32, 'big')
 
     def eth_address(self) -> ChecksumAddress:
         account = w3.eth.account.create()
