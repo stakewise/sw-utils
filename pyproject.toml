@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sw-utils"
-version = "v0.15.2"
+version = "v0.15.3"
 description = "StakeWise Python utils"
 authors = ["StakeWise Labs <info@stakewise.io>"]
 license = "GPL-3.0-or-later"
@@ -14,7 +14,7 @@ ipfshttpclient = "^0.8.0a2"
 multiformats = "==0.3.1.post4"
 web3 = "==7.14.1"
 tenacity = "==8.2.3"
-pyjwt = "==2.14.0"
+pyjwt = "==2.15.0"
 ssz = "==0.5.2"
 gql = {extras = ["aiohttp"], version = "==3.5.3"}
 
