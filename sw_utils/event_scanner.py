@@ -39,8 +39,8 @@ class EventProcessor(ABC):
 
 
 class EventScanner:
-    min_scan_chunk_size = 10
-    max_scan_chunk_size = 1_000_000
+    min_chunk_size = 10
+    max_chunk_size = 1_000_000
     chunk_size_multiplier = 2
     max_request_retries = 30
     request_retry_seconds = 3
@@ -49,15 +49,28 @@ class EventScanner:
         self,
         processor: EventProcessor,
         argument_filters: dict[str, Any] | None = None,
-        chunk_size: int | None = None,
+        start_chunk_size: int | None = None,
+        max_chunk_size: int | None = None,
     ):
+        """
+        :param start_chunk_size: initial number of blocks per `eth_getLogs` request,
+            adjusted dynamically during the scan
+        :param max_chunk_size: max number of blocks per `eth_getLogs` request,
+            e.g. for nodes that limit the log range. Overrides the class attribute
+        """
+        if max_chunk_size is not None:
+            if max_chunk_size < 1:
+                raise ValueError('max_chunk_size must be positive')
+            self.max_chunk_size = max_chunk_size
+
         self.processor = processor
         self.argument_filters = argument_filters
 
-        # Start with half of max chunk size. 1kk chunks works only with powerful nodes.
-        start_chunk_size = self.max_scan_chunk_size // 2
+        # Max chunk size may be a heavy load for the node,
+        # so by default start from a more moderate half of it.
+        start_chunk_size = start_chunk_size or self.max_chunk_size // 2
         # Scan in chunks, commit between.
-        self.chunk_size = chunk_size or start_chunk_size
+        self.chunk_size = min(start_chunk_size, self.max_chunk_size)
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
@@ -92,13 +105,23 @@ class EventScanner:
         """
         retries = self.max_request_retries
         for i in range(retries):
-            to_block = min(last_block, BlockNumber(from_block + self.chunk_size))
+            # Both ends are inclusive
+            to_block = min(last_block, BlockNumber(from_block + self.chunk_size - 1))
             try:
                 return to_block, await self._contract_call(from_block, to_block)
             except Exception as e:
                 if i < retries - 1:
+                    logger.debug(
+                        'Failed to fetch %s events for blocks %d-%d, attempt %d of %d: %r',
+                        self.processor.contract_event,
+                        from_block,
+                        to_block,
+                        i + 1,
+                        retries,
+                        e,
+                    )
                     # Decrease the `eth_getBlocks` range
-                    self.chunk_size = self.chunk_size // 2
+                    self.chunk_size = max(1, self.chunk_size // 2)
                     # Let the JSON-RPC to recover e.g. from restart
                     await sleep(self.request_retry_seconds)
                     continue
@@ -117,5 +140,5 @@ class EventScanner:
 
     def _estimate_next_chunk_size(self) -> None:
         self.chunk_size *= self.chunk_size_multiplier
-        self.chunk_size = max(self.min_scan_chunk_size, self.chunk_size)
-        self.chunk_size = min(self.max_scan_chunk_size, self.chunk_size)
+        self.chunk_size = max(self.min_chunk_size, self.chunk_size)
+        self.chunk_size = min(self.max_chunk_size, self.chunk_size)

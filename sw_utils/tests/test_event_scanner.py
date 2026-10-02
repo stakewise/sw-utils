@@ -88,27 +88,24 @@ class TestEventScannerFuzzing:
     """
 
     @pytest.mark.parametrize(
-        'min_scan_chunk_size, max_scan_chunk_size, from_block, to_block',
+        'min_chunk_size, max_chunk_size, from_block, to_block',
         [
+            (1, 1, 7, 100),
             (1, 2, 7, 100),
             (10, 1000, 700, 10_000),
         ],
     )
-    async def test_fuzzing(self, min_scan_chunk_size, max_scan_chunk_size, from_block, to_block):
+    async def test_fuzzing(self, min_chunk_size, max_chunk_size, from_block, to_block):
         for _ in range(100):
             try:
-                await self._run_single_test(
-                    min_scan_chunk_size, max_scan_chunk_size, from_block, to_block
-                )
+                await self._run_single_test(min_chunk_size, max_chunk_size, from_block, to_block)
             finally:
                 db.clear()
 
-    async def _run_single_test(
-        self, min_scan_chunk_size, max_scan_chunk_size, from_block, to_block
-    ):
+    async def _run_single_test(self, min_chunk_size, max_chunk_size, from_block, to_block):
         with (
-            mock.patch.object(EventScanner, 'min_scan_chunk_size', min_scan_chunk_size),
-            mock.patch.object(EventScanner, 'max_scan_chunk_size', max_scan_chunk_size),
+            mock.patch.object(EventScanner, 'min_chunk_size', min_chunk_size),
+            mock.patch.object(EventScanner, 'max_chunk_size', max_chunk_size),
             mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=from_block),
         ):
             p = SimpleEventProcessor()
@@ -156,6 +153,94 @@ class TestEventScannerSingleBlock:
                 assert db.last_processed_block is None
             finally:
                 db.clear()
+
+
+class TestEventScannerMaxChunkSize:
+    def test_chunk_size_clamped(self):
+        p = MockedEventProcessor()
+        scanner = EventScanner(processor=p, max_chunk_size=10_000)
+        assert scanner.max_chunk_size == 10_000
+        assert scanner.chunk_size == 5_000
+        assert EventScanner.max_chunk_size == 1_000_000
+        assert EventScanner(processor=p).chunk_size == 500_000
+        assert (
+            EventScanner(processor=p, start_chunk_size=50_000, max_chunk_size=10_000).chunk_size
+            == 10_000
+        )
+
+    @pytest.mark.parametrize('max_chunk_size', [0, -1])
+    def test_invalid_max_chunk_size(self, max_chunk_size):
+        with pytest.raises(ValueError):
+            EventScanner(processor=MockedEventProcessor(), max_chunk_size=max_chunk_size)
+
+    async def test_requests_never_exceed_cap(self):
+        max_chunk_size = 10_000
+        from_block, to_block = 0, 1_000_000
+        ranges: list[tuple[int, int]] = []
+
+        async def fetch(a, b):
+            ranges.append((a, b))
+            return []
+
+        with mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=from_block):
+            scanner = EventScanner(processor=SimpleEventProcessor(), max_chunk_size=max_chunk_size)
+            scanner._contract_call = fetch
+            try:
+                await scanner.process_new_events(to_block=to_block)
+            finally:
+                db.clear()
+
+        assert ranges[0] == (0, 4_999)
+        assert all(b - a + 1 == max_chunk_size for a, b in ranges[1:-1])
+        assert ranges[-1] == (995_000, 1_000_000)
+        # contiguous and non-overlapping
+        assert all(ranges[i][1] + 1 == ranges[i + 1][0] for i in range(len(ranges) - 1))
+
+    async def test_node_range_limit_no_failures(self):
+        max_chunk_size = 10_000
+        from_block, to_block = 34_778_552, 34_978_552
+
+        async def fetch(a, b):
+            if b - a + 1 > max_chunk_size:
+                raise ValueError('Block range exceeds the maximum')
+            return []
+
+        with (
+            mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=from_block),
+            mock.patch('sw_utils.event_scanner.sleep') as sleep_mock,
+        ):
+            scanner = EventScanner(processor=SimpleEventProcessor(), max_chunk_size=max_chunk_size)
+            scanner._contract_call = fetch
+            try:
+                await scanner.process_new_events(to_block=to_block)
+                assert db.last_processed_block == to_block
+            finally:
+                db.clear()
+
+        sleep_mock.assert_not_called()
+
+    async def test_default_ranges(self):
+        from_block, to_block = 0, 3_000_000
+        ranges: list[tuple[int, int]] = []
+
+        async def fetch(a, b):
+            ranges.append((a, b))
+            return []
+
+        with mock.patch.object(SimpleEventProcessor, 'get_from_block', return_value=from_block):
+            scanner = EventScanner(processor=SimpleEventProcessor())
+            scanner._contract_call = fetch
+            try:
+                await scanner.process_new_events(to_block=to_block)
+            finally:
+                db.clear()
+
+        assert ranges == [
+            (0, 499_999),
+            (500_000, 1_499_999),
+            (1_500_000, 2_499_999),
+            (2_500_000, 3_000_000),
+        ]
 
 
 class MockedAsyncEvent:
