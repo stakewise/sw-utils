@@ -164,14 +164,31 @@ class TestEventScannerMaxChunkSize:
         assert EventScanner.max_chunk_size == 1_000_000
         assert EventScanner(processor=p).chunk_size == 500_000
         assert (
-            EventScanner(processor=p, start_chunk_size=50_000, max_chunk_size=10_000).chunk_size
-            == 10_000
+            EventScanner(processor=p, start_chunk_size=7_000, max_chunk_size=10_000).chunk_size
+            == 7_000
         )
+        assert EventScanner(processor=p, max_chunk_size=10).chunk_size == 10
+
+    @pytest.mark.parametrize('start_chunk_size', [-1, 0, 9, 10_001])
+    def test_invalid_start_chunk_size(self, start_chunk_size):
+        with pytest.raises(ValueError):
+            EventScanner(
+                processor=MockedEventProcessor(),
+                start_chunk_size=start_chunk_size,
+                max_chunk_size=10_000,
+            )
 
     @pytest.mark.parametrize('max_chunk_size', [0, -1])
     def test_invalid_max_chunk_size(self, max_chunk_size):
         with pytest.raises(ValueError):
             EventScanner(processor=MockedEventProcessor(), max_chunk_size=max_chunk_size)
+
+    def test_max_chunk_size_below_min(self):
+        min_chunk_size = EventScanner.min_chunk_size
+        with pytest.raises(ValueError):
+            EventScanner(processor=MockedEventProcessor(), max_chunk_size=min_chunk_size - 1)
+        scanner = EventScanner(processor=MockedEventProcessor(), max_chunk_size=min_chunk_size)
+        assert scanner.max_chunk_size == min_chunk_size
 
     async def test_requests_never_exceed_cap(self):
         max_chunk_size = 10_000

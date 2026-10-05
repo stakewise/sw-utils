@@ -62,15 +62,20 @@ class EventScanner:
             if max_chunk_size < 1:
                 raise ValueError('max_chunk_size must be positive')
             self.max_chunk_size = max_chunk_size
+        if self.min_chunk_size > self.max_chunk_size:
+            raise ValueError('min_chunk_size must not exceed max_chunk_size')
 
         self.processor = processor
         self.argument_filters = argument_filters
 
-        # Max chunk size may be a heavy load for the node,
-        # so by default start from a more moderate half of it.
-        start_chunk_size = start_chunk_size or self.max_chunk_size // 2
+        if start_chunk_size is None:
+            # Max chunk size may be a heavy load for the node,
+            # so by default start from a more moderate half of it.
+            start_chunk_size = max(self.min_chunk_size, self.max_chunk_size // 2)
+        elif not self.min_chunk_size <= start_chunk_size <= self.max_chunk_size:
+            raise ValueError('start_chunk_size must be between min_chunk_size and max_chunk_size')
         # Scan in chunks, commit between.
-        self.chunk_size = min(start_chunk_size, self.max_chunk_size)
+        self.chunk_size = start_chunk_size
 
     async def process_new_events(self, to_block: BlockNumber) -> None:
         current_from_block = await self.processor.get_from_block()
