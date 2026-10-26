@@ -1,0 +1,148 @@
+{
+  "version": "fulu",
+  "execution_optimistic": false,
+  "finalized": true,
+  "data": {
+    "message": {
+      "slot": "4234080",
+      "proposer_index": "239273",
+      "parent_root": "0x53bf9492270759cc7c8ba58d4b0d676ca5e6c8cfd4cfe8653ecea157b3ae1aab",
+      "state_root": "0xa1ba93f919a66ca379c4c315664f7ce8429e66f87bea620d75029e307bd5ddfc",
+      "body": {
+        "randao_reveal": "0x8c5812ae0d6333414d28b531d0bd3f95270a60b5d3c0a8f8f90d8ff19f9fb3849f38edd41ffa3fa0ac2938dc9bbf2c480926b249ed82a9e8ec95f8be03ed057368184c7046d84b672981e3d42727e2da6fa8a358eeaa1630739f9053ea146e55",
+        "eth1_data": {
+          "deposit_root": "0xb53d08908c6c7946b23c37b826848e624a1484d18b5e02dffb738137cad63d29",
+          "deposit_count": "37025",
+          "block_hash": "0x5adeb26c3cbdd173235c4939bbc1ab4f693787ec11b2651dea22e472e13b02c2"
+        },
+        "graffiti": "0x6368756e6775732d6c69676874686f7573652d6e65746865726d696e642d3100",
+        "proposer_slashings": [],
+        "attester_slashings": [],
+        "attestations": [],
+        "deposits": [],
+        "voluntary_exits": [],
+        "sync_aggregate": {},
+        "execution_payload": {
+          "parent_hash": "0xc54c392e459c43bbb47a4bd07d62f6d6656ebe8d385ad3bc4edae727b10bd18e",
+          "fee_recipient": "0x25941dc771bb64514fc8abbce970307fb9d477e9",
+          "state_root": "0x6ce17a68fc5e2fcd69b240e318286bf5aacdb45ae535a13b8234d038047c8e13",
+          "receipts_root": "0x4f5f774640625fa914e6d78db4e3a63c633aa5f6cf86d982dce2e6e80f88050d",
+          "logs_bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "prev_randao": "0xd54e5593171fdd924811718ec4ad6659b2530e802e3d23afc3f89ee98723b965",
+          "block_number": "3891504",
+          "gas_limit": "60000000",
+          "gas_used": "413432",
+          "timestamp": "1793022360",
+          "extra_data": "0x",
+          "base_fee_per_gas": "1079829971",
+          "block_hash": "0x55b2da75016c0e0fea34025a700fc678ae4fa84b16f55d78cca34dacb972a686",
+          "transactions": [],
+          "withdrawals": [
+            {
+              "index": "61951386",
+              "validator_index": "829495",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2736194"
+            },
+            {
+              "index": "61951387",
+              "validator_index": "829496",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2730319"
+            },
+            {
+              "index": "61951388",
+              "validator_index": "829497",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2731680"
+            },
+            {
+              "index": "61951389",
+              "validator_index": "829498",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2732952"
+            },
+            {
+              "index": "61951390",
+              "validator_index": "829499",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2715411"
+            },
+            {
+              "index": "61951391",
+              "validator_index": "829500",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2721831"
+            },
+            {
+              "index": "61951392",
+              "validator_index": "829501",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2741670"
+            },
+            {
+              "index": "61951393",
+              "validator_index": "829502",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2717901"
+            },
+            {
+              "index": "61951394",
+              "validator_index": "829503",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2718883"
+            },
+            {
+              "index": "61951395",
+              "validator_index": "829504",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2697309"
+            },
+            {
+              "index": "61951396",
+              "validator_index": "829505",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2724785"
+            },
+            {
+              "index": "61951397",
+              "validator_index": "829506",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2706380"
+            },
+            {
+              "index": "61951398",
+              "validator_index": "829507",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2698889"
+            },
+            {
+              "index": "61951399",
+              "validator_index": "829508",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2718208"
+            },
+            {
+              "index": "61951400",
+              "validator_index": "829509",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2709821"
+            },
+            {
+              "index": "61951401",
+              "validator_index": "829510",
+              "address": "0xe0c39b39319bdb31c8fd95c967bae71f767287c5",
+              "amount": "2719910"
+            }
+          ],
+          "blob_gas_used": "262144",
+          "excess_blob_gas": "211010277"
+        },
+        "bls_to_execution_changes": [],
+        "blob_kzg_commitments": [],
+        "execution_requests": {}
+      }
+    },
+    "signature": "0xaaae55a472d6c3c4873bde00359ff575f7309e2cadd6d3c378fa955e9ff4b63b8cb3a38a16afc69e44131e309d584dd50eb7009133e802255c05476f98592e3994992c786400a853ca5bade0191c25282e5344abe3a51d74cd24575f7e9520e0"
+  }
+}

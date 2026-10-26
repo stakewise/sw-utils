@@ -1,0 +1,49 @@
+{
+  "version": "gloas",
+  "execution_optimistic": false,
+  "finalized": true,
+  "data": {
+    "message": {
+      "slot": "11404096",
+      "proposer_index": "334",
+      "parent_root": "0x5e7b402e95288a80b86e16f311752b39bfdd78f6851550fe883ae25c4c8d740f",
+      "state_root": "0x2f9af5d66f5c53bf9eec7af8805d3054cb3bc1475560dfe40b29b4c3ea98bebd",
+      "body": {
+        "randao_reveal": "0xa077c062bde489bae09dd14af6c60364fbdc63df97917774031ca6b5f57c4be121e52d261eee808608e1c71c667af41c0f0336bca2c5676a2f0ffb0cb906d28da24e1e9509eb6b1da23e8e6de295ed4a2e6f9c2f93e3070b13c7949c1bd683fc",
+        "eth1_data": {
+          "deposit_root": "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "deposit_count": "0",
+          "block_hash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "graffiti": "0x454765653936434e6565393620457269676f6e2d4361706c696e000000000000",
+        "proposer_slashings": [],
+        "attester_slashings": [],
+        "attestations": [],
+        "deposits": [],
+        "voluntary_exits": [],
+        "sync_aggregate": {},
+        "bls_to_execution_changes": [],
+        "signed_execution_payload_bid": {
+          "message": {
+            "parent_block_hash": "0x85ff580fbafd3ddeac1bada2d08604f98add5bd322b428123c9770ad824252ab",
+            "parent_block_root": "0x5e7b402e95288a80b86e16f311752b39bfdd78f6851550fe883ae25c4c8d740f",
+            "block_hash": "0x6b6ce69134e69a0998eda3992d6d292d37f7cb2896c9b4be578804f3ab257156",
+            "prev_randao": "0xc48d6a0ff4c3c2265d08c571aeffc7e341e36ec499ad2c3c61ce8458b9d9268b",
+            "fee_recipient": "0x4df6eb2ec570b58cc64f540247a8adfa11f1cf63",
+            "gas_limit": "200000000",
+            "builder_index": "18446744073709551615",
+            "slot": "11404096",
+            "value": "0",
+            "execution_payment": "0",
+            "blob_kzg_commitments": [],
+            "execution_requests_root": "0x87b69a306c8e430d0857f7c4ac5e27cecffa1108d43c2e5df7388056fea7a423"
+          },
+          "signature": "0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "payload_attestations": [],
+        "parent_execution_requests": {}
+      }
+    },
+    "signature": "0xab222d161c1e306755e49b5ade508b7f94315d23e38cb4d076922964c3c88a4da88b53fc38a2035a59d7a10ee46ee3651700f704781b2048dd000158df74d6e3218013d4b96c94bb361c7ae4c605ecd0d9f0936d415714dfbecb1628c8078cca"
+  }
+}

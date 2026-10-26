@@ -8,10 +8,12 @@ from web3 import AsyncWeb3, Web3
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VALIDATORS, GET_VOLUNTARY_EXITS
 from web3.exceptions import BlockNotFound
-from web3.types import Timestamp
+from web3.types import Timestamp, WithdrawalData
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
+from sw_utils.exceptions import ExecutionBehindConsensusError
+from sw_utils.networks import BaseNetworkConfig
 from sw_utils.typings import ChainHead, ConsensusFork
 
 logger = logging.getLogger(__name__)
@@ -279,108 +281,156 @@ def get_consensus_client(
 
 async def get_chain_finalized_head(
     consensus_client: ExtendedAsyncBeacon,
-    slots_per_epoch: int,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
 ) -> ChainHead:
     """Fetches the fork finalized chain head."""
     block_data = await consensus_client.get_block('finalized')
     slot = int(block_data['data']['message']['slot'])
 
-    return ChainHead(
-        epoch=slot // slots_per_epoch,
-        slot=slot,
-        block_number=BlockNumber(
-            int(block_data['data']['message']['body']['execution_payload']['block_number'])
-        ),
-        execution_ts=Timestamp(
-            int(block_data['data']['message']['body']['execution_payload']['timestamp'])
-        ),
+    return await _build_chain_head(
+        block_data=block_data,
+        epoch=slot // network_config.SLOTS_PER_EPOCH,
+        execution_client=execution_client,
+        network_config=network_config,
     )
 
 
 async def get_chain_justified_head(
     consensus_client: ExtendedAsyncBeacon,
-    slots_per_epoch: int,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
 ) -> ChainHead:
     """Fetches the fork safe chain head."""
     checkpoints = await consensus_client.get_finality_checkpoint()
-    epoch: int = int(checkpoints['data']['current_justified']['epoch'])
-    last_slot_id: int = epoch * slots_per_epoch
-    for i in range(slots_per_epoch):
-        try:
-            slot = await consensus_client.get_block(str(last_slot_id - i))
-        except ClientResponseError as e:
-            if hasattr(e, 'status') and e.status == 404:
-                # slot was not proposed, try the previous one
-                continue
-            raise e
+    epoch = int(checkpoints['data']['current_justified']['epoch'])
+    block_data = await _get_epoch_block(consensus_client, epoch, network_config.SLOTS_PER_EPOCH)
 
-        execution_payload = slot['data']['message']['body']['execution_payload']
-        return ChainHead(
-            epoch=epoch,
-            slot=last_slot_id - i,
-            block_number=BlockNumber(int(execution_payload['block_number'])),
-            execution_ts=Timestamp(int(execution_payload['timestamp'])),
-        )
-
-    raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
+    return await _build_chain_head(
+        block_data=block_data,
+        epoch=epoch,
+        execution_client=execution_client,
+        network_config=network_config,
+    )
 
 
 async def get_chain_latest_head(
     consensus_client: ExtendedAsyncBeacon,
-    slots_per_epoch: int,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
 ) -> ChainHead:
     """Fetches the fork latest chain head."""
     block_data = await consensus_client.get_block('head')
     slot = int(block_data['data']['message']['slot'])
 
-    return ChainHead(
-        epoch=slot // slots_per_epoch,
-        slot=slot,
-        block_number=BlockNumber(
-            int(block_data['data']['message']['body']['execution_payload']['block_number'])
-        ),
-        execution_ts=Timestamp(
-            int(block_data['data']['message']['body']['execution_payload']['timestamp'])
-        ),
+    return await _build_chain_head(
+        block_data=block_data,
+        epoch=slot // network_config.SLOTS_PER_EPOCH,
+        execution_client=execution_client,
+        network_config=network_config,
     )
 
 
 async def get_chain_epoch_head(
     epoch: int,
-    slots_per_epoch: int,
-    execution_client: AsyncWeb3,
     consensus_client: ExtendedAsyncBeacon,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
 ) -> ChainHead:
     """Fetches the epoch chain head."""
-    slot_id: int = epoch * slots_per_epoch
+    block_data = await _get_epoch_block(consensus_client, epoch, network_config.SLOTS_PER_EPOCH)
+
+    return await _build_chain_head(
+        block_data=block_data,
+        epoch=epoch,
+        execution_client=execution_client,
+        network_config=network_config,
+    )
+
+
+async def get_payload_expected_withdrawals(
+    execution_client: AsyncWeb3,
+    chain_head: ChainHead,
+    network_config: BaseNetworkConfig,
+) -> list[WithdrawalData]:
+    """
+    Withdrawals already deducted from CL balances at `chain_head.slot`
+    but not yet on EL at `chain_head.block_number`.
+
+    Pre-Gloas: always empty.
+    Gloas+: withdrawals of EL block `block_number + 1`, as every payload carries exactly
+    `state.payload_expected_withdrawals`. Includes builder withdrawals
+    (`validatorIndex >= 2**40`), callers filter by their validator indexes.
+
+    Use finalized heads only: block `block_number + 1` always exists on a finalized chain,
+    so a missing block means the execution client lags. For the latest head it may legitimately
+    not exist yet or belong to another branch.
+    """
+    if chain_head.slot < network_config.GLOAS_SLOT:
+        return []
+
+    block_number = chain_head.block_number + 1
+    try:
+        execution_block = await execution_client.eth.get_block(block_number)
+    except BlockNotFound as e:
+        raise ExecutionBehindConsensusError(
+            f'Execution client has no block {block_number} following chain head at slot '
+            f'{chain_head.slot}'
+        ) from e
+
+    return list(execution_block['withdrawals'])
+
+
+async def _get_epoch_block(
+    consensus_client: ExtendedAsyncBeacon, epoch: int, slots_per_epoch: int
+) -> dict:
+    """Walks back from the first slot of the epoch to the closest proposed block."""
+    slot_id = epoch * slots_per_epoch
     for i in range(slots_per_epoch):
         try:
-            slot = await consensus_client.get_block(str(slot_id - i))
+            return await consensus_client.get_block(str(slot_id - i))
         except ClientResponseError as e:
             if hasattr(e, 'status') and e.status == 404:
                 # slot was not proposed, try the previous one
                 continue
             raise e
-        try:
-            execution_payload = slot['data']['message']['body']['execution_payload']
-            return ChainHead(
-                epoch=epoch,
-                slot=slot_id - i,
-                block_number=BlockNumber(int(execution_payload['block_number'])),
-                execution_ts=Timestamp(int(execution_payload['timestamp'])),
-            )
-        except KeyError:  # pre shapella slot
-            block_hash = slot['data']['message']['body']['eth1_data']['block_hash']
-            try:
-                block = await execution_client.eth.get_block(block_hash)
-            except BlockNotFound:
-                continue
-
-            return ChainHead(
-                epoch=epoch,
-                slot=slot_id - i,
-                block_number=BlockNumber(int(block['number'])),
-                execution_ts=Timestamp(int(block['timestamp'])),
-            )
 
     raise RuntimeError(f'Failed to fetch slot for epoch {epoch}')
+
+
+async def _build_chain_head(
+    block_data: dict,
+    epoch: int,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
+) -> ChainHead:
+    """
+    Detects the fork by body keys rather than by version or slot,
+    so there is no fork list to maintain.
+    """
+    message = block_data['data']['message']
+    body = message['body']
+    slot = int(message['slot'])
+
+    if 'signed_execution_payload_bid' in body:  # Gloas+
+        parent_block_hash = body['signed_execution_payload_bid']['message']['parent_block_hash']
+        try:
+            execution_block = await execution_client.eth.get_block(parent_block_hash)
+        except BlockNotFound as e:
+            raise ExecutionBehindConsensusError(
+                f'Execution client has no block {parent_block_hash} referenced by slot {slot}'
+            ) from e
+        block_number = BlockNumber(execution_block['number'])
+    elif 'execution_payload' in body:  # Bellatrix..Fulu
+        block_number = BlockNumber(int(body['execution_payload']['block_number']))
+    else:
+        raise ValueError(f'Pre-merge block at slot {slot} is not supported')
+
+    return ChainHead(
+        epoch=epoch,
+        slot=slot,
+        block_number=block_number,
+        consensus_ts=Timestamp(
+            network_config.GENESIS_TIMESTAMP + slot * network_config.SECONDS_PER_SLOT
+        ),
+    )

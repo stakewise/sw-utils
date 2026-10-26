@@ -1,0 +1,49 @@
+{
+  "version": "gloas",
+  "execution_optimistic": false,
+  "finalized": true,
+  "data": {
+    "message": {
+      "slot": "11403711",
+      "proposer_index": "1773",
+      "parent_root": "0x88f8c13fab6e66e6622f6c438773e23e3d4a8513a0eb6b22b5079e2459eb4ae6",
+      "state_root": "0x082636a22cbea5090635a598b3140d85519d677ca17855fafc7a00e30756b43f",
+      "body": {
+        "randao_reveal": "0xadb0bb78babaaf286d3b7b7c4cbc7a98ba28f0e60398e43d6d651b07c4d5d10f0fac1b2b6a961b42a311fe2d651398c50f96206af8ebb248359a1d89b3058bef22a066ec2a032be690ee67de12bdd2408afb6a453c333af4df648ea9db56da4f",
+        "eth1_data": {
+          "deposit_root": "0xec912358887b0111331726b5a71253af46a12f0ece15c67768b0a9edce8a61f8",
+          "deposit_count": "410",
+          "block_hash": "0xeece2eb2562b2f4572236cf5c6bf3251ed7629985557def971485a659109f12c"
+        },
+        "graffiti": "0x474561353739504d643031310000000000000000000000000000000000000000",
+        "proposer_slashings": [],
+        "attester_slashings": [],
+        "attestations": [],
+        "deposits": [],
+        "voluntary_exits": [],
+        "sync_aggregate": {},
+        "bls_to_execution_changes": [],
+        "signed_execution_payload_bid": {
+          "message": {
+            "parent_block_hash": "0xa78eb2e4d11cfdab5a6d6b7750e28e96e9d3192b8ebed79b5d8ffc3ebbbc9db4",
+            "parent_block_root": "0x88f8c13fab6e66e6622f6c438773e23e3d4a8513a0eb6b22b5079e2459eb4ae6",
+            "block_hash": "0xa35a9d17809bc912b53d45ed18901a5ffb9fe89b8b2adcfcf3020144811c78c9",
+            "prev_randao": "0xa82ee9b0e4c7d9b6e8adc196dc9dc8c13b6a63a709370ef9e9670815202c1807",
+            "fee_recipient": "0x0c06b6d4ec451987e8c0b772ffcf7f080c46447a",
+            "gas_limit": "200000000",
+            "builder_index": "10",
+            "slot": "11403711",
+            "value": "70463360",
+            "execution_payment": "0",
+            "blob_kzg_commitments": [],
+            "execution_requests_root": "0x87b69a306c8e430d0857f7c4ac5e27cecffa1108d43c2e5df7388056fea7a423"
+          },
+          "signature": "0xae52867e70d9d5482bc3472cc4c96ed387a60e64cc73dc0f388f7185fa787b8048f5bf4054a55a3f31ffda90e8849e0001ea7580fae9da35c67a823cf83d6648e4f90fc633502b5d580b3f976c00a783e23a6781413dcb35d82ab04f92cd4ef0"
+        },
+        "payload_attestations": [],
+        "parent_execution_requests": {}
+      }
+    },
+    "signature": "0xa8ae4008256455b8fc34e4bd1746350d56304e750d780d158f9818aa00d7089f0ff265aff16036fa5462320310cd5f48118fbebf69bdb73dc1089c542a55d8fcf6fb5fa3d611a747680aaa135c34076419516f434c69c42793c57677bd66c383"
+  }
+}

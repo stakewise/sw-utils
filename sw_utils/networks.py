@@ -81,6 +81,7 @@ class BaseNetworkConfig:
     SHAPELLA_BLOCK: BlockNumber
     PECTRA_EPOCH: int
     PECTRA_BLOCK: BlockNumber
+    GLOAS_EPOCH: int
     OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS: ChecksumAddress
     MIN_EFFECTIVE_PRIORITY_FEE_PER_GAS: Wei
     COMMUNITY_VAULT_CONTRACT_ADDRESS: ChecksumAddress
@@ -112,6 +113,10 @@ class BaseNetworkConfig:
     @property
     def PECTRA_SLOT(self) -> int:
         return self.PECTRA_EPOCH * self.SLOTS_PER_EPOCH
+
+    @property
+    def GLOAS_SLOT(self) -> int:
+        return self.GLOAS_EPOCH * self.SLOTS_PER_EPOCH
 
     @property
     def CONTRACTS_RELEASE_VERSION_TO_RELEASE(self) -> dict[ContractReleaseVersion, ContractRelease]:
@@ -183,6 +188,7 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(17034870),
         PECTRA_EPOCH=364032,
         PECTRA_BLOCK=BlockNumber(0),
+        GLOAS_EPOCH=18446744073709551615,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
@@ -267,6 +273,7 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(0),
         PECTRA_EPOCH=2048,
         PECTRA_BLOCK=BlockNumber(60412),
+        GLOAS_EPOCH=132352,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),
@@ -355,6 +362,7 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(29242932),
         PECTRA_EPOCH=1337856,
         PECTRA_BLOCK=BlockNumber(0),
+        GLOAS_EPOCH=18446744073709551615,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
