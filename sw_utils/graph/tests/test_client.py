@@ -90,9 +90,7 @@ class TestFetchPages:
         client.session.execute.side_effect = self._paginate
         params = {'block': 1}
 
-        result = await client.fetch_pages(
-            gql(QUERY), params, page_size=2, cursor_pagination=True
-        )
+        result = await client.fetch_pages(gql(QUERY), params, page_size=2, cursor_pagination=True)
 
         assert result == self.items
         assert self.variables == [

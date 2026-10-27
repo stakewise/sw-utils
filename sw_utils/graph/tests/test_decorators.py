@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 from gql.transport.exceptions import TransportServerError
-from tenacity import RetryError
 
 from sw_utils.graph.decorators import retry_gql_errors
 
@@ -49,11 +48,10 @@ class TestRetryGqlErrors:
         assert func.await_count == 1
         sleep_mock.assert_not_awaited()
 
-    async def test_raises_retry_error_after_delay(self, sleep_mock):
+    async def test_reraises_original_error_after_delay(self, sleep_mock):
         func = AsyncMock(side_effect=TransportServerError('bad gateway', 502))
 
-        with pytest.raises(RetryError) as exc_info:
+        with pytest.raises(TransportServerError):
             await retry_gql_errors(delay=0)(func)()
 
-        assert isinstance(exc_info.value.last_attempt.exception(), TransportServerError)
         assert func.await_count == 1
