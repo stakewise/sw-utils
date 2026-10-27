@@ -1,4 +1,3 @@
-import warnings
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal, NewType, TypeAlias
@@ -35,16 +34,6 @@ class ChainHead:
     slot: int
     block_number: BlockNumber
     consensus_ts: Timestamp
-
-    @property
-    def execution_ts(self) -> Timestamp:
-        """Deprecated alias of `consensus_ts`, will be removed in the next release."""
-        warnings.warn(
-            'ChainHead.execution_ts is deprecated, use consensus_ts',
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.consensus_ts
 
 
 @dataclass

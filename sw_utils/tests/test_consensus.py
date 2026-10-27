@@ -392,16 +392,6 @@ class TestChainHeadFunctions:
 
 
 class TestChainHead:
-    def test_execution_ts_alias(self) -> None:
-        chain_head = ChainHead(
-            epoch=1, slot=32, block_number=BlockNumber(5), consensus_ts=Timestamp(1700000000)
-        )
-
-        with pytest.warns(DeprecationWarning, match='consensus_ts'):
-            execution_ts = chain_head.execution_ts
-
-        assert execution_ts == chain_head.consensus_ts
-
     def test_execution_ts_is_not_a_constructor_argument(self) -> None:
         with pytest.raises(TypeError):
             ChainHead(  # type: ignore[call-arg]  # pylint: disable=unexpected-keyword-arg
