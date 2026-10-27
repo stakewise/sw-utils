@@ -3,6 +3,7 @@ import logging
 from typing import TypeAlias, cast
 
 from eth_typing import BlockNumber
+from gql import GraphQLRequest
 from graphql import DocumentNode
 
 from sw_utils.graph.client import GraphClient
@@ -37,7 +38,7 @@ class SubgraphCommittee:
             await graph_client.disconnect()
 
     async def fetch_votes(
-        self, query: DocumentNode, block_number: BlockNumber
+        self, query: GraphQLRequest | DocumentNode, block_number: BlockNumber
     ) -> 'SubgraphCommitteeVotes':
         subgraph_votes = await asyncio.gather(
             *[
@@ -54,7 +55,7 @@ class SubgraphCommittee:
     async def _fetch_vote(
         self,
         graph_client: GraphClient,
-        query: DocumentNode,
+        query: GraphQLRequest | DocumentNode,
         block_number: BlockNumber,
     ) -> SubgraphVote | None:
         try:

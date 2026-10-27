@@ -13,10 +13,10 @@ py-ecc = "^8.0.0"
 ipfshttpclient = "^0.8.0a2"
 multiformats = "==0.3.1.post4"
 web3 = "==7.14.1"
-tenacity = "==8.2.3"
+tenacity = "==9.2.1"
 pyjwt = "==2.15.1"
 ssz = "==0.5.2"
-gql = {extras = ["aiohttp"], version = "==3.5.3"}
+gql = {extras = ["aiohttp"], version = "==4.4.0"}
 
 [tool.poetry.group.dev.dependencies]
 pylint = "==3.3.3"

@@ -1,7 +1,7 @@
 import logging
 
 from eth_typing import BlockNumber
-from gql import Client, gql
+from gql import Client, GraphQLRequest, gql
 from gql.client import AsyncClientSession
 from gql.transport.aiohttp import AIOHTTPTransport
 from graphql import DocumentNode
@@ -26,8 +26,6 @@ class GraphClient:
         self.request_timeout = request_timeout
         self.retry_timeout = retry_timeout
         self.page_size = page_size
-        # ssl parameter is added to disable AIOHTTPTransport warning
-        # will remove it for 4.x gql version
         transport = AIOHTTPTransport(url=endpoint, timeout=self.request_timeout, ssl=ssl)
         self.gql_client = Client(transport=transport, execute_timeout=self.request_timeout)
         self.session: AsyncClientSession | None = None
@@ -38,31 +36,32 @@ class GraphClient:
     async def disconnect(self) -> None:
         await self.gql_client.close_async()
 
-    async def run_query(self, query: DocumentNode, params: dict | None = None) -> dict:
+    async def run_query(
+        self, query: GraphQLRequest | DocumentNode, params: dict | None = None
+    ) -> dict:
         if not self.session:
             raise RuntimeError("GraphClient session is not initialized. Call 'setup' first.")
+
+        request = GraphQLRequest(query, variable_values=params)
 
         def log_before(retry_state: 'RetryCallState') -> None:
             if retry_state.attempt_number <= 1:
                 return
             msg = 'Retrying %s graph query, attempt %s'
             query_name = 'Unknown'
-            if (
-                query.definitions
-                and hasattr(query.definitions[0], 'name')
-                and query.definitions[0].name
-            ):
-                query_name = query.definitions[0].name.value
+            definitions = request.document.definitions
+            if definitions and hasattr(definitions[0], 'name') and definitions[0].name:
+                query_name = definitions[0].name.value
             args = (query_name, retry_state.attempt_number)
             logger.log(logging.INFO, msg, *args)
 
         retry_decorator = retry_gql_errors(delay=self.retry_timeout, before=log_before)
-        result = await retry_decorator(self.session.execute)(query, variable_values=params)
+        result = await retry_decorator(self.session.execute)(request)
         return result
 
     async def fetch_pages(
         self,
-        query: DocumentNode,
+        query: GraphQLRequest | DocumentNode,
         params: dict | None = None,
         page_size: int | None = None,
         cursor_pagination: bool = False,
