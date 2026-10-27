@@ -25,6 +25,7 @@ from .ipfs import (
 )
 from .networks import (
     ETH_NETWORKS,
+    FAR_FUTURE_EPOCH,
     GNO_NETWORKS,
     GNOSIS,
     HOODI,

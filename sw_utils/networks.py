@@ -16,6 +16,8 @@ GNO_NETWORKS = [GNOSIS]
 
 EMPTY_ADDR_HEX = HexAddress(HexStr('0x' + '00' * 20))
 
+FAR_FUTURE_EPOCH = 2**64 - 1
+
 
 class ContractReleaseVersion(IntEnum):
     V4 = 4  # Pectra release
@@ -182,13 +184,13 @@ NETWORKS = {
             CONFIG_UPDATE_LAST_EVENT_IPFS_HASH='QmeCywDfupWC7jz5EDHsU5yEb2unAhn8iSGWBUEdrMjdMc',
         ),
         CHAIN_ID=1,
-        FAR_FUTURE_EPOCH=18446744073709551615,
+        FAR_FUTURE_EPOCH=FAR_FUTURE_EPOCH,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000000')),
         SHAPELLA_EPOCH=194048,
         SHAPELLA_BLOCK=BlockNumber(17034870),
         PECTRA_EPOCH=364032,
         PECTRA_BLOCK=BlockNumber(0),
-        GLOAS_EPOCH=18446744073709551615,
+        GLOAS_EPOCH=FAR_FUTURE_EPOCH,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x2A261e60FB14586B474C208b1B7AC6D0f5000306'
         ),
@@ -267,7 +269,7 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x10000910')),
         CHAIN_ID=560048,
-        FAR_FUTURE_EPOCH=18446744073709551615,
+        FAR_FUTURE_EPOCH=FAR_FUTURE_EPOCH,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x40000910')),
         SHAPELLA_EPOCH=0,
         SHAPELLA_BLOCK=BlockNumber(0),
@@ -356,13 +358,13 @@ NETWORKS = {
         ),
         GENESIS_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x00000064')),
         CHAIN_ID=100,
-        FAR_FUTURE_EPOCH=18446744073709551615,
+        FAR_FUTURE_EPOCH=FAR_FUTURE_EPOCH,
         SHAPELLA_FORK_VERSION=Web3.to_bytes(hexstr=HexStr('0x03000064')),
         SHAPELLA_EPOCH=648704,
         SHAPELLA_BLOCK=BlockNumber(29242932),
         PECTRA_EPOCH=1337856,
         PECTRA_BLOCK=BlockNumber(0),
-        GLOAS_EPOCH=18446744073709551615,
+        GLOAS_EPOCH=FAR_FUTURE_EPOCH,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x60B2053d7f2a0bBa70fe6CDd88FB47b579B9179a'
         ),
