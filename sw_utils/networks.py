@@ -275,7 +275,7 @@ NETWORKS = {
         SHAPELLA_BLOCK=BlockNumber(0),
         PECTRA_EPOCH=2048,
         PECTRA_BLOCK=BlockNumber(60412),
-        GLOAS_EPOCH=132352,
+        GLOAS_EPOCH=FAR_FUTURE_EPOCH,
         OS_TOKEN_VAULT_CONTROLLER_CONTRACT_ADDRESS=Web3.to_checksum_address(
             '0x140Fc69Eabd77fFF91d9852B612B2323256f7Ac1'
         ),

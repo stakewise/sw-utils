@@ -153,7 +153,11 @@ class TestChainHeadFunctions:
         network_config = NETWORK_BY_SLOT[slot]
         consensus_client = _consensus_client_with_blocks({slot: _load_beacon_block(slot)})
 
-        chain_head = await head_function(consensus_client, execution_client, network_config)
+        chain_head = await head_function(
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=network_config,
+        )
 
         assert chain_head == ChainHead(
             epoch=slot // network_config.SLOTS_PER_EPOCH,
@@ -171,7 +175,9 @@ class TestChainHeadFunctions:
         )
 
         chain_head = await get_chain_justified_head(
-            consensus_client, execution_client, network_config
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=network_config,
         )
 
         assert chain_head.epoch == epoch
@@ -186,7 +192,10 @@ class TestChainHeadFunctions:
         consensus_client = _consensus_client_with_blocks({slot: _load_beacon_block(slot)})
 
         chain_head = await get_chain_epoch_head(
-            epoch, consensus_client, execution_client, network_config
+            epoch,
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=network_config,
         )
 
         assert chain_head.epoch == epoch
@@ -202,7 +211,11 @@ class TestChainHeadFunctions:
             {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}, epoch=epoch
         )
 
-        chain_head = await get_chain_justified_head(consensus_client, execution_client, SEPOLIA)
+        chain_head = await get_chain_justified_head(
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=SEPOLIA,
+        )
 
         assert chain_head.epoch == epoch
         assert chain_head.slot == BUILDER_SLOT
@@ -216,7 +229,12 @@ class TestChainHeadFunctions:
             {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}
         )
 
-        chain_head = await get_chain_epoch_head(epoch, consensus_client, execution_client, SEPOLIA)
+        chain_head = await get_chain_epoch_head(
+            epoch,
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=SEPOLIA,
+        )
 
         assert chain_head.epoch == epoch
         assert chain_head.slot == BUILDER_SLOT
@@ -232,9 +250,18 @@ class TestChainHeadFunctions:
 
         with pytest.raises(RuntimeError, match='Failed to fetch slot for epoch 10'):
             if head_function is get_chain_epoch_head:
-                await head_function(10, consensus_client, execution_client, SEPOLIA)
+                await head_function(
+                    10,
+                    consensus_client=consensus_client,
+                    execution_client=execution_client,
+                    network_config=SEPOLIA,
+                )
             else:
-                await head_function(consensus_client, execution_client, SEPOLIA)
+                await head_function(
+                    consensus_client=consensus_client,
+                    execution_client=execution_client,
+                    network_config=SEPOLIA,
+                )
 
         assert consensus_client.get_block.call_count == SEPOLIA.SLOTS_PER_EPOCH
 
@@ -244,7 +271,12 @@ class TestChainHeadFunctions:
         consensus_client.get_block = AsyncMock(side_effect=error)
 
         with pytest.raises(ClientResponseError):
-            await get_chain_epoch_head(10, consensus_client, execution_client, SEPOLIA)
+            await get_chain_epoch_head(
+                10,
+                consensus_client=consensus_client,
+                execution_client=execution_client,
+                network_config=SEPOLIA,
+            )
 
     @pytest.mark.parametrize('slot', list(BEACON_BLOCK_FILES))
     async def test_consensus_ts_is_derived_from_slot(
@@ -253,7 +285,11 @@ class TestChainHeadFunctions:
         network_config = NETWORK_BY_SLOT[slot]
         consensus_client = _consensus_client_with_blocks({slot: _load_beacon_block(slot)})
 
-        chain_head = await get_chain_latest_head(consensus_client, execution_client, network_config)
+        chain_head = await get_chain_latest_head(
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=network_config,
+        )
 
         assert chain_head.consensus_ts == (
             network_config.GENESIS_TIMESTAMP + slot * network_config.SECONDS_PER_SLOT
@@ -264,7 +300,11 @@ class TestChainHeadFunctions:
     ) -> None:
         consensus_client = _consensus_client_with_blocks({FULU_SLOT: _load_beacon_block(FULU_SLOT)})
 
-        await get_chain_finalized_head(consensus_client, execution_client, HOODI_CONFIG)
+        await get_chain_finalized_head(
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=HOODI_CONFIG,
+        )
 
         execution_client.eth.get_block.assert_not_called()
 
@@ -275,7 +315,9 @@ class TestChainHeadFunctions:
         consensus_client = _consensus_client_with_blocks({FULU_SLOT: block})
 
         chain_head = await get_chain_finalized_head(
-            consensus_client, execution_client, HOODI_CONFIG
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=HOODI_CONFIG,
         )
 
         payload_timestamp = int(block['data']['message']['body']['execution_payload']['timestamp'])
@@ -291,23 +333,29 @@ class TestChainHeadFunctions:
         ]['parent_block_hash']
         consensus_client = _consensus_client_with_blocks({slot: block})
 
-        await get_chain_finalized_head(consensus_client, execution_client, SEPOLIA)
+        await get_chain_finalized_head(
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=SEPOLIA,
+        )
 
         execution_client.eth.get_block.assert_awaited_once_with(parent_block_hash)
 
     async def test_gloas_empty_parent_payload_is_skipped(self, execution_client: AsyncMock) -> None:
         # the payload of BUILDER_SLOT was not delivered, so both slots resolve to the same EL block
         builder_head = await get_chain_finalized_head(
-            _consensus_client_with_blocks({BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}),
-            execution_client,
-            SEPOLIA,
+            consensus_client=_consensus_client_with_blocks(
+                {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}
+            ),
+            execution_client=execution_client,
+            network_config=SEPOLIA,
         )
         next_head = await get_chain_finalized_head(
-            _consensus_client_with_blocks(
+            consensus_client=_consensus_client_with_blocks(
                 {AFTER_EMPTY_PARENT_SLOT: _load_beacon_block(AFTER_EMPTY_PARENT_SLOT)}
             ),
-            execution_client,
-            SEPOLIA,
+            execution_client=execution_client,
+            network_config=SEPOLIA,
         )
 
         assert builder_head.slot + 1 == next_head.slot
@@ -330,7 +378,11 @@ class TestChainHeadFunctions:
         consensus_client = _consensus_client_with_blocks({slot: block}, epoch=epoch)
 
         with pytest.raises(ExecutionBehindConsensusError) as exc_info:
-            await head_function(consensus_client, empty_execution_client, SEPOLIA)
+            await head_function(
+                consensus_client=consensus_client,
+                execution_client=empty_execution_client,
+                network_config=SEPOLIA,
+            )
 
         assert isinstance(exc_info.value, BlockNotFound)
         assert parent_block_hash in str(exc_info.value)
@@ -345,7 +397,12 @@ class TestChainHeadFunctions:
         epoch = SELF_BUILD_SLOT // SEPOLIA.SLOTS_PER_EPOCH
 
         with pytest.raises(BlockNotFound):
-            await get_chain_epoch_head(epoch, consensus_client, empty_execution_client, SEPOLIA)
+            await get_chain_epoch_head(
+                epoch,
+                consensus_client=consensus_client,
+                execution_client=empty_execution_client,
+                network_config=SEPOLIA,
+            )
 
     @pytest.mark.parametrize('slot', GLOAS_EPOCH_START_SLOTS)
     async def test_gloas_epoch_head_ignores_eth1_data(
@@ -363,7 +420,10 @@ class TestChainHeadFunctions:
         consensus_client = _consensus_client_with_blocks({slot: block})
 
         chain_head = await get_chain_epoch_head(
-            slot // SEPOLIA.SLOTS_PER_EPOCH, consensus_client, execution_client, SEPOLIA
+            slot // SEPOLIA.SLOTS_PER_EPOCH,
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=SEPOLIA,
         )
 
         assert chain_head.block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
@@ -373,7 +433,7 @@ class TestChainHeadFunctions:
         'head_function',
         [get_chain_finalized_head, get_chain_justified_head, get_chain_latest_head],
     )
-    async def test_pre_merge_block_is_not_supported(
+    async def test_unsupported_block_body_is_rejected(
         self, head_function: Any, execution_client: AsyncMock
     ) -> None:
         pre_merge_block = copy.deepcopy(_load_beacon_block(FULU_SLOT))
@@ -385,8 +445,14 @@ class TestChainHeadFunctions:
             {slot: pre_merge_block}, epoch=slot // HOODI_CONFIG.SLOTS_PER_EPOCH
         )
 
-        with pytest.raises(ValueError, match=f'Pre-merge block at slot {slot} is not supported'):
-            await head_function(consensus_client, execution_client, HOODI_CONFIG)
+        with pytest.raises(
+            ValueError, match=f'Unsupported beacon block body at slot {slot} \\(version='
+        ):
+            await head_function(
+                consensus_client=consensus_client,
+                execution_client=execution_client,
+                network_config=HOODI_CONFIG,
+            )
 
         execution_client.eth.get_block.assert_not_called()
 

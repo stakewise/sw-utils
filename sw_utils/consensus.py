@@ -280,6 +280,7 @@ def get_consensus_client(
 
 
 async def get_chain_finalized_head(
+    *,
     consensus_client: ExtendedAsyncBeacon,
     execution_client: AsyncWeb3,
     network_config: BaseNetworkConfig,
@@ -297,6 +298,7 @@ async def get_chain_finalized_head(
 
 
 async def get_chain_justified_head(
+    *,
     consensus_client: ExtendedAsyncBeacon,
     execution_client: AsyncWeb3,
     network_config: BaseNetworkConfig,
@@ -315,6 +317,7 @@ async def get_chain_justified_head(
 
 
 async def get_chain_latest_head(
+    *,
     consensus_client: ExtendedAsyncBeacon,
     execution_client: AsyncWeb3,
     network_config: BaseNetworkConfig,
@@ -333,6 +336,7 @@ async def get_chain_latest_head(
 
 async def get_chain_epoch_head(
     epoch: int,
+    *,
     consensus_client: ExtendedAsyncBeacon,
     execution_client: AsyncWeb3,
     network_config: BaseNetworkConfig,
@@ -362,9 +366,9 @@ async def get_payload_expected_withdrawals(
     `state.payload_expected_withdrawals`. Includes builder withdrawals
     (`validatorIndex >= 2**40`), callers filter by their validator indexes.
 
-    Use finalized heads only: block `block_number + 1` always exists on a finalized chain,
-    so a missing block means the execution client lags. For the latest head it may legitimately
-    not exist yet or belong to another branch.
+    Use finalized heads only. A missing block `block_number + 1` means the execution client
+    lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
+    For the latest head the block may also belong to another branch.
     """
     if chain_head.slot < network_config.GLOAS_SLOT:
         return []
@@ -374,8 +378,8 @@ async def get_payload_expected_withdrawals(
         execution_block = await execution_client.eth.get_block(block_number)
     except BlockNotFound as e:
         raise ExecutionBehindConsensusError(
-            f'Execution client has no block {block_number} following chain head at slot '
-            f'{chain_head.slot}'
+            f'Execution block {block_number} following chain head at slot {chain_head.slot} '
+            f'is not available yet (execution client lagging or next payload not revealed)'
         ) from e
 
     return list(execution_block['withdrawals'])
@@ -424,7 +428,8 @@ async def _build_chain_head(
     elif 'execution_payload' in body:  # Bellatrix..Fulu
         block_number = BlockNumber(int(body['execution_payload']['block_number']))
     else:
-        raise ValueError(f'Pre-merge block at slot {slot} is not supported')
+        version = block_data.get('version')
+        raise ValueError(f'Unsupported beacon block body at slot {slot} (version={version})')
 
     return ChainHead(
         epoch=epoch,
