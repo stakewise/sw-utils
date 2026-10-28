@@ -40,7 +40,12 @@ class GraphClient:
         if not self.session:
             raise RuntimeError("GraphClient session is not initialized. Call 'setup' first.")
 
-        request = GraphQLRequest(query, variable_values=params)
+        variables: dict | None
+        if isinstance(query, GraphQLRequest):
+            variables = {**(query.variable_values or {}), **(params or {})}
+        else:
+            variables = params
+        request = GraphQLRequest(query, variable_values=variables or None)
 
         def log_before(retry_state: 'RetryCallState') -> None:
             if retry_state.attempt_number <= 1:
