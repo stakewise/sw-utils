@@ -1,7 +1,5 @@
 import copy
 import dataclasses
-import json
-from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -16,38 +14,22 @@ from sw_utils.consensus import (
     get_chain_finalized_head,
     get_chain_justified_head,
     get_chain_latest_head,
-    get_payload_expected_withdrawals,
 )
 from sw_utils.exceptions import ExecutionBehindConsensusError
-from sw_utils.networks import HOODI, MAINNET, NETWORKS, BaseNetworkConfig
-from sw_utils.typings import ChainHead
-
-FIXTURES_DIR = Path(__file__).parent / 'fixtures'
-
-HOODI_CONFIG = NETWORKS[HOODI]
-MAINNET_CONFIG = NETWORKS[MAINNET]
-
-# Sepolia is not a sw-utils network, but it is the first public network with Gloas.
-SEPOLIA = dataclasses.replace(
+from sw_utils.tests.gloas_data import (
+    AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
+    AFTER_EMPTY_PARENT_SLOT,
+    BUILDER_SLOT,
+    FULU_BLOCK_NUMBER,
+    FULU_SLOT,
     HOODI_CONFIG,
-    GENESIS_TIMESTAMP=Timestamp(1655733600),
-    SECONDS_PER_SLOT=12,
-    GLOAS_EPOCH=353024,
+    SELF_BUILD_EXECUTION_BLOCK_NUMBER,
+    SELF_BUILD_SLOT,
+    SEPOLIA,
+    consensus_ts,
+    load_json,
 )
-
-# Fulu block on Hoodi, `execution_payload` path.
-FULU_SLOT = 4234080
-FULU_BLOCK_NUMBER = 3891504
-# Gloas blocks on Sepolia. `bid.parent_block_hash` of each one points to the expected EL block.
-SELF_BUILD_SLOT = 11404096
-SELF_BUILD_EXECUTION_BLOCK_NUMBER = 11962172
-# Builder bid (builder_index != 2**64 - 1), its payload was not delivered (empty slot).
-BUILDER_SLOT = 11403711
-# Block right after the empty slot: its parent hash is the one of `BUILDER_SLOT` block.
-AFTER_EMPTY_PARENT_SLOT = 11403712
-AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER = 11961792
-# The only EL block with fixture withdrawals: follows `SELF_BUILD_EXECUTION_BLOCK_NUMBER`.
-WITHDRAWALS_EXECUTION_BLOCK_NUMBER = 11962173
+from sw_utils.typings import ChainHead
 
 BEACON_BLOCK_FILES = {
     FULU_SLOT: 'beacon_block_hoodi_fulu_4234080.json',
@@ -74,45 +56,12 @@ EPOCH_START_SLOTS = [slot for slot in BEACON_BLOCK_FILES if slot % 32 == 0]
 GLOAS_EPOCH_START_SLOTS = [slot for slot in GLOAS_SLOTS if slot % 32 == 0]
 
 
-def _load_json(filename: str) -> Any:
-    return json.loads((FIXTURES_DIR / filename).read_text())
-
-
 def _load_beacon_block(slot: int) -> dict:
-    return _load_json(BEACON_BLOCK_FILES[slot])
-
-
-def _consensus_ts(network_config: BaseNetworkConfig, slot: int) -> int:
-    return network_config.GENESIS_TIMESTAMP + slot * network_config.SECONDS_PER_SLOT
+    return load_json(BEACON_BLOCK_FILES[slot])
 
 
 def _not_found_error() -> ClientResponseError:
     return ClientResponseError(request_info=MagicMock(), history=(), status=404)
-
-
-@pytest.fixture
-def sepolia_execution_blocks() -> dict[str, dict]:
-    return _load_json('sepolia_execution_blocks.json')
-
-
-@pytest.fixture
-def execution_client(sepolia_execution_blocks: dict[str, dict]) -> AsyncMock:
-    """Resolves Sepolia EL blocks by hash or number, raises BlockNotFound for others."""
-    blocks_by_hash = {block['hash']: block for block in sepolia_execution_blocks.values()}
-
-    async def get_block(block_identifier: str | int) -> dict:
-        if isinstance(block_identifier, int):
-            block = sepolia_execution_blocks.get(str(block_identifier))
-        else:
-            block = blocks_by_hash.get(block_identifier)
-        if block is None:
-            raise BlockNotFound(f'Block {block_identifier} not found')
-        return block
-
-    client = AsyncMock()
-    client.eth = AsyncMock()
-    client.eth.get_block = AsyncMock(side_effect=get_block)
-    return client
 
 
 @pytest.fixture
@@ -163,7 +112,7 @@ class TestChainHeadFunctions:
             epoch=slot // network_config.SLOTS_PER_EPOCH,
             slot=slot,
             block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
-            consensus_ts=Timestamp(_consensus_ts(network_config, slot)),
+            consensus_ts=Timestamp(consensus_ts(network_config, slot)),
         )
 
     @pytest.mark.parametrize('slot', EPOCH_START_SLOTS)
@@ -183,7 +132,7 @@ class TestChainHeadFunctions:
         assert chain_head.epoch == epoch
         assert chain_head.slot == slot
         assert chain_head.block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
-        assert chain_head.consensus_ts == _consensus_ts(network_config, slot)
+        assert chain_head.consensus_ts == consensus_ts(network_config, slot)
 
     @pytest.mark.parametrize('slot', EPOCH_START_SLOTS)
     async def test_epoch_head(self, slot: int, execution_client: AsyncMock) -> None:
@@ -201,7 +150,7 @@ class TestChainHeadFunctions:
         assert chain_head.epoch == epoch
         assert chain_head.slot == slot
         assert chain_head.block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
-        assert chain_head.consensus_ts == _consensus_ts(network_config, slot)
+        assert chain_head.consensus_ts == consensus_ts(network_config, slot)
 
     async def test_justified_head_skips_missed_slots(self, execution_client: AsyncMock) -> None:
         # the first slot of the epoch has no block, the closest previous one is used
@@ -476,67 +425,3 @@ class TestChainHead:
 
         assert data == {'epoch': 1, 'slot': 32, 'block_number': 5, 'consensus_ts': 1700000000}
         assert ChainHead(**data) == chain_head
-
-
-class TestGetPayloadExpectedWithdrawals:
-    async def test_pre_gloas_returns_empty_list(self, execution_client: AsyncMock) -> None:
-        chain_head = ChainHead(
-            epoch=FULU_SLOT // HOODI_CONFIG.SLOTS_PER_EPOCH,
-            slot=FULU_SLOT,
-            block_number=BlockNumber(FULU_BLOCK_NUMBER),
-            consensus_ts=Timestamp(_consensus_ts(HOODI_CONFIG, FULU_SLOT)),
-        )
-        assert chain_head.slot < HOODI_CONFIG.GLOAS_SLOT
-
-        withdrawals = await get_payload_expected_withdrawals(
-            execution_client, chain_head, HOODI_CONFIG
-        )
-
-        assert withdrawals == []
-        execution_client.eth.get_block.assert_not_called()
-
-    async def test_unscheduled_gloas_returns_empty_list(self, execution_client: AsyncMock) -> None:
-        chain_head = ChainHead(
-            epoch=1, slot=32, block_number=BlockNumber(5), consensus_ts=Timestamp(1700000000)
-        )
-
-        withdrawals = await get_payload_expected_withdrawals(
-            execution_client, chain_head, MAINNET_CONFIG
-        )
-
-        assert withdrawals == []
-        execution_client.eth.get_block.assert_not_called()
-
-    async def test_gloas_returns_withdrawals_of_next_block(
-        self, execution_client: AsyncMock, sepolia_execution_blocks: dict[str, dict]
-    ) -> None:
-        chain_head = ChainHead(
-            epoch=SELF_BUILD_SLOT // SEPOLIA.SLOTS_PER_EPOCH,
-            slot=SELF_BUILD_SLOT,
-            block_number=BlockNumber(SELF_BUILD_EXECUTION_BLOCK_NUMBER),
-            consensus_ts=Timestamp(_consensus_ts(SEPOLIA, SELF_BUILD_SLOT)),
-        )
-        assert chain_head.slot >= SEPOLIA.GLOAS_SLOT
-
-        withdrawals = await get_payload_expected_withdrawals(execution_client, chain_head, SEPOLIA)
-
-        expected = sepolia_execution_blocks[str(WITHDRAWALS_EXECUTION_BLOCK_NUMBER)]['withdrawals']
-        assert withdrawals == expected
-        assert len(withdrawals) == 16
-        # builder withdrawal: validator index has the builder flag bit set
-        assert any(withdrawal['validatorIndex'] >= 2**40 for withdrawal in withdrawals)
-        execution_client.eth.get_block.assert_awaited_once_with(WITHDRAWALS_EXECUTION_BLOCK_NUMBER)
-
-    async def test_gloas_missing_next_block(self, execution_client: AsyncMock) -> None:
-        chain_head = ChainHead(
-            epoch=AFTER_EMPTY_PARENT_SLOT // SEPOLIA.SLOTS_PER_EPOCH,
-            slot=AFTER_EMPTY_PARENT_SLOT,
-            block_number=BlockNumber(AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER),
-            consensus_ts=Timestamp(_consensus_ts(SEPOLIA, AFTER_EMPTY_PARENT_SLOT)),
-        )
-
-        with pytest.raises(ExecutionBehindConsensusError) as exc_info:
-            await get_payload_expected_withdrawals(execution_client, chain_head, SEPOLIA)
-
-        assert isinstance(exc_info.value, BlockNotFound)
-        assert str(AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER + 1) in str(exc_info.value)

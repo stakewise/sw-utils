@@ -8,12 +8,15 @@ from .consensus import (
     get_chain_justified_head,
     get_chain_latest_head,
     get_consensus_client,
-    get_payload_expected_withdrawals,
 )
 from .decorators import memoize, retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
 from .exceptions import ExecutionBehindConsensusError, IpfsException
-from .execution import GasManager, get_execution_client
+from .execution import (
+    GasManager,
+    get_execution_client,
+    get_payload_expected_withdrawals,
+)
 from .gnosis import MGNO_RATE, convert_to_gno, convert_to_mgno
 from .ipfs import (
     BaseUploadClient,

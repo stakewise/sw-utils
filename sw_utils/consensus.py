@@ -8,7 +8,7 @@ from web3 import AsyncWeb3, Web3
 from web3.beacon import AsyncBeacon
 from web3.beacon.api_endpoints import GET_VALIDATORS, GET_VOLUNTARY_EXITS
 from web3.exceptions import BlockNotFound
-from web3.types import Timestamp, WithdrawalData
+from web3.types import Timestamp
 
 from sw_utils.common import urljoin
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
@@ -350,39 +350,6 @@ async def get_chain_epoch_head(
         execution_client=execution_client,
         network_config=network_config,
     )
-
-
-async def get_payload_expected_withdrawals(
-    execution_client: AsyncWeb3,
-    chain_head: ChainHead,
-    network_config: BaseNetworkConfig,
-) -> list[WithdrawalData]:
-    """
-    Withdrawals already deducted from CL balances at `chain_head.slot`
-    but not yet on EL at `chain_head.block_number`.
-
-    Pre-Gloas: always empty.
-    Gloas+: withdrawals of EL block `block_number + 1`, as every payload carries exactly
-    `state.payload_expected_withdrawals`. Includes builder withdrawals
-    (`validatorIndex >= 2**40`), callers filter by their validator indexes.
-
-    Use finalized heads only. A missing block `block_number + 1` means the execution client
-    lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
-    For the latest head the block may also belong to another branch.
-    """
-    if chain_head.slot < network_config.GLOAS_SLOT:
-        return []
-
-    block_number = chain_head.block_number + 1
-    try:
-        execution_block = await execution_client.eth.get_block(block_number)
-    except BlockNotFound as e:
-        raise ExecutionBehindConsensusError(
-            f'Execution block {block_number} following chain head at slot {chain_head.slot} '
-            f'is not available yet (execution client lagging or next payload not revealed)'
-        ) from e
-
-    return list(execution_block['withdrawals'])
 
 
 async def _get_epoch_block(
