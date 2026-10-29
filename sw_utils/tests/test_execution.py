@@ -7,11 +7,9 @@ from web3.types import Timestamp
 
 from sw_utils.exceptions import ExecutionBehindConsensusError
 from sw_utils.execution import get_payload_expected_withdrawals
-from sw_utils.networks import MAINNET, NETWORKS
 from sw_utils.tests.gloas_data import (
     AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
     AFTER_EMPTY_PARENT_SLOT,
-    BUILDER_SLOT,
     FULU_BLOCK_NUMBER,
     FULU_SLOT,
     HOODI_CONFIG,
@@ -23,8 +21,6 @@ from sw_utils.tests.gloas_data import (
 )
 from sw_utils.typings import ChainHead
 
-MAINNET_CONFIG = NETWORKS[MAINNET]
-
 
 class TestGetPayloadExpectedWithdrawals:
     async def test_pre_gloas_returns_empty_list(self, execution_client: AsyncMock) -> None:
@@ -32,30 +28,10 @@ class TestGetPayloadExpectedWithdrawals:
             epoch=FULU_SLOT // HOODI_CONFIG.SLOTS_PER_EPOCH,
             slot=FULU_SLOT,
             slot_ts=Timestamp(slot_ts(HOODI_CONFIG, FULU_SLOT)),
-            parent_slot=FULU_SLOT,
-            parent_block_number=BlockNumber(FULU_BLOCK_NUMBER),
+            is_gloas=False,
+            latest_block_number=BlockNumber(FULU_BLOCK_NUMBER),
         )
-        assert chain_head.slot < HOODI_CONFIG.GLOAS_SLOT
-
-        withdrawals = await get_payload_expected_withdrawals(
-            execution_client, chain_head, HOODI_CONFIG
-        )
-
-        assert withdrawals == []
-        execution_client.eth.get_block.assert_not_called()
-
-    async def test_unscheduled_gloas_returns_empty_list(self, execution_client: AsyncMock) -> None:
-        chain_head = ChainHead(
-            epoch=1,
-            slot=32,
-            slot_ts=Timestamp(1700000000),
-            parent_slot=32,
-            parent_block_number=BlockNumber(5),
-        )
-
-        withdrawals = await get_payload_expected_withdrawals(
-            execution_client, chain_head, MAINNET_CONFIG
-        )
+        withdrawals = await get_payload_expected_withdrawals(execution_client, chain_head)
 
         assert withdrawals == []
         execution_client.eth.get_block.assert_not_called()
@@ -67,12 +43,10 @@ class TestGetPayloadExpectedWithdrawals:
             epoch=SELF_BUILD_SLOT // SEPOLIA.SLOTS_PER_EPOCH,
             slot=SELF_BUILD_SLOT,
             slot_ts=Timestamp(slot_ts(SEPOLIA, SELF_BUILD_SLOT)),
-            parent_slot=SELF_BUILD_SLOT - 1,
-            parent_block_number=BlockNumber(SELF_BUILD_EXECUTION_BLOCK_NUMBER),
+            is_gloas=True,
+            latest_block_number=BlockNumber(SELF_BUILD_EXECUTION_BLOCK_NUMBER),
         )
-        assert chain_head.slot >= SEPOLIA.GLOAS_SLOT
-
-        withdrawals = await get_payload_expected_withdrawals(execution_client, chain_head, SEPOLIA)
+        withdrawals = await get_payload_expected_withdrawals(execution_client, chain_head)
 
         expected = sepolia_execution_blocks[str(WITHDRAWALS_EXECUTION_BLOCK_NUMBER)]['withdrawals']
         assert withdrawals == expected
@@ -86,13 +60,12 @@ class TestGetPayloadExpectedWithdrawals:
             epoch=AFTER_EMPTY_PARENT_SLOT // SEPOLIA.SLOTS_PER_EPOCH,
             slot=AFTER_EMPTY_PARENT_SLOT,
             slot_ts=Timestamp(slot_ts(SEPOLIA, AFTER_EMPTY_PARENT_SLOT)),
-            # builds on the payload before the empty `BUILDER_SLOT`
-            parent_slot=BUILDER_SLOT - 1,
-            parent_block_number=BlockNumber(AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER),
+            is_gloas=True,
+            latest_block_number=BlockNumber(AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER),
         )
 
         with pytest.raises(ExecutionBehindConsensusError) as exc_info:
-            await get_payload_expected_withdrawals(execution_client, chain_head, SEPOLIA)
+            await get_payload_expected_withdrawals(execution_client, chain_head)
 
         assert isinstance(exc_info.value, BlockNotFound)
         assert str(AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER + 1) in str(exc_info.value)

@@ -423,14 +423,11 @@ async def _build_chain_head(
             raise ExecutionBehindConsensusError(
                 f'Execution client has no block {parent_block_hash} referenced by slot {slot}'
             ) from e
-        parent_block_number = BlockNumber(execution_block['number'])
-        # payload timestamp is the start of its slot
-        parent_slot = (
-            int(execution_block['timestamp']) - network_config.GENESIS_TIMESTAMP
-        ) // network_config.SECONDS_PER_SLOT
+        latest_block_number = BlockNumber(execution_block['number'])
+        is_gloas = True
     elif 'execution_payload' in body:  # Bellatrix..Fulu
-        parent_block_number = BlockNumber(int(body['execution_payload']['block_number']))
-        parent_slot = slot
+        latest_block_number = BlockNumber(int(body['execution_payload']['block_number']))
+        is_gloas = False
     else:
         version = block_data.get('version')
         raise ValueError(f'Unsupported beacon block body at slot {slot} (version={version})')
@@ -441,6 +438,6 @@ async def _build_chain_head(
         slot_ts=Timestamp(
             network_config.GENESIS_TIMESTAMP + slot * network_config.SECONDS_PER_SLOT
         ),
-        parent_slot=parent_slot,
-        parent_block_number=parent_block_number,
+        is_gloas=is_gloas,
+        latest_block_number=latest_block_number,
     )

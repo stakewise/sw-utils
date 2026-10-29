@@ -15,7 +15,6 @@ from web3.types import RPCEndpoint, RPCResponse, TxParams, Wei, WithdrawalData
 
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
 from sw_utils.exceptions import ExecutionBehindConsensusError
-from sw_utils.networks import BaseNetworkConfig
 from sw_utils.typings import ChainHead
 
 logger = logging.getLogger(__name__)
@@ -234,11 +233,10 @@ def get_execution_client(
 async def get_payload_expected_withdrawals(
     execution_client: AsyncWeb3,
     chain_head: ChainHead,
-    network_config: BaseNetworkConfig,
 ) -> list[WithdrawalData]:
     """
     Withdrawals already deducted from CL balances at `chain_head.slot`
-    but not yet on EL at `chain_head.parent_block_number`.
+    but not yet on EL at `chain_head.latest_block_number`.
 
     Pre-Gloas: always empty.
     Gloas+: withdrawals of EL block `chain_head.block_number`, as every payload carries exactly
@@ -249,7 +247,7 @@ async def get_payload_expected_withdrawals(
     lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
     For the latest head the block may also belong to another branch.
     """
-    if chain_head.slot < network_config.GLOAS_SLOT:
+    if not chain_head.is_gloas:
         return []
 
     block_number = chain_head.block_number

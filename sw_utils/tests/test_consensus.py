@@ -54,15 +54,6 @@ EXPECTED_BLOCK_NUMBER_BY_SLOT = {
     BUILDER_SLOT: AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
     AFTER_EMPTY_PARENT_SLOT: AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
 }
-# Slot of each block's parent payload: Fulu payload is in the block itself, Gloas self-build
-# builds on the previous slot, the builder block and the next one both build on the payload
-# before the empty one.
-EXPECTED_PARENT_SLOT_BY_SLOT = {
-    FULU_SLOT: FULU_SLOT,
-    SELF_BUILD_SLOT: SELF_BUILD_SLOT - 1,
-    BUILDER_SLOT: BUILDER_SLOT - 1,
-    AFTER_EMPTY_PARENT_SLOT: BUILDER_SLOT - 1,
-}
 GLOAS_SLOTS = [SELF_BUILD_SLOT, BUILDER_SLOT, AFTER_EMPTY_PARENT_SLOT]
 # Epoch heads walk back from the first slot of the epoch, so only epoch boundary slots can be
 # found directly.
@@ -126,8 +117,8 @@ class TestChainHeadFunctions:
             epoch=slot // network_config.SLOTS_PER_EPOCH,
             slot=slot,
             slot_ts=Timestamp(slot_ts(network_config, slot)),
-            parent_slot=EXPECTED_PARENT_SLOT_BY_SLOT[slot],
-            parent_block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
+            is_gloas=slot in GLOAS_SLOTS,
+            latest_block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
         )
 
     @pytest.mark.parametrize('slot', EPOCH_START_SLOTS)
@@ -146,9 +137,9 @@ class TestChainHeadFunctions:
 
         assert chain_head.epoch == epoch
         assert chain_head.slot == slot
-        assert chain_head.parent_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
+        assert chain_head.latest_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
         assert chain_head.slot_ts == slot_ts(network_config, slot)
-        assert chain_head.parent_slot == EXPECTED_PARENT_SLOT_BY_SLOT[slot]
+        assert chain_head.is_gloas is (slot in GLOAS_SLOTS)
 
     @pytest.mark.parametrize('slot', EPOCH_START_SLOTS)
     async def test_epoch_head(self, slot: int, execution_client: AsyncMock) -> None:
@@ -165,9 +156,9 @@ class TestChainHeadFunctions:
 
         assert chain_head.epoch == epoch
         assert chain_head.slot == slot
-        assert chain_head.parent_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
+        assert chain_head.latest_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
         assert chain_head.slot_ts == slot_ts(network_config, slot)
-        assert chain_head.parent_slot == EXPECTED_PARENT_SLOT_BY_SLOT[slot]
+        assert chain_head.is_gloas is (slot in GLOAS_SLOTS)
 
     async def test_justified_head_skips_missed_slots(self, execution_client: AsyncMock) -> None:
         # the first slot of the epoch has no block, the closest previous one is used
@@ -185,7 +176,7 @@ class TestChainHeadFunctions:
 
         assert chain_head.epoch == epoch
         assert chain_head.slot == BUILDER_SLOT
-        assert chain_head.parent_block_number == AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER
+        assert chain_head.latest_block_number == AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER
         requested_slots = [call.args[0] for call in consensus_client.get_block.call_args_list]
         assert requested_slots == [str(AFTER_EMPTY_PARENT_SLOT), str(BUILDER_SLOT)]
 
@@ -323,8 +314,8 @@ class TestChainHeadFunctions:
         )
 
         assert builder_head.slot + 1 == next_head.slot
-        assert builder_head.parent_block_number == next_head.parent_block_number
-        assert next_head.parent_block_number == AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER
+        assert builder_head.latest_block_number == next_head.latest_block_number
+        assert next_head.latest_block_number == AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER
 
     @pytest.mark.parametrize('slot', GLOAS_EPOCH_START_SLOTS)
     @pytest.mark.parametrize(
@@ -390,7 +381,7 @@ class TestChainHeadFunctions:
             network_config=SEPOLIA,
         )
 
-        assert chain_head.parent_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
+        assert chain_head.latest_block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
         execution_client.eth.get_block.assert_awaited_once_with(parent_block_hash)
 
     @pytest.mark.parametrize(
@@ -436,8 +427,8 @@ class TestChainHead:
             epoch=1,
             slot=32,
             slot_ts=Timestamp(1700000000),
-            parent_slot=31,
-            parent_block_number=BlockNumber(5),
+            is_gloas=True,
+            latest_block_number=BlockNumber(5),
         )
 
         data = dataclasses.asdict(chain_head)
@@ -446,8 +437,8 @@ class TestChainHead:
             'epoch': 1,
             'slot': 32,
             'slot_ts': 1700000000,
-            'parent_slot': 31,
-            'parent_block_number': 5,
+            'is_gloas': True,
+            'latest_block_number': 5,
         }
         assert ChainHead(**data) == chain_head
 
@@ -456,8 +447,8 @@ class TestChainHead:
             epoch=1,
             slot=32,
             slot_ts=Timestamp(1700000000),
-            parent_slot=32,
-            parent_block_number=BlockNumber(5),
+            is_gloas=False,
+            latest_block_number=BlockNumber(5),
         )
 
         assert chain_head.block_number == 5
@@ -467,8 +458,8 @@ class TestChainHead:
             epoch=1,
             slot=32,
             slot_ts=Timestamp(1700000000),
-            parent_slot=30,
-            parent_block_number=BlockNumber(5),
+            is_gloas=True,
+            latest_block_number=BlockNumber(5),
         )
 
         assert chain_head.block_number == 6
@@ -491,8 +482,8 @@ class TestGetChainSlotHead:
             epoch=slot // network_config.SLOTS_PER_EPOCH,
             slot=slot,
             slot_ts=Timestamp(slot_ts(network_config, slot)),
-            parent_slot=EXPECTED_PARENT_SLOT_BY_SLOT[slot],
-            parent_block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
+            is_gloas=slot in GLOAS_SLOTS,
+            latest_block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
         )
         consensus_client.get_block.assert_awaited_once_with(str(slot))
 
