@@ -21,6 +21,12 @@ logger = logging.getLogger(__name__)
 
 GET_SYNC_COMMITTEE_REWARDS = 'eth/v1/beacon/rewards/sync_committee/{0}'
 
+# Gloas (EIP-7732): builder withdrawals share the `Withdrawal.validator_index` field
+# with validator withdrawals, marked by this bit.
+BUILDER_INDEX_FLAG = 2**40
+# Gloas (EIP-7732): `ExecutionPayloadBid.builder_index` of a block built by its proposer.
+BUILDER_INDEX_SELF_BUILD = 2**64 - 1
+
 
 class ValidatorStatus(Enum):
     """Validator statuses in consensus layer"""
@@ -350,6 +356,32 @@ async def get_chain_epoch_head(
         execution_client=execution_client,
         network_config=network_config,
     )
+
+
+async def get_chain_slot_head(
+    slot: int,
+    *,
+    consensus_client: ExtendedAsyncBeacon,
+    execution_client: AsyncWeb3,
+    network_config: BaseNetworkConfig,
+) -> ChainHead:
+    """
+    Fetches the chain head at the proposed `slot`.
+    Raises ClientResponseError with status 404 if the slot was not proposed.
+    """
+    block_data = await consensus_client.get_block(str(slot))
+
+    return await _build_chain_head(
+        block_data=block_data,
+        epoch=slot // network_config.SLOTS_PER_EPOCH,
+        execution_client=execution_client,
+        network_config=network_config,
+    )
+
+
+def is_builder_index(validator_index: int) -> bool:
+    """Whether `Withdrawal.validator_index` is a Gloas builder index, not a validator one."""
+    return (validator_index & BUILDER_INDEX_FLAG) != 0
 
 
 async def _get_epoch_block(

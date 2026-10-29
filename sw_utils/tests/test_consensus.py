@@ -10,10 +10,14 @@ from web3.exceptions import BlockNotFound
 from web3.types import Timestamp
 
 from sw_utils.consensus import (
+    BUILDER_INDEX_FLAG,
+    BUILDER_INDEX_SELF_BUILD,
     get_chain_epoch_head,
     get_chain_finalized_head,
     get_chain_justified_head,
     get_chain_latest_head,
+    get_chain_slot_head,
+    is_builder_index,
 )
 from sw_utils.exceptions import ExecutionBehindConsensusError
 from sw_utils.tests.gloas_data import (
@@ -26,6 +30,7 @@ from sw_utils.tests.gloas_data import (
     SELF_BUILD_EXECUTION_BLOCK_NUMBER,
     SELF_BUILD_SLOT,
     SEPOLIA,
+    WITHDRAWALS_EXECUTION_BLOCK_NUMBER,
     consensus_ts,
     load_json,
 )
@@ -425,3 +430,73 @@ class TestChainHead:
 
         assert data == {'epoch': 1, 'slot': 32, 'block_number': 5, 'consensus_ts': 1700000000}
         assert ChainHead(**data) == chain_head
+
+
+class TestGetChainSlotHead:
+    @pytest.mark.parametrize('slot', list(BEACON_BLOCK_FILES))
+    async def test_slot_head(self, slot: int, execution_client: AsyncMock) -> None:
+        network_config = NETWORK_BY_SLOT[slot]
+        consensus_client = _consensus_client_with_blocks({slot: _load_beacon_block(slot)})
+
+        chain_head = await get_chain_slot_head(
+            slot,
+            consensus_client=consensus_client,
+            execution_client=execution_client,
+            network_config=network_config,
+        )
+
+        assert chain_head == ChainHead(
+            epoch=slot // network_config.SLOTS_PER_EPOCH,
+            slot=slot,
+            block_number=BlockNumber(EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]),
+            consensus_ts=Timestamp(consensus_ts(network_config, slot)),
+        )
+        consensus_client.get_block.assert_awaited_once_with(str(slot))
+
+    async def test_missed_slot(self, execution_client: AsyncMock) -> None:
+        consensus_client = _consensus_client_with_blocks(
+            {SELF_BUILD_SLOT: _load_beacon_block(SELF_BUILD_SLOT)}
+        )
+
+        with pytest.raises(ClientResponseError) as exc_info:
+            await get_chain_slot_head(
+                SELF_BUILD_SLOT + 1,
+                consensus_client=consensus_client,
+                execution_client=execution_client,
+                network_config=SEPOLIA,
+            )
+
+        assert exc_info.value.status == 404
+        execution_client.eth.get_block.assert_not_called()
+
+
+class TestIsBuilderIndex:
+    @pytest.mark.parametrize(
+        'validator_index, expected',
+        [
+            (0, False),
+            (1_234_567, False),
+            (BUILDER_INDEX_FLAG - 1, False),
+            (BUILDER_INDEX_FLAG, True),
+            (BUILDER_INDEX_FLAG | 42, True),
+        ],
+    )
+    def test_is_builder_index(self, validator_index: int, expected: bool) -> None:
+        assert is_builder_index(validator_index) is expected
+
+    def test_fixture_builder_withdrawals(self, sepolia_execution_blocks: dict[str, dict]) -> None:
+        withdrawals = sepolia_execution_blocks[str(WITHDRAWALS_EXECUTION_BLOCK_NUMBER)][
+            'withdrawals'
+        ]
+
+        builder_withdrawals = [w for w in withdrawals if is_builder_index(w['validatorIndex'])]
+
+        assert builder_withdrawals
+        assert all(w['validatorIndex'] >= 2**40 for w in builder_withdrawals)
+
+    def test_self_build_bid(self) -> None:
+        bid = _load_beacon_block(SELF_BUILD_SLOT)['data']['message']['body'][
+            'signed_execution_payload_bid'
+        ]['message']
+        assert int(bid['builder_index']) == BUILDER_INDEX_SELF_BUILD
+        assert int(bid['value']) == 0

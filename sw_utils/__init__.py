@@ -1,5 +1,7 @@
 from .common import InterruptHandler, async_batched
 from .consensus import (
+    BUILDER_INDEX_FLAG,
+    BUILDER_INDEX_SELF_BUILD,
     PENDING_STATUSES,
     ExtendedAsyncBeacon,
     ValidatorStatus,
@@ -7,7 +9,9 @@ from .consensus import (
     get_chain_finalized_head,
     get_chain_justified_head,
     get_chain_latest_head,
+    get_chain_slot_head,
     get_consensus_client,
+    is_builder_index,
 )
 from .decorators import memoize, retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner

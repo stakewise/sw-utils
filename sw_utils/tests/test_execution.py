@@ -17,14 +17,12 @@ from sw_utils.tests.gloas_data import (
     SELF_BUILD_EXECUTION_BLOCK_NUMBER,
     SELF_BUILD_SLOT,
     SEPOLIA,
+    WITHDRAWALS_EXECUTION_BLOCK_NUMBER,
     consensus_ts,
 )
 from sw_utils.typings import ChainHead
 
 MAINNET_CONFIG = NETWORKS[MAINNET]
-
-# The only EL block with fixture withdrawals: follows `SELF_BUILD_EXECUTION_BLOCK_NUMBER`.
-WITHDRAWALS_EXECUTION_BLOCK_NUMBER = 11962173
 
 
 class TestGetPayloadExpectedWithdrawals:

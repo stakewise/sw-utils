@@ -30,6 +30,8 @@ BUILDER_SLOT = 11403711
 # Block right after the empty slot: its parent hash is the one of `BUILDER_SLOT` block.
 AFTER_EMPTY_PARENT_SLOT = 11403712
 AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER = 11961792
+# The only EL block with fixture withdrawals: follows `SELF_BUILD_EXECUTION_BLOCK_NUMBER`.
+WITHDRAWALS_EXECUTION_BLOCK_NUMBER = 11962173
 
 
 def load_json(filename: str) -> Any:
