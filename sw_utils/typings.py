@@ -23,17 +23,19 @@ class ChainHead:
     """
     Chain head at a beacon slot.
 
-    epoch, slot, consensus_ts: the head moment,
-    consensus_ts = GENESIS_TIMESTAMP + slot * SECONDS_PER_SLOT.
-    block_number: execution block whose effects are fully reflected in the beacon state at `slot`.
-    Pre-Gloas it is the payload of `slot`. Gloas+ it is the latest processed payload
-    (`bid.parent_block_hash` == `state.latest_block_hash`), which lags `slot` by at least one slot.
+    epoch, slot, slot_ts: the head moment, slot_ts = GENESIS_TIMESTAMP + slot * SECONDS_PER_SLOT.
+    parent_block_number: execution block whose effects are fully reflected in the beacon state
+    at `slot`. Gloas+ it is the latest processed payload, the one the head block builds on
+    (`bid.parent_block_hash` == `state.latest_block_hash`). Pre-Gloas it is the payload of `slot`.
+    parent_slot: slot of the `parent_block_number` payload. Gloas+ it lags `slot`
+    by at least one slot, more after empty payloads. Pre-Gloas it equals `slot`.
     """
 
     epoch: int
     slot: int
-    block_number: BlockNumber
-    consensus_ts: Timestamp
+    slot_ts: Timestamp
+    parent_slot: int
+    parent_block_number: BlockNumber
 
 
 @dataclass

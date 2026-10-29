@@ -38,5 +38,5 @@ def load_json(filename: str) -> Any:
     return json.loads((FIXTURES_DIR / filename).read_text())
 
 
-def consensus_ts(network_config: BaseNetworkConfig, slot: int) -> int:
+def slot_ts(network_config: BaseNetworkConfig, slot: int) -> int:
     return network_config.GENESIS_TIMESTAMP + slot * network_config.SECONDS_PER_SLOT

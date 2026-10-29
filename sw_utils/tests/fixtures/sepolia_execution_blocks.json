@@ -1,14 +1,17 @@
 {
   "11962172": {
     "number": 11962172,
+    "timestamp": 1792582740,
     "hash": "0x85ff580fbafd3ddeac1bada2d08604f98add5bd322b428123c9770ad824252ab"
   },
   "11961792": {
     "number": 11961792,
+    "timestamp": 1792578120,
     "hash": "0xa78eb2e4d11cfdab5a6d6b7750e28e96e9d3192b8ebed79b5d8ffc3ebbbc9db4"
   },
   "11962173": {
     "number": 11962173,
+    "timestamp": 1792582752,
     "hash": "0x6b6ce69134e69a0998eda3992d6d292d37f7cb2896c9b4be578804f3ab257156",
     "withdrawals": [
       {
