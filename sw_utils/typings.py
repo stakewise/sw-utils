@@ -25,10 +25,17 @@ class ChainHead:
 
     epoch, slot, slot_ts: the head moment, slot_ts = GENESIS_TIMESTAMP + slot * SECONDS_PER_SLOT.
     parent_block_number: execution block whose effects are fully reflected in the beacon state
-    at `slot`. Gloas+ it is the latest processed payload, the one the head block builds on
-    (`bid.parent_block_hash` == `state.latest_block_hash`). Pre-Gloas it is the payload of `slot`.
-    parent_slot: slot of the `parent_block_number` payload. Gloas+ it lags `slot`
-    by at least one slot, more after empty payloads. Pre-Gloas it equals `slot`.
+    at `slot`.
+    parent_slot: slot of the `parent_block_number` payload.
+
+    Gloas+:
+    - parent_block_number is the latest processed payload, the one the head block builds on
+      (`bid.parent_block_hash` == `state.latest_block_hash`).
+    - parent_slot lags `slot` by at least one slot, more after empty payloads.
+
+    Pre-Gloas:
+    - parent_block_number is the payload of `slot`.
+    - parent_slot equals `slot`.
     """
 
     epoch: int
@@ -36,6 +43,17 @@ class ChainHead:
     slot_ts: Timestamp
     parent_slot: int
     parent_block_number: BlockNumber
+
+    @property
+    def block_number(self) -> BlockNumber:
+        """
+        Execution block of the `slot` payload. Gloas+ it is `parent_block_number + 1`,
+        which may not exist yet (payload not revealed or empty). Pre-Gloas it equals
+        `parent_block_number`.
+        """
+        if self.parent_slot == self.slot:
+            return self.parent_block_number
+        return BlockNumber(self.parent_block_number + 1)
 
 
 @dataclass

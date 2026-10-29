@@ -241,18 +241,18 @@ async def get_payload_expected_withdrawals(
     but not yet on EL at `chain_head.parent_block_number`.
 
     Pre-Gloas: always empty.
-    Gloas+: withdrawals of EL block `parent_block_number + 1`, as every payload carries exactly
+    Gloas+: withdrawals of EL block `chain_head.block_number`, as every payload carries exactly
     `state.payload_expected_withdrawals`. Includes builder withdrawals
     (`validatorIndex >= 2**40`), callers filter by their validator indexes.
 
-    Use finalized heads only. A missing block `parent_block_number + 1` means the execution client
+    Use finalized heads only. A missing block `chain_head.block_number` means the execution client
     lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
     For the latest head the block may also belong to another branch.
     """
     if chain_head.slot < network_config.GLOAS_SLOT:
         return []
 
-    block_number = chain_head.parent_block_number + 1
+    block_number = chain_head.block_number
     try:
         execution_block = await execution_client.eth.get_block(block_number)
     except BlockNotFound as e:

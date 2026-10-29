@@ -451,6 +451,28 @@ class TestChainHead:
         }
         assert ChainHead(**data) == chain_head
 
+    def test_block_number_pre_gloas(self) -> None:
+        chain_head = ChainHead(
+            epoch=1,
+            slot=32,
+            slot_ts=Timestamp(1700000000),
+            parent_slot=32,
+            parent_block_number=BlockNumber(5),
+        )
+
+        assert chain_head.block_number == 5
+
+    def test_block_number_gloas(self) -> None:
+        chain_head = ChainHead(
+            epoch=1,
+            slot=32,
+            slot_ts=Timestamp(1700000000),
+            parent_slot=30,
+            parent_block_number=BlockNumber(5),
+        )
+
+        assert chain_head.block_number == 6
+
 
 class TestGetChainSlotHead:
     @pytest.mark.parametrize('slot', list(BEACON_BLOCK_FILES))
