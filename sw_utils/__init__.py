@@ -11,8 +11,12 @@ from .consensus import (
 )
 from .decorators import memoize, retry_aiohttp_errors, retry_ipfs_exception, safe
 from .event_scanner import EventProcessor, EventScanner
-from .exceptions import IpfsException
-from .execution import GasManager, get_execution_client
+from .exceptions import ExecutionBehindConsensusError, IpfsException
+from .execution import (
+    GasManager,
+    get_execution_client,
+    get_payload_expected_withdrawals,
+)
 from .gnosis import MGNO_RATE, convert_to_gno, convert_to_mgno
 from .ipfs import (
     BaseUploadClient,
@@ -24,6 +28,7 @@ from .ipfs import (
 )
 from .networks import (
     ETH_NETWORKS,
+    FAR_FUTURE_EPOCH,
     GNO_NETWORKS,
     GNOSIS,
     HOODI,

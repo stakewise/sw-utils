@@ -8,11 +8,15 @@ from eth_typing import URI
 from web3 import AsyncWeb3, Web3
 from web3._utils.async_transactions import _max_fee_per_gas
 from web3.eth import AsyncEth
+from web3.exceptions import BlockNotFound
 from web3.net import AsyncNet
 from web3.providers import AsyncHTTPProvider
-from web3.types import RPCEndpoint, RPCResponse, TxParams, Wei
+from web3.types import RPCEndpoint, RPCResponse, TxParams, Wei, WithdrawalData
 
 from sw_utils.decorators import can_be_retried_aiohttp_error, retry_aiohttp_errors
+from sw_utils.exceptions import ExecutionBehindConsensusError
+from sw_utils.networks import BaseNetworkConfig
+from sw_utils.typings import ChainHead
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +229,39 @@ def get_execution_client(
     )
 
     return client
+
+
+async def get_payload_expected_withdrawals(
+    execution_client: AsyncWeb3,
+    chain_head: ChainHead,
+    network_config: BaseNetworkConfig,
+) -> list[WithdrawalData]:
+    """
+    Withdrawals already deducted from CL balances at `chain_head.slot`
+    but not yet on EL at `chain_head.block_number`.
+
+    Pre-Gloas: always empty.
+    Gloas+: withdrawals of EL block `block_number + 1`, as every payload carries exactly
+    `state.payload_expected_withdrawals`. Includes builder withdrawals
+    (`validatorIndex >= 2**40`), callers filter by their validator indexes.
+
+    Use finalized heads only. A missing block `block_number + 1` means the execution client
+    lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
+    For the latest head the block may also belong to another branch.
+    """
+    if chain_head.slot < network_config.GLOAS_SLOT:
+        return []
+
+    block_number = chain_head.block_number + 1
+    try:
+        execution_block = await execution_client.eth.get_block(block_number)
+    except BlockNotFound as e:
+        raise ExecutionBehindConsensusError(
+            f'Execution block {block_number} following chain head at slot {chain_head.slot} '
+            f'is not available yet (execution client lagging or next payload not revealed)'
+        ) from e
+
+    return list(execution_block['withdrawals'])
 
 
 def _create_jwt_auth_token(jwt_secret: str) -> str:

@@ -20,10 +20,20 @@ class ConsensusFork:
 
 @dataclass
 class ChainHead:
+    """
+    Chain head at a beacon slot.
+
+    epoch, slot, consensus_ts: the head moment,
+    consensus_ts = GENESIS_TIMESTAMP + slot * SECONDS_PER_SLOT.
+    block_number: execution block whose effects are fully reflected in the beacon state at `slot`.
+    Pre-Gloas it is the payload of `slot`. Gloas+ it is the latest processed payload
+    (`bid.parent_block_hash` == `state.latest_block_hash`), which lags `slot` by at least one slot.
+    """
+
     epoch: int
     slot: int
     block_number: BlockNumber
-    execution_ts: Timestamp
+    consensus_ts: Timestamp
 
 
 @dataclass
