@@ -240,8 +240,8 @@ async def get_payload_expected_withdrawals(
     Withdrawals already deducted from CL balances at `chain_head.slot`
     but not yet on EL at `chain_head.block_number`.
 
-    Pre-Gloas: always empty.
-    Gloas+: withdrawals of EL block `block_number + 1`, as every payload carries exactly
+    Pre-Glamsterdam: always empty.
+    Glamsterdam+: withdrawals of EL block `block_number + 1`, as every payload carries exactly
     `state.payload_expected_withdrawals`. Includes builder withdrawals
     (`validatorIndex >= 2**40`), callers filter by their validator indexes.
 
@@ -249,7 +249,7 @@ async def get_payload_expected_withdrawals(
     lags or no payload has been revealed since the head yet (e.g. a run of empty payloads).
     For the latest head the block may also belong to another branch.
     """
-    if chain_head.slot < network_config.GLOAS_SLOT:
+    if chain_head.slot < network_config.GLAMSTERDAM_SLOT:
         return []
 
     block_number = chain_head.block_number + 1

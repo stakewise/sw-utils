@@ -11,18 +11,19 @@ FIXTURES_DIR = Path(__file__).parent / 'fixtures'
 
 HOODI_CONFIG = NETWORKS[HOODI]
 
-# Sepolia is not a sw-utils network, but it is the first public network with Gloas.
-SEPOLIA = dataclasses.replace(
+# Test network config with Glamsterdam active, matching the captured blocks in the fixtures.
+GLAMSTERDAM_CONFIG = dataclasses.replace(
     HOODI_CONFIG,
     GENESIS_TIMESTAMP=Timestamp(1655733600),
     SECONDS_PER_SLOT=12,
-    GLOAS_EPOCH=353024,
+    GLAMSTERDAM_EPOCH=353024,
 )
 
 # Fulu block on Hoodi, `execution_payload` path.
 FULU_SLOT = 4234080
 FULU_BLOCK_NUMBER = 3891504
-# Gloas blocks on Sepolia. `bid.parent_block_hash` of each one points to the expected EL block.
+# Glamsterdam blocks on the test network.
+# `bid.parent_block_hash` of each one points to the expected EL block.
 SELF_BUILD_SLOT = 11404096
 SELF_BUILD_EXECUTION_BLOCK_NUMBER = 11962172
 # Builder bid (builder_index != 2**64 - 1), its payload was not delivered (empty slot).

@@ -383,7 +383,7 @@ async def _build_chain_head(
     body = message['body']
     slot = int(message['slot'])
 
-    if 'signed_execution_payload_bid' in body:  # Gloas+
+    if 'signed_execution_payload_bid' in body:  # Glamsterdam+
         parent_block_hash = body['signed_execution_payload_bid']['message']['parent_block_hash']
         try:
             execution_block = await execution_client.eth.get_block(parent_block_hash)

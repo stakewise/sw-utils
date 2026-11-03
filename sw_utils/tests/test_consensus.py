@@ -16,16 +16,16 @@ from sw_utils.consensus import (
     get_chain_latest_head,
 )
 from sw_utils.exceptions import ExecutionBehindConsensusError
-from sw_utils.tests.gloas_data import (
+from sw_utils.tests.glamsterdam_data import (
     AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
     AFTER_EMPTY_PARENT_SLOT,
     BUILDER_SLOT,
     FULU_BLOCK_NUMBER,
     FULU_SLOT,
+    GLAMSTERDAM_CONFIG,
     HOODI_CONFIG,
     SELF_BUILD_EXECUTION_BLOCK_NUMBER,
     SELF_BUILD_SLOT,
-    SEPOLIA,
     consensus_ts,
     load_json,
 )
@@ -33,15 +33,15 @@ from sw_utils.typings import ChainHead
 
 BEACON_BLOCK_FILES = {
     FULU_SLOT: 'beacon_block_hoodi_fulu_4234080.json',
-    SELF_BUILD_SLOT: 'beacon_block_sepolia_gloas_self_build_11404096.json',
-    BUILDER_SLOT: 'beacon_block_sepolia_gloas_builder_11403711.json',
-    AFTER_EMPTY_PARENT_SLOT: 'beacon_block_sepolia_gloas_after_empty_parent_11403712.json',
+    SELF_BUILD_SLOT: 'beacon_block_glamsterdam_self_build_11404096.json',
+    BUILDER_SLOT: 'beacon_block_glamsterdam_builder_11403711.json',
+    AFTER_EMPTY_PARENT_SLOT: 'beacon_block_glamsterdam_after_empty_parent_11403712.json',
 }
 NETWORK_BY_SLOT = {
     FULU_SLOT: HOODI_CONFIG,
-    SELF_BUILD_SLOT: SEPOLIA,
-    BUILDER_SLOT: SEPOLIA,
-    AFTER_EMPTY_PARENT_SLOT: SEPOLIA,
+    SELF_BUILD_SLOT: GLAMSTERDAM_CONFIG,
+    BUILDER_SLOT: GLAMSTERDAM_CONFIG,
+    AFTER_EMPTY_PARENT_SLOT: GLAMSTERDAM_CONFIG,
 }
 EXPECTED_BLOCK_NUMBER_BY_SLOT = {
     FULU_SLOT: FULU_BLOCK_NUMBER,
@@ -49,11 +49,11 @@ EXPECTED_BLOCK_NUMBER_BY_SLOT = {
     BUILDER_SLOT: AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
     AFTER_EMPTY_PARENT_SLOT: AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER,
 }
-GLOAS_SLOTS = [SELF_BUILD_SLOT, BUILDER_SLOT, AFTER_EMPTY_PARENT_SLOT]
+GLAMSTERDAM_SLOTS = [SELF_BUILD_SLOT, BUILDER_SLOT, AFTER_EMPTY_PARENT_SLOT]
 # Epoch heads walk back from the first slot of the epoch, so only epoch boundary slots can be
 # found directly.
 EPOCH_START_SLOTS = [slot for slot in BEACON_BLOCK_FILES if slot % 32 == 0]
-GLOAS_EPOCH_START_SLOTS = [slot for slot in GLOAS_SLOTS if slot % 32 == 0]
+GLAMSTERDAM_EPOCH_START_SLOTS = [slot for slot in GLAMSTERDAM_SLOTS if slot % 32 == 0]
 
 
 def _load_beacon_block(slot: int) -> dict:
@@ -154,8 +154,8 @@ class TestChainHeadFunctions:
 
     async def test_justified_head_skips_missed_slots(self, execution_client: AsyncMock) -> None:
         # the first slot of the epoch has no block, the closest previous one is used
-        epoch = AFTER_EMPTY_PARENT_SLOT // SEPOLIA.SLOTS_PER_EPOCH
-        assert epoch * SEPOLIA.SLOTS_PER_EPOCH == AFTER_EMPTY_PARENT_SLOT
+        epoch = AFTER_EMPTY_PARENT_SLOT // GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH
+        assert epoch * GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH == AFTER_EMPTY_PARENT_SLOT
         consensus_client = _consensus_client_with_blocks(
             {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}, epoch=epoch
         )
@@ -163,7 +163,7 @@ class TestChainHeadFunctions:
         chain_head = await get_chain_justified_head(
             consensus_client=consensus_client,
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
 
         assert chain_head.epoch == epoch
@@ -173,7 +173,7 @@ class TestChainHeadFunctions:
         assert requested_slots == [str(AFTER_EMPTY_PARENT_SLOT), str(BUILDER_SLOT)]
 
     async def test_epoch_head_skips_missed_slots(self, execution_client: AsyncMock) -> None:
-        epoch = AFTER_EMPTY_PARENT_SLOT // SEPOLIA.SLOTS_PER_EPOCH
+        epoch = AFTER_EMPTY_PARENT_SLOT // GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH
         consensus_client = _consensus_client_with_blocks(
             {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}
         )
@@ -182,7 +182,7 @@ class TestChainHeadFunctions:
             epoch,
             consensus_client=consensus_client,
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
 
         assert chain_head.epoch == epoch
@@ -203,16 +203,16 @@ class TestChainHeadFunctions:
                     10,
                     consensus_client=consensus_client,
                     execution_client=execution_client,
-                    network_config=SEPOLIA,
+                    network_config=GLAMSTERDAM_CONFIG,
                 )
             else:
                 await head_function(
                     consensus_client=consensus_client,
                     execution_client=execution_client,
-                    network_config=SEPOLIA,
+                    network_config=GLAMSTERDAM_CONFIG,
                 )
 
-        assert consensus_client.get_block.call_count == SEPOLIA.SLOTS_PER_EPOCH
+        assert consensus_client.get_block.call_count == GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH
 
     async def test_non_404_error_is_propagated(self, execution_client: AsyncMock) -> None:
         consensus_client = AsyncMock()
@@ -224,7 +224,7 @@ class TestChainHeadFunctions:
                 10,
                 consensus_client=consensus_client,
                 execution_client=execution_client,
-                network_config=SEPOLIA,
+                network_config=GLAMSTERDAM_CONFIG,
             )
 
     @pytest.mark.parametrize('slot', list(BEACON_BLOCK_FILES))
@@ -272,8 +272,8 @@ class TestChainHeadFunctions:
         payload_timestamp = int(block['data']['message']['body']['execution_payload']['timestamp'])
         assert chain_head.consensus_ts == payload_timestamp
 
-    @pytest.mark.parametrize('slot', GLOAS_SLOTS)
-    async def test_gloas_block_resolves_parent_block_hash(
+    @pytest.mark.parametrize('slot', GLAMSTERDAM_SLOTS)
+    async def test_glamsterdam_block_resolves_parent_block_hash(
         self, slot: int, execution_client: AsyncMock
     ) -> None:
         block = _load_beacon_block(slot)
@@ -285,79 +285,81 @@ class TestChainHeadFunctions:
         await get_chain_finalized_head(
             consensus_client=consensus_client,
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
 
         execution_client.eth.get_block.assert_awaited_once_with(parent_block_hash)
 
-    async def test_gloas_empty_parent_payload_is_skipped(self, execution_client: AsyncMock) -> None:
+    async def test_glamsterdam_empty_parent_payload_is_skipped(
+        self, execution_client: AsyncMock
+    ) -> None:
         # the payload of BUILDER_SLOT was not delivered, so both slots resolve to the same EL block
         builder_head = await get_chain_finalized_head(
             consensus_client=_consensus_client_with_blocks(
                 {BUILDER_SLOT: _load_beacon_block(BUILDER_SLOT)}
             ),
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
         next_head = await get_chain_finalized_head(
             consensus_client=_consensus_client_with_blocks(
                 {AFTER_EMPTY_PARENT_SLOT: _load_beacon_block(AFTER_EMPTY_PARENT_SLOT)}
             ),
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
 
         assert builder_head.slot + 1 == next_head.slot
         assert builder_head.block_number == next_head.block_number
         assert next_head.block_number == AFTER_EMPTY_PARENT_EXECUTION_BLOCK_NUMBER
 
-    @pytest.mark.parametrize('slot', GLOAS_EPOCH_START_SLOTS)
+    @pytest.mark.parametrize('slot', GLAMSTERDAM_EPOCH_START_SLOTS)
     @pytest.mark.parametrize(
         'head_function',
         [get_chain_finalized_head, get_chain_justified_head, get_chain_latest_head],
     )
-    async def test_gloas_execution_behind_consensus(
+    async def test_glamsterdam_execution_behind_consensus(
         self, head_function: Any, slot: int, empty_execution_client: AsyncMock
     ) -> None:
         block = _load_beacon_block(slot)
         parent_block_hash = block['data']['message']['body']['signed_execution_payload_bid'][
             'message'
         ]['parent_block_hash']
-        epoch = slot // SEPOLIA.SLOTS_PER_EPOCH
+        epoch = slot // GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH
         consensus_client = _consensus_client_with_blocks({slot: block}, epoch=epoch)
 
         with pytest.raises(ExecutionBehindConsensusError) as exc_info:
             await head_function(
                 consensus_client=consensus_client,
                 execution_client=empty_execution_client,
-                network_config=SEPOLIA,
+                network_config=GLAMSTERDAM_CONFIG,
             )
 
         assert isinstance(exc_info.value, BlockNotFound)
         assert parent_block_hash in str(exc_info.value)
         assert str(slot) in str(exc_info.value)
 
-    async def test_gloas_epoch_head_execution_behind_consensus(
+    async def test_glamsterdam_epoch_head_execution_behind_consensus(
         self, empty_execution_client: AsyncMock
     ) -> None:
         consensus_client = _consensus_client_with_blocks(
             {SELF_BUILD_SLOT: _load_beacon_block(SELF_BUILD_SLOT)}
         )
-        epoch = SELF_BUILD_SLOT // SEPOLIA.SLOTS_PER_EPOCH
+        epoch = SELF_BUILD_SLOT // GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH
 
         with pytest.raises(BlockNotFound):
             await get_chain_epoch_head(
                 epoch,
                 consensus_client=consensus_client,
                 execution_client=empty_execution_client,
-                network_config=SEPOLIA,
+                network_config=GLAMSTERDAM_CONFIG,
             )
 
-    @pytest.mark.parametrize('slot', GLOAS_EPOCH_START_SLOTS)
-    async def test_gloas_epoch_head_ignores_eth1_data(
+    @pytest.mark.parametrize('slot', GLAMSTERDAM_EPOCH_START_SLOTS)
+    async def test_glamsterdam_epoch_head_ignores_eth1_data(
         self, slot: int, execution_client: AsyncMock
     ) -> None:
-        # Gloas blocks have no `execution_payload`, the frozen `eth1_data.block_hash`
+        # Glamsterdam blocks have no `execution_payload`, the frozen `eth1_data.block_hash`
         # must never be used to find the execution block.
         block = _load_beacon_block(slot)
         eth1_block_hash = block['data']['message']['body']['eth1_data']['block_hash']
@@ -369,10 +371,10 @@ class TestChainHeadFunctions:
         consensus_client = _consensus_client_with_blocks({slot: block})
 
         chain_head = await get_chain_epoch_head(
-            slot // SEPOLIA.SLOTS_PER_EPOCH,
+            slot // GLAMSTERDAM_CONFIG.SLOTS_PER_EPOCH,
             consensus_client=consensus_client,
             execution_client=execution_client,
-            network_config=SEPOLIA,
+            network_config=GLAMSTERDAM_CONFIG,
         )
 
         assert chain_head.block_number == EXPECTED_BLOCK_NUMBER_BY_SLOT[slot]
