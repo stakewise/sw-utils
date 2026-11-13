@@ -10,6 +10,7 @@ from web3.exceptions import BlockNotFound
 from web3.types import Timestamp
 
 from sw_utils.consensus import (
+    ExtendedAsyncBeacon,
     get_chain_epoch_head,
     get_chain_finalized_head,
     get_chain_justified_head,
@@ -427,3 +428,29 @@ class TestChainHead:
 
         assert data == {'epoch': 1, 'slot': 32, 'block_number': 5, 'consensus_ts': 1700000000}
         assert ChainHead(**data) == chain_head
+
+
+class TestGetBuilders:
+    async def test_all_builders(self) -> None:
+        client = ExtendedAsyncBeacon(base_urls=['http://localhost'])
+        builder = {'index': '0', 'status': 'active', 'builder': {'pubkey': '0x' + 'aa' * 48}}
+        client._async_make_post_request = AsyncMock(  # type: ignore[method-assign]
+            return_value={'data': [builder]}
+        )
+
+        assert await client.get_builders(state_id='123') == [builder]
+        client._async_make_post_request.assert_awaited_once_with(
+            endpoint_uri='/eth/v1/beacon/states/123/builders', body={}
+        )
+
+    async def test_filter_by_ids(self) -> None:
+        client = ExtendedAsyncBeacon(base_urls=['http://localhost'])
+        client._async_make_post_request = AsyncMock(  # type: ignore[method-assign]
+            return_value={'data': []}
+        )
+        public_key = '0x' + 'bb' * 48
+
+        assert await client.get_builders(builder_ids=[public_key]) == []
+        client._async_make_post_request.assert_awaited_once_with(
+            endpoint_uri='/eth/v1/beacon/states/head/builders', body={'ids': [public_key]}
+        )
