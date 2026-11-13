@@ -120,6 +120,20 @@ class ExtendedAsyncBeacon(AsyncBeacon):
         response = await self._async_make_get_request(endpoint_uri)
         return response['data']
 
+    async def get_builders(
+        self, state_id: int | str = 'head', builder_ids: Sequence[str] | None = None
+    ) -> list[dict]:
+        """
+        Fetches builders from the state, optionally filtered by public keys or indexes.
+        Available since Gloas: the consensus node returns 400 for earlier states.
+        """
+        endpoint_uri = f'/eth/v1/beacon/states/{state_id}/builders'
+        body: dict[str, list[str]] = {}
+        if builder_ids:
+            body['ids'] = list(builder_ids)
+        response = await self._async_make_post_request(endpoint_uri=endpoint_uri, body=body)
+        return response['data']
+
     async def get_pending_partial_withdrawals(self, state_id: int | str = 'head') -> list[dict]:
         """Fetches pending deposits."""
         endpoint_uri = f'/eth/v1/beacon/states/{state_id}/pending_partial_withdrawals'
