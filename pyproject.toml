@@ -1,10 +1,15 @@
-[tool.poetry]
+[project]
 name = "sw-utils"
-version = "v0.16.1"
+version = "0.16.1"
 description = "StakeWise Python utils"
-authors = ["StakeWise Labs <info@stakewise.io>"]
+authors = [{ name = "StakeWise Labs", email = "info@stakewise.io" }]
 license = "GPL-3.0-or-later"
 readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dynamic = ["dependencies"]
+
+[tool.poetry]
+requires-poetry = ">=2.4"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -87,5 +92,5 @@ exclude = '''
 
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
